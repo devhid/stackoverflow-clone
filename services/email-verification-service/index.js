@@ -17,33 +17,35 @@ app.use(express.json());
 
 /* Verifies a user's email and confirms the account registration. */
 app.post('/verify', async (req, res) => {
-    let email = req.body["email"];
-    let key = req.body["key"];
+    const email = req.body["email"];
+    const key = req.body["key"];
+
+    let response = {};
 
     if(!notEmpty([email, key])) {
-        let response = {"status": "error", "error": "One or more fields are empty."};
+        response = {"status": "error", "error": "One or more fields are empty."};
         return res.json(response);
     }
 
     let emailExists = await database.emailExists(email);
     if(!emailExists) {
-        let response = {"status": "error", "error": "No account under that email was registered."};
+        response = {"status": "error", "error": "No account under that email was registered."};
         return res.json(response);
     }
 
     let verified = await database.isVerified(email);
     if(verified) {
-        let response = {"status": "error", "error": "Email is already verified."};
+        response = {"status": "error", "error": "Email is already verified."};
         return res.json(response);
     }
 
     let success = await database.verifyEmail(email, key);
     if(!success) {
-        let response = {"status": "error", "error": "Could not verify email. Incorrect key."};
+        response = {"status": "error", "error": "Could not verify email. Incorrect key."};
         return res.json(response);
     }
 
-    let response = {"status": "OK"};
+    response = {"status": "OK"};
     return res.json(response);
 });
 
