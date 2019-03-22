@@ -1,0 +1,29 @@
+{
+  "name": "registration-service",
+  "version": "1.0.0",
+  "description": "A microservice that handles user account registration for StackOverflow.",
+  "main": "index.js",
+  "dependencies": {
+    "bcrypt": "^3.0.5",
+    "elasticsearch": "^15.4.1",
+    "express": "^4.16.4",
+    "express-async-await": "^1.1.0"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.10"
+  },
+  "scripts": {
+    "start": "node_modules/.bin/nodemon index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/devhid/cse356.git"
+  },
+  "author": "Mankirat Gulati",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/devhid/cse356/issues"
+  },
+  "homepage": "https://github.com/devhid/cse356#readme"
+}
