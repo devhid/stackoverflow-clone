@@ -45,3 +45,4 @@
   * Develop the rest of the API in a separate microservice, `main-application-service`.
   * Deploy microservices on separate instances.
   * Find a way to call all endpoints on only one IP so that grading will work.
+  * Extensively test each endpoint with fake data.
