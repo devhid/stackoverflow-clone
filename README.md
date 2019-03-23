@@ -10,7 +10,7 @@
 * Requires **authorization**: `user:pass@107.191.43.73:92`
   * Use same credentials for Kibana.
 * Index: `users`
-* To get all documents stored in `users`, make a `GET` request in Postman: `http://107.191.43.73:9200/users/_search?pretty=true&q=*:*`
+* To get all documents stored in `users`, make a `GET` request in Postman: `http://<user>:<pass>@107.191.43.73:9200/users/_search?pretty=true&q=*:*`
 
 ## Developing Stateful Services
 #### 1. Create a virtual environment. 
