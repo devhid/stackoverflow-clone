@@ -12,6 +12,10 @@
 * Index: `users`
 * To get all documents stored in `users`, make a `GET` request in Postman: `http://<user>:<pass>@107.191.43.73:9200/users/_search?pretty=true&q=*:*`
 
+## Redis
+* Running on `64.52.162.153:6379`.
+* Requires **authorization**.
+
 ## Developing Stateful Services
 #### 1. Create a virtual environment. 
 `nodeenv venv`
