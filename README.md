@@ -3,9 +3,12 @@
 
 ## Kibana
 * Visit `107.191.43.73` to see the dashboard and data sourced by Elasticsearch.
+* Requires **authorization**.
 
 ## Elasticsearch
-* Running on `107.191.43.73:9200`.
+* Running on `107.191.43.73:92`.
+* Requires **authorization**: `user:pass@107.191.43.73:92`
+  * Use same credentials for Kibana.
 * Index: `users`
 * To get all documents stored in `users`, make a `GET` request in Postman: `http://107.191.43.73:9200/users/_search?pretty=true&q=*:*`
 
@@ -17,14 +20,14 @@
   * To deactivate: `deactivate_node`
 #### 3. Create a file for database operations.
 `touch database.js`
-#### 4. Copy and paste the following at the top of the file
+#### 4. Copy and paste the following at the top of the file.
   ``` node.js
   /* library imports */
   const elasticsearch = require('elasticsearch');
 
   /* client to communicate with elasticsearch */
   const client = new elasticsearch.Client({
-      host: "107.191.43.73:9200"
+      host: "http://<user>:<pass>@107.191.43.73:92"
   });
   
   /* index where user account information will be stored */
