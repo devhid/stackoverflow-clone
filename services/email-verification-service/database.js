@@ -3,7 +3,7 @@ const elasticsearch = require('elasticsearch');
 
 /* client to communicate with elasticsearch */
 const client = new elasticsearch.Client({
-    host: "http://admin:Ferdman123@107.191.43.73:92"
+    host: "http://admin:ferdman123@107.191.43.73:92"
 });
 
 /* index where user account information will be stored */
