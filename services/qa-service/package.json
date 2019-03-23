@@ -1,0 +1,28 @@
+{
+  "name": "qa-service",
+  "version": "1.0.0",
+  "description": "Service that will handle questions and answers for the stackoverflow clone",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node_modules/.bin/nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/devhid/stackoverflow-clone.git"
+  },
+  "keywords": [
+    "questions",
+    "answers"
+  ],
+  "author": "Johnny So",
+  "license": "ISC",
+  "dependencies": {
+    "elasticsearch": "^15.4.1",
+    "express": "^4.16.4",
+    "express-async-errors": "^3.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.10"
+  }
+}
