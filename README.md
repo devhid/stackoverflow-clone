@@ -37,3 +37,11 @@
   /* index where user account information will be stored */
   const INDEX = "users";
   ```
+  
+  ## To-do
+  * Setup mail server to send verification emails.
+  * Add `/send_email` endpoint which will be called by registration service in `/adduser`.
+  * Develop a `search` microservice.
+  * Develop the rest of the API in a separate microservice, `main-application-service`.
+  * Deploy microservices on separate instances.
+  * Find a way to call all endpoints on only one IP so that grading will work.
