@@ -17,12 +17,12 @@ const INDEX = "users";
 async function userExists(email, username) {
     const emailExists = (await client.count({
         index: INDEX,
-        body: { query: { match: { "email": email.toLowerCase() } } }
+        body: { query: { term: { "email": email.toLowerCase() } } }
     })).count != 0;
 
     const usernameExists = (await client.count({
         index: INDEX,
-        body: { query: { match: { "username": username.toLowerCase() } } }
+        body: { query: { term: { "username": username.toLowerCase() } } }
     })).count != 0;
 
     return emailExists || usernameExists;
