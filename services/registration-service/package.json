@@ -18,12 +18,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/devhid/cse356.git"
+    "url": "git+https://github.com/devhid/stackoverflow-clone.git"
   },
   "author": "Mankirat Gulati",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/devhid/cse356/issues"
+    "url": "https://github.com/devhid/stackoverflow-clone/issues"
   },
-  "homepage": "https://github.com/devhid/cse356#readme"
+  "homepage": "https://github.com/devhid/stackoverflow-clone#readme"
 }
