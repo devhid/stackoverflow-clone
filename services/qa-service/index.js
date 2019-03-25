@@ -65,6 +65,10 @@ app.post('/questions/add', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
+        console.log(user);
+        console.log(title);
+        console.log(body);
+        console.log(tags);
         response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
     }
@@ -82,6 +86,7 @@ app.get('/questions/:qid', async(req, res) => {
     // grab parameters
     let qid = req.params.qid;
     let user = req.session.user;
+    let username = (user == undefined) ? user : user._source.username;
 
     // on getting the IP
     // https://stackoverflow.com/questions/10849687/express-js-how-to-get-remote-client-address
@@ -94,7 +99,8 @@ app.get('/questions/:qid', async(req, res) => {
     }
 
     // perform database operations
-    let question = await database.getQuestion(qid, user, ip, true);
+
+    let question = await database.getQuestion(qid, username, ip, true);
     if (question == undefined){
         response[constants.STATUS_ERR] = constants.ERR_GENERAL;
         return res.json(response);

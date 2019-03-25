@@ -42,6 +42,7 @@ async function addQuestion(user, title, body, tags, media){
             "unauthenticated": []
         }
     });
+    console.log(viewResponse);
     return response._id;
 }
 
@@ -51,12 +52,20 @@ async function updateViewCount(qid, user, ip){
         index: INDEX_VIEWS,
         body: {
             query: {
+                // match_all: {}
                 term: {
                     "qid": qid
                 }
             }
         }
-    })['hits']['hits'][0];
+    });//['hits']['hits'][0];
+
+    console.log(question_view);
+    question_view = question_view.hits.hits[0];
+    console.log(qid);
+    console.log(question_view);
+    console.log(user);
+    // console.log(question_view.hits.hits[0]);
 
     // check whether or not we increment by username or IP address
     let update = true;
@@ -68,6 +77,7 @@ async function updateViewCount(qid, user, ip){
             update = false;
         else {
             // update the array of unauthenticated views by IP address
+            console.log("pushing IP");
             const updateViewResponse = await client.updateByQuery({
                 index: INDEX_VIEWS,
                 type: "_doc",
@@ -78,11 +88,16 @@ async function updateViewCount(qid, user, ip){
                             "qid": qid
                         } 
                     }, 
-                    script: { 
-                        inline: "ctx._source.unauthenticated.push(ip)" 
-                    } 
+                    script: {
+                        lang: "painless",
+                        inline: "ctx._source.unauthenticated.add(params.newIP)",
+                        params: {
+                            "newIP": ip
+                        }
+                    }
                 }
             });
+            console.log(updateViewResponse);
         }
     }
     else {
@@ -91,6 +106,7 @@ async function updateViewCount(qid, user, ip){
         if (users.includes(user))
             update = false;
         else {
+            console.log("pushing user");
             // update the array of authenticated views by username
             const updateViewResponse = await client.updateByQuery({
                 index: INDEX_VIEWS,
@@ -102,11 +118,16 @@ async function updateViewCount(qid, user, ip){
                             "qid": qid
                         } 
                     }, 
-                    script: { 
-                        inline: "ctx._source.authenticated.push(user)" 
-                    } 
+                    script: {
+                        lang: "painless",
+                        inline: "ctx._source.authenticated.add(params.newUser)",
+                        params: {
+                            "newUser": user
+                        }
+                    }
                 }
             });
+            console.log(updateViewResponse);
         }
     }
 
@@ -119,7 +140,7 @@ async function updateViewCount(qid, user, ip){
             body: { 
                 query: { 
                     term: { 
-                        "id": id
+                        "_id": qid
                     } 
                 }, 
                 script: { 
@@ -133,7 +154,7 @@ async function updateViewCount(qid, user, ip){
     return await client.get({
         index: INDEX_MAIN,
         type: "_doc",
-        id: id
+        id: qid
     });
 }
 
