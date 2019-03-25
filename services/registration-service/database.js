@@ -38,7 +38,7 @@ async function addUser(email, username, password) {
             "email": email.toLowerCase(),
             "username": username.toLowerCase(),
             "password": bcrypt.hashSync(password, 10),
-            "key": crypto.randomBytes(64).toString('hex'),
+            "key": crypto.randomBytes(16).toString('hex'),
             "email_verified": false,
             "reputation": 1
         }
