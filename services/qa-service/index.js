@@ -52,10 +52,11 @@ function generateERR(){
     return response;
 }
 
-/* route handling */
+/* milestone 1 */
 app.post('/questions/add', async(req, res) => {
-    // grab parameters
     let response = generateERR();
+
+    // grab parameters
     let title = req.body.title;
     let body = req.body.body;
     let tags = req.body.tags;
@@ -63,8 +64,10 @@ app.post('/questions/add', async(req, res) => {
     let user = req.session.user;
 
     // check if any mandatory parameters are undefined
-    if (user == undefined || title == undefined || body == undefined || tags == undefined)
+    if (user == undefined || title == undefined || body == undefined || tags == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
+    }
 
     // perform database operations
     let qid = await database.addQuestion(user, title, body, tags, media);
@@ -74,22 +77,87 @@ app.post('/questions/add', async(req, res) => {
 });
 
 app.get('/questions/:qid', async(req, res) => {
-    // grab parameters
     let response = generateERR();
+
+    // grab parameters
     let qid = req.params.qid;
+    let user = req.session.user;
+
+    // on getting the IP
+    // https://stackoverflow.com/questions/10849687/express-js-how-to-get-remote-client-address
+    let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
 
     // check if any mandatory parameters are undefined
-    if (qid == undefined)
+    if (qid == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
+    }
 
     // perform database operations
-    let question = await database.getQuestion(qid);
+    let question = await database.getQuestion(qid, user, ip, true);
+    if (question == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+        return res.json(response);
+    }
+
     question._source['id'] = question._id;
     response = generateOK();
     response[constants.QUESTION_KEY] = question._source;
     return res.json(response);
 });
 
+app.post('/questions/:qid/answers/add', async(req, res) => {
+    let response = generateERR();
+
+    // grab parameters
+    let qid = req.params.qid;
+    let body = req.body.body;
+    let media = req.body.media;
+    let user = req.session.user;
+
+    // check if any mandatory parameters are undefined
+    if (qid == undefined || body == undefined || user == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
+        return res.json(response);
+    }
+
+    // perform database operations
+    let answer = await database.addAnswer(qid, user, body, media);
+    if (answer == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+        return res.json(response);
+    }
+
+    response = generateOK();
+    response[constants.ID_KEY] = answer._id;
+    return res.json(response);
+});
+
+app.get('/questions/:qid/answers', async(req, res) => {
+    let response = generateERR();
+
+    // grab parameters
+    let qid = req.params.qid;
+
+    // check if any mandatory parameters are undefined
+    if (qid == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
+        return res.json(response);
+    }
+
+    // perform database operations
+    let answers = await database.getAnswers(qid);
+    if (answers == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+        return res.json(response);
+    }
+
+    response = generateOK();
+    response[constants.ANSWERS_KEY] = answers;
+    return res.json(response);
+});
+
+/* milestone 2 */
 app.delete('/questions/:qid', async(req, res) => {
     // grab parameters
     let response = generateERR();
@@ -101,7 +169,7 @@ app.delete('/questions/:qid', async(req, res) => {
         return res.json(response);
 
     // perform database operations
-    let status = await database.deleteQuestion(user,qid);
+    let status = await database.deleteQuestion(qid,user);
     if (status === false){
         res.status(403);
         response[constants.STATUS_ERR] = constants.ERR_DEL_NOTOWN_Q;
@@ -117,16 +185,7 @@ app.delete('/questions/:qid', async(req, res) => {
     return res.json(response);
 });
 
-app.post('/questions/:qid/answers/add', async(req, res) => {
-    let response = generateERR();
-    return res.json(response);
-});
-
-app.get('/questions/:qid/answers', async(req, res) => {
-    let response = generateERR();
-    return res.json(response);
-});
-
+/* milestone 3 */
 app.post('/questions/:qid/upvote', async(req, res) => {
     let response = generateERR();
     return res.json(response);
