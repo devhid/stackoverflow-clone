@@ -18,9 +18,12 @@
   "author": "Johnny So",
   "license": "ISC",
   "dependencies": {
+    "connect-redis": "^3.4.1",
     "elasticsearch": "^15.4.1",
     "express": "^4.16.4",
-    "express-async-errors": "^3.1.1"
+    "express-async-errors": "^3.1.1",
+    "express-session": "^1.15.6",
+    "redis": "^2.8.0"
   },
   "devDependencies": {
     "nodemon": "^1.18.10"

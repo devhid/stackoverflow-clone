@@ -1,15 +1,15 @@
 /* library imports */
 const express = require('express');
-const asyncWrapper = require('express-async-await');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 
 /* internal imports */
 const database = require('./database');
+const constants = require('./constants')
 
 /* initialize express application */
 const app = express();
-asyncWrapper(app);
+require('express-async-errors');
 
 /* the port the server will listen on */
 const PORT = 5000;
@@ -41,14 +41,14 @@ app.use(express.json());
 /* helper funcs */
 function generateOK(){
     let response = {};
-    responseBody[constants.STATUS_KEY] = constants.STATUS_OK;
+    response[constants.STATUS_KEY] = constants.STATUS_OK;
     return response;
 }
 
 function generateERR(){
     let response = {};
-    responseBody[constants.STATUS_KEY] = constants.STATUS_ERR;
-    responseBody[constants.STATUS_ERR] = '';
+    response[constants.STATUS_KEY] = constants.STATUS_ERR;
+    response[constants.STATUS_ERR] = '';
     return response;
 }
 
