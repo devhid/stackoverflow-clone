@@ -120,6 +120,7 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     let body = req.body.body;
     let media = req.body.media;
     let user = req.session.user;
+    let username = (user == undefined) ? user : user._source.username;
 
     // check if any mandatory parameters are undefined
     if (qid == undefined || body == undefined || user == undefined){
@@ -128,7 +129,7 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     }
 
     // perform database operations
-    let answer = await database.addAnswer(qid, user, body, media);
+    let answer = await database.addAnswer(qid, username, body, media);
     if (answer == undefined){
         response[constants.STATUS_ERR] = constants.ERR_GENERAL;
         return res.json(response);

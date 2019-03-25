@@ -1,18 +1,21 @@
 /* library imports */
 const elasticsearch = require('elasticsearch');
 
+const constants = require('./constants');
+
 /* client to communicate with elasticsearch */
 const client = new elasticsearch.Client({
     host: "http://admin:ferdman123@107.191.43.73:92"
 });
 
-const INDEX_MAIN = "qa";            // INDEX_MAIN is where questions and answers are stored
-const INDEX_VIEWS = "qa-views";     // INDEX_VIEWS is where views for a question are stored
+const INDEX_QUESTIONS = "questions";  // INDEX_QUESTIONS is where questions are stored
+const INDEX_VIEWS = "views";          // INDEX_VIEWS is where views for a question are stored
+const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stored
 
 async function addQuestion(user, title, body, tags, media){
     media = (media == undefined) ? [] : media;
     let response = await client.index({
-        index: INDEX_MAIN,
+        index: INDEX_QUESTIONS,
         type: "_doc",
         refresh: "true",
         body: {
@@ -28,7 +31,6 @@ async function addQuestion(user, title, body, tags, media){
             "timestamp": Math.round(Date.now()/1000),
             "media": media,
             "tags": tags,
-            "answers": [],
             "accepted_answer_id": null
         }
     });
@@ -60,12 +62,7 @@ async function updateViewCount(qid, user, ip){
         }
     });//['hits']['hits'][0];
 
-    console.log(question_view);
     question_view = question_view.hits.hits[0];
-    console.log(qid);
-    console.log(question_view);
-    console.log(user);
-    // console.log(question_view.hits.hits[0]);
 
     // check whether or not we increment by username or IP address
     let update = true;
@@ -134,7 +131,7 @@ async function updateViewCount(qid, user, ip){
     // perform the update if necessary
     if (update){
         const updateResponse = await client.updateByQuery({
-            index: INDEX_MAIN,
+            index: INDEX_QUESTIONS,
             type: "_doc",
             refresh: "true",
             body: { 
@@ -152,7 +149,7 @@ async function updateViewCount(qid, user, ip){
     
     // return the question
     return await client.get({
-        index: INDEX_MAIN,
+        index: INDEX_QUESTIONS,
         type: "_doc",
         id: qid
     });
@@ -165,7 +162,7 @@ async function getQuestion(qid, user, ip, update){
     }
     if (question == null){
         question = await client.get({
-            index: INDEX_MAIN,
+            index: INDEX_QUESTIONS,
             type: "_doc",
             id: qid
         });
@@ -178,7 +175,7 @@ async function deleteQuestion(qid, user){
     let response = null;
     if (user._source.username == question._source.user.username){
         response = await client.delete({
-            index: INDEX_MAIN,
+            index: INDEX_QUESTIONS,
             type: "_doc",
             id: qid
         });
@@ -190,13 +187,18 @@ async function deleteQuestion(qid, user){
 
 async function addAnswer(qid, user, body, media){
     media = (media == undefined) ? [] : media;
+    console.log(qid);
+    console.log(user);
+    console.log(body);
+    console.log(media);
+    
     let response = await client.index({
-        index: INDEX_MAIN,
+        index: INDEX_ANSWERS,
         type: "_doc",
         refresh: "true",
         body: {
             "qid": qid,
-            "user": user._source.username,
+            "user": user,
             "body": body,
             "score": 0,
             "is_accepted": false,
@@ -208,8 +210,8 @@ async function addAnswer(qid, user, body, media){
 }
 
 async function getAnswers(qid){
-    const answers = await client.search({
-        index: INDEX_MAIN,
+    let answers = (await client.search({
+        index: INDEX_ANSWERS,
         body: {
             query: {
                 term: {
@@ -217,8 +219,17 @@ async function getAnswers(qid){
                 }
             }
         }
-    })['hits']['hits'];
-    return answers;
+    })).hits.hits;//['hits']['hits'];
+    
+    var transformedAnswers = [];
+    for (var i in answers){
+        let ans = answers[i];
+        ans._source[constants.ID_KEY] = ans._id;
+        ans = ans._source;
+        delete ans.qid;
+        transformedAnswers.push(ans);
+    }
+    return transformedAnswers;
 }
 
 /** MILESTONE 3 */
