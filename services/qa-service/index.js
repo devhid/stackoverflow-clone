@@ -65,16 +65,16 @@ app.post('/questions/add', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
-        console.log(user);
-        console.log(title);
-        console.log(body);
-        console.log(tags);
         response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
     }
 
     // perform database operations
     let qid = await database.addQuestion(user, title, body, tags, media);
+    if (!qid){
+        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+        return res.json(response);
+    }
     response = generateOK();
     response[constants.ID_KEY] = qid;
     return res.json(response);
@@ -101,8 +101,8 @@ app.get('/questions/:qid', async(req, res) => {
     // perform database operations
 
     let question = await database.getQuestion(qid, username, ip, true);
-    if (question == undefined){
-        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+    if (!question){
+        response[constants.STATUS_ERR] = constants.ERR_Q_NOTFOUND;
         return res.json(response);
     }
 
@@ -155,7 +155,7 @@ app.get('/questions/:qid/answers', async(req, res) => {
     // perform database operations
     let answers = await database.getAnswers(qid);
     if (answers == undefined){
-        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+        response[constants.STATUS_ERR] = constants.ERR_Q_NOTFOUND;
         return res.json(response);
     }
 

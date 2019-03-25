@@ -50,7 +50,7 @@ async function addQuestion(user, title, body, tags, media){
 
 async function updateViewCount(qid, user, ip){
     // grab the document representing the views for the question
-    let question_view = await client.search({
+    let question_view = (await client.search({
         index: INDEX_VIEWS,
         body: {
             query: {
@@ -60,9 +60,10 @@ async function updateViewCount(qid, user, ip){
                 }
             }
         }
-    });//['hits']['hits'][0];
+    })).hits.hits[0];
 
-    question_view = question_view.hits.hits[0];
+    if (question_view == undefined)
+        return false;
 
     // check whether or not we increment by username or IP address
     let update = true;
@@ -74,7 +75,6 @@ async function updateViewCount(qid, user, ip){
             update = false;
         else {
             // update the array of unauthenticated views by IP address
-            console.log("pushing IP");
             const updateViewResponse = await client.updateByQuery({
                 index: INDEX_VIEWS,
                 type: "_doc",
@@ -94,7 +94,6 @@ async function updateViewCount(qid, user, ip){
                     }
                 }
             });
-            console.log(updateViewResponse);
         }
     }
     else {
@@ -103,7 +102,6 @@ async function updateViewCount(qid, user, ip){
         if (users.includes(user))
             update = false;
         else {
-            console.log("pushing user");
             // update the array of authenticated views by username
             const updateViewResponse = await client.updateByQuery({
                 index: INDEX_VIEWS,
@@ -124,7 +122,6 @@ async function updateViewCount(qid, user, ip){
                     }
                 }
             });
-            console.log(updateViewResponse);
         }
     }
 
@@ -160,7 +157,9 @@ async function getQuestion(qid, user, ip, update){
     if (update){
         question = updateViewCount(qid, user, ip);
     }
-    if (question == null){
+    // if updateViewCount returned false, the QID is invalid
+    //      do not try to search again
+    if (question === null){
         question = await client.get({
             index: INDEX_QUESTIONS,
             type: "_doc",
@@ -173,6 +172,8 @@ async function getQuestion(qid, user, ip, update){
 async function deleteQuestion(qid, user){
     const question = await getQuestion(qid, user);
     let response = null;
+    if (!question)
+        return response;
     if (user._source.username == question._source.user.username){
         response = await client.delete({
             index: INDEX_QUESTIONS,
@@ -220,7 +221,10 @@ async function getAnswers(qid){
             }
         }
     })).hits.hits;//['hits']['hits'];
-    
+
+    if (answers.length == 0)
+        return undefined
+
     var transformedAnswers = [];
     for (var i in answers){
         let ans = answers[i];
