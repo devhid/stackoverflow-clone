@@ -10,6 +10,15 @@ const client = new elasticsearch.Client({
 /* index where user account information will be stored */
 const INDEX = "users";
 
+async function getUser(username) {
+    const results = (await client.search({
+        index: INDEX,
+        body: { query: { term: { "username": username.toLowerCase() } } }
+    }))['hits']['hits'];
+
+    return results ? results[0] : null;
+}
+
 async function userExists(username) {
     const usernameExists = (await client.count({
         index: INDEX,
@@ -38,6 +47,7 @@ async function authenticate(username, password) {
 }
 
 module.exports = {
+    getUser: getUser,
     userExists: userExists,
     canLogin: canLogin,
     authenticate, authenticate

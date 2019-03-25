@@ -12,7 +12,7 @@ const app = express();
 asyncWrapper(app);
 
 /* the port the server will listen on */
-const PORT = 5000;
+const PORT = 1000;
 
 /* options for the redis store */
 const redisOptions = {
@@ -73,7 +73,7 @@ app.post('/login', async (req, res) => {
         return res.json(response);
     }
 
-    req.session.user = { id : Math.random() };
+    req.session.user = await database.getUser(username);
     
     response = {"status": "OK"};
     return res.json(response);
