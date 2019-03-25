@@ -53,7 +53,7 @@ async function emailExists(email) {
     const emailExists = (await client.count({
         index: INDEX,
         body: { query: { term: { "email": email.toLowerCase() } } }
-    })).count != 0
+    })).count != 0;
 
     return emailExists;
 }
