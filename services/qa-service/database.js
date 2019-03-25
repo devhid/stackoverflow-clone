@@ -25,7 +25,7 @@ async function addQuestion(user, title, body, tags, media){
             "score": 0,
             "view_count": 0,
             "answer_count": 0,
-            "timestamp": Date.now(),
+            "timestamp": Date.now()/1000,
             "media": media,
             "tags": tags,
             "answers": [],
@@ -71,7 +71,7 @@ async function addAnswer(qid, user, body, media){
             "body": body,
             "score": 0,
             "is_accepted": false,
-            "timestamp": Date.now(),
+            "timestamp": Date.now()/1000,
             "media": media
         }
     });

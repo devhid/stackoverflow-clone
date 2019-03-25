@@ -5,7 +5,7 @@ const RedisStore = require('connect-redis')(session);
 
 /* internal imports */
 const database = require('./database');
-const constants = require('./constants')
+const constants = require('./constants');
 
 /* initialize express application */
 const app = express();
