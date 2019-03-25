@@ -47,6 +47,8 @@ async function addUser(email, username, password) {
     return response;
 }
 
+/* Retrieve the key for a user from the database. */
+
 module.exports = {
     userExists: userExists,
     addUser: addUser

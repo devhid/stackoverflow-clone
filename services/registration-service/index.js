@@ -12,8 +12,30 @@ asyncWrapper(app);
 /* the port the server will listen on */
 const PORT = 2000;
 
+/* connect to the email server */
+const emailjs = require('emailjs')
+const mail_server = emailjs.server.connect({
+    user: "ubuntu",
+    password: "",
+    host: "mail.cse356-mailserver.cloud.compas.cs.stonybrook.edu",
+    ssl: false
+});
+
 /* parse incoming requests data as json */
 app.use(express.json());
+
+app.get('/emailtest', async(req, res) => {
+    console.log(mail_server);
+    mail_server.send({
+        text: "Email received.",
+        from: "no-reply <ubuntu@cse356-mailserver.cloud.compas.cs.stonybrook.edu>",
+        to: "jondysong@yahoo.com",
+        subject: "Test email"
+        }, function(err, message) {
+            console.log(err);
+            console.log(message);
+    });
+});
 
 /* Register a user if they do not already exist. */
 app.post('/adduser', async (req, res) => {
@@ -35,6 +57,16 @@ app.post('/adduser', async (req, res) => {
     }
 
     database.addUser(email, username, password);    
+
+    mail_server.send({
+        text: "Email received.",
+        from: "no-reply <ubuntu@cse356-mailserver.cloud.compas.cs.stonybrook.edu>",
+        to: email,
+        subject: "validation key: "
+        }, function(err, message) {
+            //console.log(err);
+            //console.log(message);
+    });
 
     response = {"status": "OK"};
     return res.json(response);
