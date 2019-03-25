@@ -1,18 +1,23 @@
 <h1 align=center>stackoverflow-clone</h1>
 <p align=center>A minimal clone of StackOverflow built for our Cloud Computing course.</p>
 
-## Kibana
+## Deployments
+
+### Authentication
+* Hosted on `64.190.90.243`
+
+### Kibana
 * Visit `107.191.43.73` to see the dashboard and data sourced by Elasticsearch.
 * Requires **authorization**.
 
-## Elasticsearch
+### Elasticsearch
 * Running on `107.191.43.73:92`.
 * Requires **authorization**: `user:pass@107.191.43.73:92`
   * Use same credentials for Kibana.
 * Index: `users`
 * To get all documents stored in `users`, make a `GET` request in Postman: `http://<user>:<pass>@107.191.43.73:9200/users/_search?pretty=true&q=*:*`
 
-## Redis
+### Redis
 * Running on `64.52.162.153:6379`.
 * Requires **authorization**.
 
