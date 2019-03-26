@@ -56,13 +56,15 @@ app.post('/adduser', async (req, res) => {
         return res.json(response);
     }
 
-    database.addUser(email, username, password);    
+    const key = database.addUser(email, username, password);
+
+    const message = "validation key: " + key;
 
     mail_server.send({
-        text: "Email received.",
+        text: message,
         from: "no-reply <ubuntu@cse356-mailserver.cloud.compas.cs.stonybrook.edu>",
         to: email,
-        subject: "validation key: "
+        subject: "Validation Key"
         }, function(err, message) {
             //console.log(err);
             //console.log(message);
