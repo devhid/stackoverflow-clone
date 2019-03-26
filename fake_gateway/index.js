@@ -9,7 +9,7 @@ const servers = require('./servers');
 const app = express();
 
 /* port to run server on */
-const PORT = 8000;
+const PORT = 5000;
 
 /* parse incoming requests data as json */
 app.use(express.json());
@@ -28,7 +28,6 @@ app.post('/adduser', (req, res) => {
 
 app.post('/login', (req, res) => {
     request.post(servers.AUTHENTICATION + '/login', { "json":req.body }, (error, response, body) => {
-        console.log(response);
         return res.json(body);
     });
 });
