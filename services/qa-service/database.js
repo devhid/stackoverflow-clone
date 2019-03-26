@@ -28,7 +28,7 @@ async function addQuestion(user, title, body, tags, media){
             "score": 0,
             "view_count": 0,
             "answer_count": 0,
-            "timestamp": Math.floor(Date.now()/1000),
+            "timestamp": Date.now()/1000,
             "media": media,
             "tags": tags,
             "accepted_answer_id": null
@@ -203,7 +203,7 @@ async function addAnswer(qid, user, body, media){
             "body": body,
             "score": 0,
             "is_accepted": false,
-            "timestamp": Math.floor(Date.now()/1000),
+            "timestamp": Date.now()/1000,
             "media": media
         }
     });

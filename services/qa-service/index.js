@@ -124,7 +124,7 @@ app.get('/questions/:qid', async(req, res) => {
     response[constants.QUESTION_KEY] = question._source;
 
     console.log("got question");
-    console.log(question);
+    console.log(response);
     return res.json(response);
 });
 
