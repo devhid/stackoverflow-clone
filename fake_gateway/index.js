@@ -18,7 +18,6 @@ app.get('/', (req, res) => {
 });
 
 app.post('/adduser', (req, res) => {
-    console(req);
     request.post(servers.REGISTRATION + '/adduser', { "body":req.body }, (error, response, body) => {
         console.log(body);
         return res.json(JSON.parse(body));
