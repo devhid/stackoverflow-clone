@@ -62,14 +62,15 @@ app.post('/questions/add', async(req, res) => {
     let tags = req.body.tags;
     let media = req.body.media;
     let user = req.session.user;
+    
+    console.log(user);
+    console.log(title);
+    console.log(body);
+    console.log(tags);
 
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
         console.log("missing params");
-        console.log(user);
-        console.log(title);
-        console.log(body);
-        console.log(tags);
         response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
     }
@@ -83,6 +84,11 @@ app.post('/questions/add', async(req, res) => {
     }
     response = generateOK();
     response[constants.ID_KEY] = qid;
+
+    let question = await database.getQuestion(qid, user._source.username, '5.5.5.5', false);
+    console.log("added question");
+    console.log(question);
+
     return res.json(response);
 });
 
@@ -116,6 +122,9 @@ app.get('/questions/:qid', async(req, res) => {
     question._source['media'] = (question._source['media'].length == 0) ? null : question._source['media'];
     response = generateOK();
     response[constants.QUESTION_KEY] = question._source;
+
+    console.log("got question");
+    console.log(question);
     return res.json(response);
 });
 
