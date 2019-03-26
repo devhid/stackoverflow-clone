@@ -10,7 +10,7 @@ const app = express();
 asyncWrapper(app);
 
 /* the port the server will listen on */
-const PORT = 3003;
+const PORT = 8001;
 
 /* connect to the email server */
 const emailjs = require('emailjs')

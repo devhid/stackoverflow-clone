@@ -12,7 +12,7 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 3002;
+const PORT = 8004;
 
 /* options for the redis store */
 const redisOptions = {
