@@ -30,6 +30,7 @@ app.post('/adduser', (req, res) => {
 
 app.post('/login', (req, res) => {
     request.post(servers.AUTHENTICATION + '/login', { "json":req.body }, (error, response, body) => {
+<<<<<<< HEAD
         cookie = response.headers['set-cookie'][0].split('; ')[0].split('=');
         res.cookie(cookie[0], cookie[1], {domain:"kellogs.cse356.compas.cs.stonybrook.edu", path: '/'});
         res.set({
@@ -39,6 +40,9 @@ app.post('/login', (req, res) => {
             "Access-Control-Allow-Headers": ["Content-Type", "*"]
         })
         console.log(res);
+=======
+        console.log(response);
+>>>>>>> 30a21d642a0929f6690fb2ac9f620f5ca2f974f7
         return res.json(body);
     });
 });
