@@ -28,6 +28,7 @@ app.post('/adduser', (req, res) => {
 
 app.post('/login', (req, res) => {
     request.post(servers.AUTHENTICATION + '/login', { "json":req.body }, (error, response, body) => {
+        console.log(response);
         return res.json(body);
     });
 });
