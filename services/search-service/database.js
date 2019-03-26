@@ -37,7 +37,13 @@ async function searchQuestions(timestamp, limit, accepted) {
         body: body
     }))['hits']['hits'];
 
-    return results;
+    var transformedResults = [];
+    for (var i in results){
+        let q = results[i];
+        transformedResults.push(q._source);
+    }
+
+    return transformedResults;
 }
 
 module.exports = {
