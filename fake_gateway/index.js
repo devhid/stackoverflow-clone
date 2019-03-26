@@ -1,7 +1,6 @@
 /* library imports */
 const express = require('express');
 const request = require('request');
-const cookieParser = require('cookie-parser');
 
 /* internal imports */
 const servers = require('./servers');
@@ -14,7 +13,6 @@ const PORT = 5000;
 
 /* parse incoming requests data as json */
 app.use(express.json());
-app.use(cookieParser())
 
 /* all routes for stack overflow api */
 
@@ -30,19 +28,6 @@ app.post('/adduser', (req, res) => {
 
 app.post('/login', (req, res) => {
     request.post(servers.AUTHENTICATION + '/login', { "json":req.body }, (error, response, body) => {
-<<<<<<< HEAD
-        cookie = response.headers['set-cookie'][0].split('; ')[0].split('=');
-        res.cookie(cookie[0], cookie[1], {domain:"kellogs.cse356.compas.cs.stonybrook.edu", path: '/'});
-        res.set({
-            "Access-Control-Allow-Origin": "http://kellogs.cse356.compas.cs.stonybrook.edu",
-            "Access-Control-Allow-Credentials": true,
-            "Access-Control-Allow-Methods": ["GET", "POST"],
-            "Access-Control-Allow-Headers": ["Content-Type", "*"]
-        })
-        console.log(res);
-=======
-        console.log(response);
->>>>>>> 30a21d642a0929f6690fb2ac9f620f5ca2f974f7
         return res.json(body);
     });
 });
