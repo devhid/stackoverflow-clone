@@ -12,7 +12,7 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 5000;
+const PORT = 8004;
 
 /* options for the redis store */
 const redisOptions = {
@@ -62,21 +62,33 @@ app.post('/questions/add', async(req, res) => {
     let tags = req.body.tags;
     let media = req.body.media;
     let user = req.session.user;
+    
+    console.log(user);
+    console.log(title);
+    console.log(body);
+    console.log(tags);
 
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
+        console.log("missing params");
         response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
     }
 
     // perform database operations
     let qid = await database.addQuestion(user, title, body, tags, media);
+    console.log(qid);
     if (!qid){
         response[constants.STATUS_ERR] = constants.ERR_GENERAL;
         return res.json(response);
     }
     response = generateOK();
     response[constants.ID_KEY] = qid;
+
+    let question = await database.getQuestion(qid, user._source.username, '5.5.5.5', false);
+    console.log("added question");
+    console.log(question);
+
     return res.json(response);
 });
 
@@ -107,8 +119,12 @@ app.get('/questions/:qid', async(req, res) => {
     }
 
     question._source['id'] = question._id;
+    question._source['media'] = (question._source['media'].length == 0) ? null : question._source['media'];
     response = generateOK();
     response[constants.QUESTION_KEY] = question._source;
+
+    console.log("got question");
+    console.log(response);
     return res.json(response);
 });
 

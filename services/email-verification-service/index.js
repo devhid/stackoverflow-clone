@@ -10,7 +10,7 @@ const app = express();
 asyncWrapper(app);
 
 /* the port the server will listen on */
-const PORT = 3000;
+const PORT = 8003;
 
 /* parse incoming requests data as json */
 app.use(express.json());
