@@ -71,6 +71,7 @@ app.post('/questions/add', async(req, res) => {
 
     // perform database operations
     let qid = await database.addQuestion(user, title, body, tags, media);
+    console.log(qid);
     if (!qid){
         response[constants.STATUS_ERR] = constants.ERR_GENERAL;
         return res.json(response);
