@@ -114,6 +114,7 @@ app.get('/questions/:qid', async(req, res) => {
     }
 
     question._source['id'] = question._id;
+    question._source['media'] = (question._source['media'].length == 0) ? null : question._source['media'];
     response = generateOK();
     response[constants.QUESTION_KEY] = question._source;
     return res.json(response);
