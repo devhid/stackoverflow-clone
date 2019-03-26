@@ -28,8 +28,23 @@ async function userExists(email, username) {
     return emailExists || usernameExists;
 }
 
-/* Index a new user in the database. */
+const byteLength = 16;
+/* Generate a new random key */
+function generateKey() {
+    return new Promise((resolve, reject) => {
+        crypto.randomBytes(byteLength, (err, buffer) => {
+            if(err) {
+                reject(err);
+            } else {
+                resolve(buffer.toString('hex'));
+            }
+        });
+    });
+}
+
+/* Index a new user in the database. Returns the generated key. */
 async function addUser(email, username, password) {
+    const key = await generateKey();
     const response = await client.index({
         index: INDEX,
         type: "_doc",
@@ -38,14 +53,16 @@ async function addUser(email, username, password) {
             "email": email.toLowerCase(),
             "username": username.toLowerCase(),
             "password": bcrypt.hashSync(password, 10),
-            "key": crypto.randomBytes(16).toString('hex'),
+            "key": key,
             "email_verified": false,
             "reputation": 1
         }
     });
 
-    return response;
+    return key;
 }
+
+/* Retrieve the key for a user from the database. */
 
 module.exports = {
     userExists: userExists,
