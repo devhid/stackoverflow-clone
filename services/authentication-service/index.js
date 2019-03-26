@@ -12,7 +12,7 @@ const app = express();
 asyncWrapper(app);
 
 /* the port the server will listen on */
-const PORT = 1000;
+const PORT = 3000;
 
 /* options for the redis store */
 const redisOptions = {
