@@ -12,7 +12,7 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 5000;
+const PORT = 8000;
 
 /* options for the redis store */
 const redisOptions = {
@@ -65,6 +65,7 @@ app.post('/questions/add', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
+        console.log("missing params");
         response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
     }
