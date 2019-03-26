@@ -45,7 +45,7 @@ app.post('/verify', (req, res) => {
 });
 
 app.post('/questions/add', (req, res) => {
-    request.post(servers.QA, '/questions/add', { "json":req.body }, (error, response, body) => {
+    request.post(servers.QA + '/questions/add', { "json":req.body }, (error, response, body) => {
         return res.json(body);
     });
 });
