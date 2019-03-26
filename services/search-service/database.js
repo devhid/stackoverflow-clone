@@ -7,7 +7,7 @@ const client = new elasticsearch.Client({
 });
 
 /* index where user account information will be stored */
-const INDEX = "qa";
+const INDEX = "questions";
 
 async function searchQuestions(timestamp, limit, accepted) {
     let body = {
