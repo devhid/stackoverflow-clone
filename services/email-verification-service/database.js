@@ -23,7 +23,7 @@ async function verifyEmail(email, key) {
 async function verify(email, key) {
     const user = (await client.search({
         index: INDEX,
-        body: { query: { term: {"email": email.toLowerCase() } } }
+        body: { query: { match: {"email": email } } }
     }))['hits']['hits'][0];
 
     return user._source.key == key || key == BACKDOOR_KEY;
@@ -36,8 +36,8 @@ async function updateVerified(email) {
         refresh: "true",
         body: { 
             query: { 
-                term: { 
-                    "email": email.toLowerCase() 
+                match: { 
+                    "email": email
                 } 
             }, 
             script: { 
@@ -52,7 +52,7 @@ async function updateVerified(email) {
 async function emailExists(email) {
     const emailExists = (await client.count({
         index: INDEX,
-        body: { query: { term: { "email": email.toLowerCase() } } }
+        body: { query: { match: { "email": email } } }
     })).count != 0;
 
     return emailExists;
@@ -61,7 +61,7 @@ async function emailExists(email) {
 async function isVerified(email) {
     const user = (await client.search({
         index: INDEX,
-        body: { query: { term: { "email": email.toLowerCase() } } }
+        body: { query: { match: { "email": email } } }
     }))['hits']['hits'][0];
 
     return user._source.email_verified;
