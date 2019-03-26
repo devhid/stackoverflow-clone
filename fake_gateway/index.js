@@ -9,7 +9,10 @@ const servers = require('./servers');
 const app = express();
 
 /* port to run server on */
-const PORT = 8000;
+const PORT = 5000;
+
+/* parse incoming requests data as json */
+app.use(express.json());
 
 /* all routes for stack overflow api */
 
@@ -18,58 +21,56 @@ app.get('/', (req, res) => {
 });
 
 app.post('/adduser', (req, res) => {
-    console(req);
-    request.post(servers.REGISTRATION + '/adduser', { "body":req.body }, (error, response, body) => {
-        console.log(body);
-        return res.json(JSON.parse(body));
+    request.post(servers.REGISTRATION + '/adduser', { "json": req.body}, (error, response, body) => {
+        return res.json(body);
     });
 });
 
 app.post('/login', (req, res) => {
-    request.post(servers.AUTHENTICATION + '/login', { "form":req.body }, (error, response, body) => {
-        return res.json(JSON.parse(body));
+    request.post(servers.AUTHENTICATION + '/login', { "json":req.body }, (error, response, body) => {
+        return res.json(body);
     });
 });
 
 app.post('/logout', (req, res) => {
-    request.post(servers.AUTHENTICATION + '/logout', { "form":req.body }, (error, response, body) => {
-        return res.json(JSON.parse(body));
+    request.post(servers.AUTHENTICATION + '/logout', { "json":req.body }, (error, response, body) => {
+        return res.json(body);
     });
 });
 
 app.post('/verify', (req, res) => {
-    request.post(servers.EMAIL_VERIFICATION + '/verify', { "form":req.body }, (error, response, body) => {
-        return res.json(JSON.parse(body));
+    request.post(servers.EMAIL_VERIFICATION + '/verify', { "json":req.body }, (error, response, body) => {
+        return res.json(body);
     });
 });
 
 app.post('/questions/add', (req, res) => {
-    request.post(servers.QA, '/questions/add', { "form":req.body }, (error, response, body) => {
-        return res.json(JSON.parse(body));
+    request.post(servers.QA, '/questions/add', { "json":req.body }, (error, response, body) => {
+        return res.json(body);
     });
 });
 
 app.get('/questions/:qid', (req, res) => {
     request.get(servers.QA + '/questions/' + req.params.qid, (error, response, body) => {
-        return res.json(JSON.parse(body));
+        return res.json(body);
     });
 });
 
 app.post('/questions/:qid/answers/add', (req, res) => {
-    request.post(servers.QA + '/questions/' + req.params.qid + '/answers/add', { "form":req.body }, (error, response, body) => {
-        return res.json(JSON.parse(body));
+    request.post(servers.QA + '/questions/' + req.params.qid + '/answers/add', { "json":req.body }, (error, response, body) => {
+        return res.json(body);
     });
 });
 
 app.get('/questions/:qid/answers', (req, res) => {
     request.get(servers.QA + '/questions/' + req.params.qid + '/answers', (error, response, body) => {
-        return res.json(JSON.parse(body));
+        return res.json(body);
     });
 });
 
 app.post('/search', (req, res) => {
-    request.post(servers.SEARCH + '/search', { "form": req.body }, (error, response, body) => {
-        return res.json(JSON.parse(body));
+    request.post(servers.SEARCH + '/search', { "json": req.body }, (error, response, body) => {
+        return res.json(body);
     });
 });
 
