@@ -39,6 +39,7 @@ app.get('/emailtest', async(req, res) => {
 
 /* Register a user if they do not already exist. */
 app.post('/adduser', async (req, res) => {
+    console.log(req.body);
     const email = req.body["email"];
     const username = req.body["username"];
     const password = req.body["password"];
