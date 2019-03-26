@@ -13,6 +13,10 @@ const PORT = 8000;
 
 /* all routes for stack overflow api */
 
+app.get('/', (req, res) => {
+   return res.send('<html><h1>kellogs</h1></html>');
+});
+
 app.post('/adduser', (req, res) => {
     request.post(servers.REGISTRATION + '/adduser', { "form":req.body }, (error, response, body) => {
         return res.json(JSON.parse(body));
