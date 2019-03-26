@@ -40,6 +40,7 @@ async function searchQuestions(timestamp, limit, accepted) {
     var transformedResults = [];
     for (var i in results){
         let q = results[i];
+        q._source['media'] = (q._source['media'].length == 0) ? null : q._source['media'];
         transformedResults.push(q._source);
     }
 
