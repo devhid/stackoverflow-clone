@@ -45,7 +45,7 @@ async function addQuestion(user, title, body, tags, media){
         }
     });
     console.log(viewResponse);
-    return response._id;
+    return (response == null) ? response : response._id;
 }
 
 async function updateViewCount(qid, user, ip){
