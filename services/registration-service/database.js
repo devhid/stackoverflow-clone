@@ -28,9 +28,22 @@ async function userExists(email, username) {
     return emailExists || usernameExists;
 }
 
+/* Generate a new random key */
+async function generateKey({ length = 16 }) {
+    return new Promise((resolve, reject) => {
+        crypto.randomBytes(length, (err, buffer) => {
+            if(err) {
+                reject(err);
+            } else {
+                resolve(buffer.toString('hex'));
+            }
+        });
+    });
+}
+
 /* Index a new user in the database. Returns the generated key. */
 async function addUser(email, username, password) {
-    const key = crypto.randomBytes(16).toString('hex');
+    const key = await generateKey();
     const response = await client.index({
         index: INDEX,
         type: "_doc",
