@@ -18,7 +18,9 @@ app.get('/', (req, res) => {
 });
 
 app.post('/adduser', (req, res) => {
-    request.post(servers.REGISTRATION + '/adduser', { "form":req.body }, (error, response, body) => {
+    console(req);
+    request.post(servers.REGISTRATION + '/adduser', { "body":req.body }, (error, response, body) => {
+        console.log(body);
         return res.json(JSON.parse(body));
     });
 });
