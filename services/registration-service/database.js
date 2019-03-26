@@ -28,10 +28,11 @@ async function userExists(email, username) {
     return emailExists || usernameExists;
 }
 
+const byteLength = 16;
 /* Generate a new random key */
-async function generateKey({ length = 16 }) {
+function generateKey() {
     return new Promise((resolve, reject) => {
-        crypto.randomBytes(length, (err, buffer) => {
+        crypto.randomBytes(byteLength, (err, buffer) => {
             if(err) {
                 reject(err);
             } else {

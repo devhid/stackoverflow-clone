@@ -29,7 +29,7 @@ app.get('/emailtest', async(req, res) => {
     mail_server.send({
         text: "Email received.",
         from: "no-reply <ubuntu@cse356-mailserver.cloud.compas.cs.stonybrook.edu>",
-        to: "jondysong@yahoo.com",
+        to: "bofinexe@postemail.net",
         subject: "Test email"
         }, function(err, message) {
             console.log(err);
@@ -56,9 +56,8 @@ app.post('/adduser', async (req, res) => {
         return res.json(response);
     }
 
-    const key = database.addUser(email, username, password);
-
-    const message = "validation key: " + key;
+    const key = await database.addUser(email, username, password);
+    const message = "validation key: \<" + key + "\>";
 
     mail_server.send({
         text: message,
