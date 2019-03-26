@@ -25,6 +25,10 @@ app.post('/search', async (req, res) => {
     const searchResults = await database.searchQuestions(timestamp, limit, accepted);
 
     let response = {"status": "OK", "questions": searchResults};
+    console.log(timestamp);
+    console.log(limit);
+    console.log(accepted);
+    console.log(response);
     return res.json(response);
 
 });
