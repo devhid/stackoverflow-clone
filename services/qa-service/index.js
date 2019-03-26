@@ -29,7 +29,6 @@ const sessionOptions = {
     resave: false,
     saveUninitialized: true,
     logErrors: true,
-    cookie: {domain: "kellogs.cse356.compas.cs.stonybrook.edu"},
     store: new RedisStore(redisOptions)
 };
 
