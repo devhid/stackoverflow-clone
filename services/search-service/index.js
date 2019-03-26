@@ -18,7 +18,7 @@ app.use(express.json());
 
 /* handle searching */
 app.post('/search', async (req, res) => {
-    const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.DEFAULT_TIMESTAMP;
+    const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.currentTime();
     const limit = Math.min(constants.DEFAULT_MAX_LIMIT, req.body['limit'] ? req.body['limit'] : constants.DEFAULT_LIMIT);
     const accepted = req.body['accepted'] ? req.body['accepted'] : constants.DEFAULT_ACCEPTED;
 

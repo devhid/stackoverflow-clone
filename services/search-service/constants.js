@@ -4,7 +4,7 @@ function getCurrentTime(){
 }
 
 module.exports = {
-    DEFAULT_TIMESTAMP: getCurrentTime,
+    currentTime: getCurrentTime,
     DEFAULT_LIMIT: 25,
     DEFAULT_MAX_LIMIT: 100,
     DEFAULT_ACCEPTED: false
