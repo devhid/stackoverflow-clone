@@ -66,6 +66,10 @@ app.post('/questions/add', async(req, res) => {
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
         console.log("missing params");
+        console.log(user);
+        console.log(title);
+        console.log(body);
+        console.log(tags);
         response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
     }
