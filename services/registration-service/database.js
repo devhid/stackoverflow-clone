@@ -17,12 +17,12 @@ const INDEX = "users";
 async function userExists(email, username) {
     const emailExists = (await client.count({
         index: INDEX,
-        body: { query: { term: { "email": email.toLowerCase() } } }
+        body: { query: { match: { "email": email } } }
     })).count != 0;
 
     const usernameExists = (await client.count({
         index: INDEX,
-        body: { query: { term: { "username": username.toLowerCase() } } }
+        body: { query: { match: { "username": username } } }
     })).count != 0;
 
     return emailExists || usernameExists;
@@ -50,8 +50,8 @@ async function addUser(email, username, password) {
         type: "_doc",
         refresh: "true",
         body: {
-            "email": email.toLowerCase(),
-            "username": username.toLowerCase(),
+            "email": email,
+            "username": username,
             "password": bcrypt.hashSync(password, 10),
             "key": key,
             "email_verified": false,
