@@ -44,6 +44,25 @@
   ```
   
   ## To-do
+  * Add lowercase analyzer for username fields for indices, `user`, `questions`, and `answers` so we can exact match them without case sensitivity.
+    ```
+    "settings": {
+       "analysis": {
+          "analyzer": {
+             "lowercase": {
+               "type": "custom",
+               "tokenizer": "standard",
+               "filter": [
+                  "lowercase"
+               ]
+             }
+          }
+       }
+    }
+    ```
+    * Edit the `keyword` field for the username fields (`username.keyword`) to include `analyzer: lowercase`.
+    * Change all `term` queries for `username` to `match` queries.
+  * Add query search functionality for `/search` endpoint (read API for more details). 
   * Refactor code base since it got messy at the end (remove debug statements).
   * Create ansible scripts to easily setup NodeJS microservices, load balancers and other useful instances.
   * Make a minimal frontend for now using Angular.
