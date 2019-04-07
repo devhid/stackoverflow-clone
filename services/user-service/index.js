@@ -14,7 +14,7 @@ require('express-async-errors');
 app.use(express.json());
 
 /* the port the server will listen on */
-const PORT = 8006;
+const PORT = 4006;
 
 /* get information about user */
 app.get('/user/:uid', async (req, res) => {
@@ -31,7 +31,6 @@ app.get('/user/:uid', async (req, res) => {
         response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
         return res.json(response);
     }
-    console.log(user);
 
     response = generateOK();
     response[constants.USER_KEY] = user;
@@ -46,6 +45,12 @@ app.get('/user/:uid/questions', async (req, res) => {
     const username = req.params['uid'];
     if(username === undefined) {
         response[constants.STATUS_ERR] = constants.ERR_MISSING_UID;
+        return res.json(response);
+    }
+
+    const user = await database.getUser(username);
+    if(user === null) {
+        response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
         return res.json(response);
     }
 
@@ -64,6 +69,12 @@ app.get('/user/:uid/answers', async (req, res) => {
     const username = req.params['uid'];
     if(username === undefined) {
         response[constants.STATUS_ERR] = constants.ERR_MISSING_UID;
+        return res.json(response);
+    }
+
+    const user = await database.getUser(username);
+    if(user === null) {
+        response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
         return res.json(response);
     }
 

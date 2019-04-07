@@ -18,7 +18,7 @@ async function getUser(username) {
         body: { query: { term: { "username": username.toLowerCase() } } }
     }))['hits']['hits'];
 
-    if(!user) {
+    if(user.length == 0) {
         return null;
     } else {
         return {
@@ -36,7 +36,7 @@ async function getUserQuestions(username) {
         body: { query: { term: { "user.username": username.toLowerCase() } } }
     }))['hits']['hits'];
 
-    if(!questions) {
+    if(questions.length == 0) {
         return [];
     } else {
         let qids = [];
@@ -57,7 +57,7 @@ async function getUserAnswers(username) {
         body: { query: { term: { "user": username.toLowerCase() } } }
     }))['hits']['hits'];
 
-    if(!answers) {
+    if(answers.length == 0) {
         return [];
     } else {
         let aids = []; // lmao
