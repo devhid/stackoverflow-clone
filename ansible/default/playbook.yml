@@ -1,6 +1,6 @@
 ---
 - name: Setting up an instance with 'ubuntu' user, ssh keys, nodejs, git, and nginx.
-  hosts: default
+  hosts: all
   remote_user: root
   vars:
     new_user: ubuntu
