@@ -1,7 +1,7 @@
 {
-  "name": "fake_gateway",
+  "name": "user-service",
   "version": "1.0.0",
-  "description": "A gateway that forwards all client requests to its appropriate microservices.",
+  "description": "A microservice that will provide user information.",
   "main": "index.js",
   "scripts": {
     "start": "node_modules/.bin/nodemon index.js",
@@ -21,8 +21,8 @@
     "nodemon": "^1.18.10"
   },
   "dependencies": {
+    "elasticsearch": "^15.4.1",
     "express": "^4.16.4",
-    "express-http-proxy": "^1.5.1",
-    "request": "^2.88.0"
+    "express-async-errors": "^3.1.1"
   }
 }

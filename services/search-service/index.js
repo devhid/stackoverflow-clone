@@ -11,20 +11,24 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 4000;
+const PORT = 8005;
 
 /* parse incoming requests data as json */
 app.use(express.json());
 
 /* handle searching */
 app.post('/search', async (req, res) => {
-    const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.DEFAULT_TIMESTAMP;
+    const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.currentTime();
     const limit = Math.min(constants.DEFAULT_MAX_LIMIT, req.body['limit'] ? req.body['limit'] : constants.DEFAULT_LIMIT);
     const accepted = req.body['accepted'] ? req.body['accepted'] : constants.DEFAULT_ACCEPTED;
 
     const searchResults = await database.searchQuestions(timestamp, limit, accepted);
 
     let response = {"status": "OK", "questions": searchResults};
+    console.log(timestamp);
+    console.log(limit);
+    console.log(accepted);
+    console.log(response);
     return res.json(response);
 
 });
