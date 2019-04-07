@@ -10,7 +10,8 @@ instances = {
     "search": "64.190.91.125",
     "qa": "140.82.9.197",
     "registration": "130.245.171.197",
-    "email-verification": "207.148.20.88"
+    "email-verification": "207.148.20.88",
+    "felk": "107.191.43.73"
 }
 
 if len(sys.argv) != 2 and len(sys.argv) != 4:
