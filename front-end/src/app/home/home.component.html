@@ -1,0 +1,24 @@
+<div class="questions-list">
+  <div *ngFor="let question of recentQuestions" class="question">
+    <!--<div class="question-ranking">
+      1
+    </div>-->
+    <div class="question-statistics">
+      <div class="question-votes">
+        {{question.score}}
+      </div>
+      <div class="question-answers">
+        {{question.answer_count}}
+      </div>
+      <div class="question-views">
+        {{question.view_count}}
+      </div>
+    </div>
+    <button (click)="retrieveQuestion(question.id)" class="question-title">
+      {{question.title}}
+    </button>
+    <div class="question-user">
+      {{question.user.username}}
+    </div>
+  </div>
+</div>

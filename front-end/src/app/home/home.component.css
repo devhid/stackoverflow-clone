@@ -1,0 +1,25 @@
+.questions-list {
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+}
+
+.question {
+    display: flex;
+    justify-content: space-between;
+    width: 80%;
+}
+
+.question-statistics {
+    display: flex;
+    justify-content: space-between;
+    width: 10%;
+}
+
+.question-title {
+    width: 65%;
+}
+
+.question-user {
+    width: 10%;
+}

@@ -1,0 +1,20 @@
+.header {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    align-items: center;
+    border-bottom: 1px solid black;
+}
+
+.header-logo {
+    width: auto;
+}
+
+.header-search {
+    width: 55%
+}
+
+.header-session-search {
+    width: auto;
+}
+
