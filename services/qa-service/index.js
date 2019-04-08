@@ -207,7 +207,7 @@ app.delete('/questions/:qid', async(req, res) => {
         res.status(404);
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
-    else (deleteRes.status === constants.DB_RES_SUCCESS){
+    else if (deleteRes.status === constants.DB_RES_SUCCESS){
         res.status(200);
         response.setOK();
     }
