@@ -11,7 +11,7 @@ const url = "8.9.11.218/search";
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit {
-  user = new User('a', 'b', 'c');
+  user = new User(null, null, null, null);
   
   constructor(
     private loginService: LoginService
@@ -21,11 +21,9 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmit() {
-    console.log(this.user.username);
-    console.log(this.user.email);
-    console.log(this.user.password);
-    this.loginService.login(this.user.email, this.user.password)
+    this.loginService.login(this.user.username, this.user.password)
     .subscribe(response => {
+      console.log(response.headers.get('set-cookie'));
       console.log(response);
     });
   }

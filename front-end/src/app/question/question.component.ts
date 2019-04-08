@@ -24,8 +24,9 @@ export class QuestionComponent implements OnInit {
   ) { }
 
   ngOnInit() {
-    this.retrieveQuestion(this.retrieveId());
-    this.retrieveAnswers(this.retrieveId());
+    let id = this.retrieveId();
+    this.retrieveQuestion(id);
+    this.retrieveAnswers(id);
     if(this.question.accepted_answer_id !== null) {
       this.retrieveAcceptedAnswer(this.question.accepted_answer_id);
     }

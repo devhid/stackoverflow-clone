@@ -23,12 +23,8 @@ export class RegisterService {
   ) { }
 
   registerAccount(username: string, email: string, password: string): Observable<any> {
-    let params = new HttpParams();
-    params.append("username", username);
-    params.append("email", email);
-    params.append("password", password);
-    console.log(params);
-    return this.http.post(registerUrl + "/adduser", { username: username, email: email, password: password }, httpHeaders)
+    let body = { username: username, email: email, password: password };
+    return this.http.post(registerUrl + "/adduser", body, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )
@@ -36,7 +32,6 @@ export class RegisterService {
 
   verifyAccount(email: string, key: string): Observable<any> {
     let body = { email: email, key: key }
-    console.log(body);
     return this.http.post(verificationUrl + "/verify", body, httpHeaders)
       .pipe(
         catchError(this.handleError)
