@@ -30,3 +30,7 @@ class APIResponse {
         }
     }
 }
+
+module.exports = {
+    APIResponse: APIResponse
+}
