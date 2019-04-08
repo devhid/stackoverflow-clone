@@ -1,8 +1,6 @@
 const constants = require('./constants');
 
 class APIResponse {
-    status = constants.STATUS_OK;
-    error = undefined;
 
     constructor(){
         // do nothing
