@@ -12,7 +12,7 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 8000;
+const PORT = 8004;
 
 /* options for the redis store */
 const redisOptions = {
@@ -29,7 +29,6 @@ const sessionOptions = {
     resave: false,
     saveUninitialized: true,
     logErrors: true,
-    cookie: {domain: "kellogs.cse356.compas.cs.stonybrook.edu"},
     store: new RedisStore(redisOptions)
 };
 
@@ -38,6 +37,14 @@ app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
+
+/* enable CORS */
+app.use(function(req, res, next) {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  next();
+});
 
 /* helper funcs */
 function generateOK(){
@@ -63,27 +70,24 @@ app.post('/questions/add', async(req, res) => {
     let tags = req.body.tags;
     let media = req.body.media;
     let user = req.session.user;
+    let username = (user == undefined) ? user : user._source.username;
 
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
         console.log("missing params");
-        console.log(user);
-        console.log(title);
-        console.log(body);
-        console.log(tags);
         response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
     }
 
     // perform database operations
     let qid = await database.addQuestion(user, title, body, tags, media);
-    console.log(qid);
     if (!qid){
         response[constants.STATUS_ERR] = constants.ERR_GENERAL;
-        return res.json(response);
     }
-    response = generateOK();
-    response[constants.ID_KEY] = qid;
+    else {
+        response = generateOK();
+        response[constants.ID_KEY] = qid;
+    }
     return res.json(response);
 });
 
@@ -108,14 +112,15 @@ app.get('/questions/:qid', async(req, res) => {
     // perform database operations
 
     let question = await database.getQuestion(qid, username, ip, true);
-    if (!question){
+    if (question === undefined){
         response[constants.STATUS_ERR] = constants.ERR_Q_NOTFOUND;
-        return res.json(response);
     }
-
-    question._source['id'] = question._id;
-    response = generateOK();
-    response[constants.QUESTION_KEY] = question._source;
+    else {
+        question._source['id'] = question._id;
+        question._source['media'] = (question._source['media'].length == 0) ? null : question._source['media'];
+        response = generateOK();
+        response[constants.QUESTION_KEY] = question._source;
+    }
     return res.json(response);
 });
 
@@ -136,14 +141,14 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     }
 
     // perform database operations
-    let answer = await database.addAnswer(qid, username, body, media);
-    if (answer == undefined){
+    let answer_id = await database.addAnswer(qid, username, body, media);
+    if (answer_id == undefined){
         response[constants.STATUS_ERR] = constants.ERR_GENERAL;
-        return res.json(response);
     }
-
-    response = generateOK();
-    response[constants.ID_KEY] = answer._id;
+    else {
+        response = generateOK();
+        response[constants.ID_KEY] = answer_id;
+    }
     return res.json(response);
 });
 
@@ -161,13 +166,13 @@ app.get('/questions/:qid/answers', async(req, res) => {
 
     // perform database operations
     let answers = await database.getAnswers(qid);
-    if (answers == undefined){
+    if (answers === undefined){
         response[constants.STATUS_ERR] = constants.ERR_Q_NOTFOUND;
-        return res.json(response);
     }
-
-    response = generateOK();
-    response[constants.ANSWERS_KEY] = answers;
+    else {
+        response = generateOK();
+        response[constants.ANSWERS_KEY] = answers;
+    }
     return res.json(response);
 });
 
@@ -175,24 +180,29 @@ app.get('/questions/:qid/answers', async(req, res) => {
 app.delete('/questions/:qid', async(req, res) => {
     // grab parameters
     let response = generateERR();
+
+    // grab parameters
     let user = req.session.user;
+    let username = (user == undefined) ? user : user._source.username;
     let qid = req.params.qid;
     
     // check if any mandatory parameters are undefined
-    if (user == undefined || qid == undefined)
+    if (user == undefined || qid == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
         return res.json(response);
+    }
 
     // perform database operations
-    let status = await database.deleteQuestion(qid,user);
-    if (status === false){
+    let status = await database.deleteQuestion(qid,username);
+    if (status === false){  // denotes the question didn't belong to the user
         res.status(403);
         response[constants.STATUS_ERR] = constants.ERR_DEL_NOTOWN_Q;
     }
-    else if (status === null){
+    else if (status === undefined){  // denotes the question could not be found
         res.status(404);
-        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+        response[constants.STATUS_ERR] = constants.ERR_Q_NOTFOUND;
     }
-    else {
+    else {                      // denotes a successful delete operation
         res.status(200);
         response = generateOK();
     }
@@ -202,11 +212,59 @@ app.delete('/questions/:qid', async(req, res) => {
 /* milestone 3 */
 app.post('/questions/:qid/upvote', async(req, res) => {
     let response = generateERR();
+
+    // grab parameters
+    let user = req.session.user;
+    let username = (user == undefined) ? user : user._source.username;
+    let qid = req.params.qid;
+    let upvote = req.body.upvote;
+
+    // check if any mandatory parameters are unspecified
+    if (username == undefined || qid == undefined || upvote == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
+        return res.json(response);
+    }
+
+    // perform database operations
+    let updateResp = await database.upvoteQuestion(qid, username, upvote);
+    if (updateResp === undefined){
+        response[constants.STATUS_ERR] = constants.ERR_Q_NOTFOUND;
+    }
+    else if (updateResp.updated != 1){
+        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+    }
+    else {
+        response = generateOK();
+    }
     return res.json(response);
 });
 
 app.post('/answers/:aid/upvote', async(req, res) => {
     let response = generateERR();
+    
+    // grab parameters
+    let user = req.session.user;
+    let username = (user == undefined) ? user : user._source.username;
+    let qid = req.params.qid;
+    let upvote = req.body.upvote;
+
+    // check if any mandatory parameters are unspecified
+    if (username == undefined || qid == undefined || upvote == undefined){
+        response[constants.STATUS_ERR] = constants.ERR_MISSING_PARAMS;
+        return res.json(response);
+    }
+
+    // perform database operations
+    let updateResp = await database.upvoteAnswer(aid, username, upvote);
+    if (updateResp === undefined){
+        response[constants.STATUS_ERR] = constants.ERR_A_NOTFOUND;
+    }
+    else if (updateResp.updated != 1){
+        response[constants.STATUS_ERR] = constants.ERR_GENERAL;
+    }
+    else {
+        response = generateOK();
+    }
     return res.json(response);
 });
 

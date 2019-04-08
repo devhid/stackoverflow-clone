@@ -7,7 +7,7 @@ const client = new elasticsearch.Client({
 });
 
 /* index where user account information will be stored */
-const INDEX = "qa";
+const INDEX = "questions";
 
 async function searchQuestions(timestamp, limit, accepted) {
     let body = {
@@ -37,7 +37,15 @@ async function searchQuestions(timestamp, limit, accepted) {
         body: body
     }))['hits']['hits'];
 
-    return results;
+    var transformedResults = [];
+    for (var i in results){
+        let q = results[i];
+        q._source['id'] = q._id;
+        q._source['media'] = (q._source['media'].length == 0) ? null : q._source['media'];
+        transformedResults.push(q._source);
+    }
+
+    return transformedResults;
 }
 
 module.exports = {

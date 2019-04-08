@@ -44,10 +44,32 @@
   ```
   
   ## To-do
-  * Setup mail server to send verification emails.
-  * Add `/send_email` endpoint which will be called by registration service in `/adduser`.
+  * Add lowercase analyzer for username fields for indices, `user`, `questions`, and `answers` so we can exact match them without case sensitivity.
+    ```
+    "settings": {
+       "analysis": {
+          "analyzer": {
+             "lowercase": {
+               "type": "custom",
+               "tokenizer": "standard",
+               "filter": [
+                  "lowercase"
+               ]
+             }
+          }
+       }
+    }
+    ```
+    * Edit the `keyword` field for the username fields (`username.keyword`) to include `analyzer: lowercase`.
+    * Change all `term` queries for `username` to `match` queries.
+  * Add query search functionality for `/search` endpoint (read API for more details). 
+  * Refactor code base since it got messy at the end (remove debug statements).
+  * Create ansible scripts to easily setup NodeJS microservices, load balancers and other useful instances.
+  * Make a minimal frontend for now using Angular.
+  * ~Setup mail server to send verification emails.~
+  * ~Add `/send_email` endpoint which will be called by registration service in `/adduser`.~
   * ~~Develop a `search` microservice.~~
   * ~~Develop the rest of the API in a separate microservice, `qa-service`.~~
   * Deploy microservices on separate instances.
-  * Find a way to call all endpoints on only one IP so that grading will work.
-  * Extensively test each endpoint with fake data.
+  * ~Find a way to call all endpoints on only one IP so that grading will work.~
+  * ~Extensively test each endpoint with fake data.~

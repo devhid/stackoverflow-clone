@@ -1,0 +1,23 @@
+---
+- name: Setting up an instance with 'ubuntu' user, ssh keys, nodejs, git, and nginx.
+  hosts: all
+  remote_user: root
+  vars:
+    new_user: ubuntu
+
+  tasks:
+  - name: Add ssh keys to authorized_keys.
+    authorized_key:
+      user: root
+      state: present
+      key: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/authorized_keys') }}"
+  
+  - name: Create new user '{{ new_user }}'.
+    user: name={{ new_user }}
+  
+  - name: Give user '{{ new_user }}' sudo permissions.
+    shell: usermod -aG sudo {{ new_user }}
+
+  - name: Copy ./ssh from root to {{ new_user }}.
+    shell: rsync --archive --chown={{ new_user }}:{{ new_user }} ~/.ssh /home/{{ new_user }}
+
