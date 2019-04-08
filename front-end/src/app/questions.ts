@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 
 import { Question } from './question';
+import { Observable } from 'rxjs';
 
 export class Questions {
     constructor(

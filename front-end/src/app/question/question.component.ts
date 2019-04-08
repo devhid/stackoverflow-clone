@@ -1,4 +1,11 @@
 import { Component, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+
+import { Observable } from 'rxjs';
+import { QuestionRetrievalService } from '../question-retrieval.service';
+import { Question } from '../question';
+import { Answer, Answers } from '../answer';
+import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-question',
@@ -7,9 +14,50 @@ import { Component, OnInit } from '@angular/core';
 })
 export class QuestionComponent implements OnInit {
 
-  constructor() { }
+  question: Question;
+  answers: Answer[];
+  acceptedAnswer: Answer;
+
+  constructor(
+    private questionRetrievalService: QuestionRetrievalService,
+    private route: ActivatedRoute
+  ) { }
 
   ngOnInit() {
+    this.retrieveQuestion(this.retrieveId());
+    this.retrieveAnswers(this.retrieveId());
+    if(this.question.accepted_answer_id !== null) {
+      this.retrieveAcceptedAnswer(this.question.accepted_answer_id);
+    }
   }
 
+  private retrieveId(): string{
+    return this.route.snapshot.paramMap.get('id');
+  }
+
+  private retrieveQuestion(id: string): void {
+    this.questionRetrievalService.getQuestion(id)
+    .subscribe((question: Question) => {
+      console.log(question);
+      this.question = question;
+    });
+  }
+
+  private retrieveAnswers(id: string): void {
+    this.questionRetrievalService.getQuestionAnswers(id)
+      .subscribe(answers => {
+        console.log(answers);
+        this.answers = answers;
+      });
+  }
+
+  private retrieveAcceptedAnswer(id: string): void {
+    this.answers.forEach(function(answer) {
+      if(answer.id === id){
+        this.acceptedAnswer = answer;
+        console.log(this.acceptedAnswer);
+        return;
+      }
+    });
+  }
 }

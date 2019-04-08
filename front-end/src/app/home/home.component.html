@@ -14,11 +14,11 @@
         {{question.view_count}}
       </div>
     </div>
-    <button (click)="retrieveQuestion(question.id)" class="question-title">
+    <a class="question-title" routerLink="/question/{{question.id}}">
       {{question.title}}
-    </button>
+    </a>
     <div class="question-user">
-      {{question.user.username}}
+      {{question.user.username}} <!--TODO: Link to user profile-->
     </div>
   </div>
 </div>

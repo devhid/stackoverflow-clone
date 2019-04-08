@@ -13,7 +13,7 @@ export class Question {
         public timestamp: number,
         public media: Array<number>, //M3
         public tags: Array<number>, //M3
-        public accepted_answer: number
+        public accepted_answer_id: string
     ) { }
 }
 
@@ -41,7 +41,7 @@ export class QuestionAdapter {
             item.question.timestamp,
             item.question.media,
             item.question.tags,
-            item.question.accepted_answer,
+            item.question.accepted_answer_id,
         )
     }
 }

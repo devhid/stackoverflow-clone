@@ -28,12 +28,4 @@ export class HomeComponent implements OnInit {
         console.log(this.recentQuestions);
       })
   }
-
-  retrieveQuestion(id: string): void {
-    this.questionRetrievalService.getQuestion(id)
-    .subscribe((question: Question) => {
-      console.log(question);
-    });
-  }
-
 }

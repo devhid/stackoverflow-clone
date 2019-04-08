@@ -3,7 +3,8 @@ import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http
 
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap, retry } from 'rxjs/operators';
-import { Question, Questions, QuestionAdapter, QuestionsAdapter } from './question';
+import { Question, Questions, QuestionAdapter } from './question';
+import { Answer, Answers } from './answer';
 //import { Questions, QuestionsAdapter } from './questions';
 
 const httpHeaders = {
@@ -21,8 +22,7 @@ export class QuestionRetrievalService {
 
   constructor(
     private http: HttpClient,
-    private adapter: QuestionAdapter,
-    //private questionsAdapter: QuestionsAdapter
+    private questionAdapter: QuestionAdapter
   ) { }
 
   getRecentQuestions(): Observable<any>{
@@ -36,7 +36,15 @@ export class QuestionRetrievalService {
   getQuestion(id: string): Observable<Question>{
     return this.http.get(this.url + "/questions/" + id)
       .pipe(
-        map(data => this.adapter.adapt(data)),
+        map(data => this.questionAdapter.adapt(data)),
+        catchError(this.handleError)
+      )
+  }
+
+  getQuestionAnswers(id: string): Observable<any>{
+    return this.http.get(this.url + "/questions/" + id + "/answers")
+      .pipe(
+        map((data: Answers) => data.answers),
         catchError(this.handleError)
       )
   }
