@@ -1,6 +1,7 @@
 import { Component, OnInit } from '@angular/core';
 
 import { User } from '../user';
+import { LoginService } from '../login.service';
 
 const url = "8.9.11.218/search";
 
@@ -12,7 +13,9 @@ const url = "8.9.11.218/search";
 export class LoginComponent implements OnInit {
   user = new User('a', 'b', 'c');
   
-  constructor() { }
+  constructor(
+    private loginService: LoginService
+  ) { }
 
   ngOnInit() {
   }
@@ -21,6 +24,10 @@ export class LoginComponent implements OnInit {
     console.log(this.user.username);
     console.log(this.user.email);
     console.log(this.user.password);
+    this.loginService.login(this.user.email, this.user.password)
+    .subscribe(response => {
+      console.log(response);
+    });
   }
 
 }

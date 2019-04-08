@@ -1,6 +1,8 @@
 import { Component, OnInit } from '@angular/core';
+import { FormGroup, FormControl } from '@angular/forms';
 
 import { User } from '../user';
+import { RegisterService } from '../register.service';
 
 @Component({
   selector: 'app-register',
@@ -10,14 +12,34 @@ import { User } from '../user';
 export class RegisterComponent implements OnInit {
   user = new User('', '', '');
 
-  constructor() { }
+  verificationForm = new FormGroup({
+    email: new FormControl(''),
+    key: new FormControl(''),
+  });
+
+  constructor(
+    private registerService: RegisterService
+  ) { }
 
   ngOnInit() {
   }
 
-  onSubmit() {
+  onRegisterSubmit() {
     console.log(this.user.username);
     console.log(this.user.email);
     console.log(this.user.password);
+    this.registerService.registerAccount(this.user.username, this.user.email, this.user.password)
+    .subscribe(response => {
+      console.log(response);
+    });
+  }
+
+  onVerifySubmit() {
+    console.log(this.verificationForm.value.email)
+    console.log(this.verificationForm.value.key);
+    this.registerService.verifyAccount(this.verificationForm.value.email, this.verificationForm.value.key)
+    .subscribe(response => {
+      console.log(response);
+    });
   }
 }
