@@ -17,8 +17,8 @@
     <a class="question-title" routerLink="/question/{{question.id}}">
       {{question.title}}
     </a>
-    <div class="question-user">
+    <a class="question-user" routerLink="/user/{{question.user.username}}">
       {{question.user.username}} <!--TODO: Link to user profile-->
-    </div>
+    </a>
   </div>
 </div>

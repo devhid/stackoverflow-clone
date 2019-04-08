@@ -25,8 +25,9 @@ export class ProfileComponent implements OnInit {
   ngOnInit() {
     let username = this.retrieveUsername();
     this.retrieveProfile(username);
-    this.retrieveQuestions(username);
-    this.retrieveAnswers(username);
+    console.log(this.userInformation);
+    //this.retrieveQuestions(username);
+    //this.retrieveAnswers(username);
   }
 
   private retrieveUsername(): string {

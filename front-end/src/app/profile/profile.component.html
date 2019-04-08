@@ -22,27 +22,32 @@
       </div>
   </div>
 
-  <div *ngFor="let question of userQuestions" class="question-section">
-    <div class="question-score">
-        {{question.score}}
-    </div>
-    <div class="question-title">
-        {{question.title}}
-    </div>
-    <div class="question-timestamp">
-        {{question.timestamp}}
+  <div class="questions-section">
+    <h3>Questions</h3>
+    <div *ngFor="let question of userQuestions" class="question-section">
+        <div class="question-score">
+            {{question.score}}
+        </div>
+        <div class="question-title">
+            {{question.title}}
+        </div>
+        <div class="question-timestamp">
+            {{question.timestamp}}
+        </div>
     </div>
   </div>
 
-  <div *ngFor="let answer of userAnswers" class="answer-section">
-    <div class="answer-score">
-        {{answer.score}}
+<div class="answer-section">
+    <h3>Answers</h3>
+    <div *ngFor="let answer of userAnswers" class="answer-section">
+        <div class="answer-score">
+            {{answer.score}}
+        </div>
+        <div class="answer-title">
+            {{answer.title}}
+        </div>
+        <div class="answer-timestamp">
+            {{answer.timestamp}}
+        </div>
     </div>
-    <div class="answer-title">
-        {{answer.title}}
-    </div>
-    <div class="answer-timestamp">
-        {{answer.timestamp}}
-    </div>
-  </div>
 </div>

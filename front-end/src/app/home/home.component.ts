@@ -25,7 +25,6 @@ export class HomeComponent implements OnInit {
     this.questionRetrievalService.getRecentQuestions()
       .subscribe(response => {
         this.recentQuestions = response;
-        console.log(this.recentQuestions);
       })
   }
 }

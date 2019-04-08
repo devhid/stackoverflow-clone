@@ -11,7 +11,7 @@ const httpHeaders = {
   })
 };
 
-const url = "http://";
+const url = "http://localhost:4006";
 
 @Injectable({
   providedIn: 'root'
@@ -23,16 +23,16 @@ export class UserService {
     private http: HttpClient
   ) { }
 
-  retrieveUserInfo(username: string): Observable<User> {
-    return this.http.get<any>(url + "/" + username, httpHeaders)
+  retrieveUserInfo(username: string): Observable<any> {
+    return this.http.get<any>(url + "/user/" + username, httpHeaders)
       .pipe(
-        map(data => this.adapter.adapt(data.user)),
+        map(data => data.user),
         catchError(this.handleError)
       )
   }
 
   retrieveUserQuestions(username: string): Observable<any> {
-    return this.http.get<any>(url + "/" + username + "/questions", httpHeaders)
+    return this.http.get<any>(url + "/user/" + username + "/questions", httpHeaders)
       .pipe(
         map(data => data.questions),
         catchError(this.handleError)
@@ -40,7 +40,7 @@ export class UserService {
   }
 
   retrieveUserAnswers(username: string): Observable<any> {
-    return this.http.get<any>(url + "/" + username + "/answers", httpHeaders)
+    return this.http.get<any>(url + "/user/" + username + "/answers", httpHeaders)
       .pipe(
         map(data => data.answers),
         catchError(this.handleError)
