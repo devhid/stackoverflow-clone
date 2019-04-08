@@ -106,14 +106,15 @@ app.get('/questions/:qid', async(req, res) => {
     }
 
     // perform database operations
-    let question = await database.getQuestion(qid, username, ip, true);
+    let getRes = await database.getQuestion(qid, username, ip, true);
     
     // check response result
-    if (question === constants.DB_RES_Q_NOTFOUND){
+    if (getRes.status === constants.DB_RES_Q_NOTFOUND){
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
-    else {
+    else if (getRes.status === constants.DB_RES_SUCCESS){
         response.setOK();
+        let question = getRes.data;
         question._source['id'] = question._id;
         question._source['media'] = (question._source['media'].length == 0) ? null : question._source['media'];
         data[constants.QUESTION_KEY] = question._source;
@@ -140,15 +141,15 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     }
 
     // perform database operations
-    let answer_id = await database.addAnswer(qid, username, body, media);
+    let addRes = await database.addAnswer(qid, username, body, media);
     
     // check response result
-    if (answer_id === undefined){
+    if (addRes.status === constants.DB_RES_ERROR){
         response.setERR(constants.ERR_GENERAL);
     }
-    else {
+    else if (addRes.status === constants.DB_RES_SUCCESS){
         response.setOK();
-        data[constants.ID_KEY] = answer_id;
+        data[constants.ID_KEY] = addRes.data;
     }
     let merged = {...response.toOBJ(), ...data};
     return res.json(merged);
@@ -168,15 +169,15 @@ app.get('/questions/:qid/answers', async(req, res) => {
     }
 
     // perform database operations
-    let answers = await database.getAnswers(qid);
+    let getRes = await database.getAnswers(qid);
     
     // check response result
-    if (answers === undefined){
+    if (getRes.status === constants.DB_RES_Q_NOTFOUND){
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
-    else {
+    else if (getRes.status === constants.DB_RES_SUCCESS){
         response.setOK();
-        data[constants.ANSWERS_KEY] = answers;
+        data[constants.ANSWERS_KEY] = getRes.data;
     }
     let merged = {...response.toOBJ(), ...data};
     return res.json(merged);
@@ -202,11 +203,11 @@ app.delete('/questions/:qid', async(req, res) => {
     let deleteRes = await database.deleteQuestion(qid,username);
     
     // check response result
-    if (deleteRes === false){           // indicates the question didn't belong to the user
+    if (deleteRes.status === constants.DB_RES_NOT_ALLOWED){
         res.status(403);
         response.setERR(constants.ERR_DEL_NOTOWN_Q);
     }
-    else if (deleteRes === undefined){  // indicates the question could not be found
+    else if (deleteRes.status === constants.DB_RES_Q_NOTFOUND){
         res.status(404);
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
@@ -243,7 +244,7 @@ app.post('/questions/:qid/upvote', async(req, res) => {
     else if (updateRes.status === constants.DB_RES_ERROR){
         response.setERR(constants.ERR_GENERAL);
     }
-    else {
+    else if (updateRes.status === constants.DB_RES_SUCCESS){
         response.setOK();
     }
 
