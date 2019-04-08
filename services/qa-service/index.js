@@ -78,8 +78,11 @@ app.post('/questions/add', async(req, res) => {
     else if (qid === constants.DB_RES_SUCCESS){
         response.setOK();
         data[constants.ID_KEY] = qid;
+        console.log(data);
+        console.log(response.toOBJ());
     }
     let merged = {...response.toOBJ(), ...data};
+    console.log(merged);
     return res.json(merged);
 });
 
