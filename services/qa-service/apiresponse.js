@@ -4,6 +4,8 @@ class APIResponse {
 
     constructor(){
         // do nothing
+        this.status = constants.STATUS_ERR;
+        this.error = undefined;
     }
 
     setOK(){

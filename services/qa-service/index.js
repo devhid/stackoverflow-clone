@@ -69,15 +69,15 @@ app.post('/questions/add', async(req, res) => {
     }
 
     // perform database operations
-    let qid = await database.addQuestion(user, title, body, tags, media);
+    let addRes = await database.addQuestion(user, title, body, tags, media);
     
     // check response result
-    if (qid === constants.DB_RES_ERROR){
+    if (addRes.status === constants.DB_RES_ERROR){
         response.setERR(constants.ERR_GENERAL);
     }
-    else if (qid === constants.DB_RES_SUCCESS){
+    else if (addRes.status === constants.DB_RES_SUCCESS){
         response.setOK();
-        data[constants.ID_KEY] = qid;
+        data[constants.ID_KEY] = addRes.data;
         console.log(data);
         console.log(response.toOBJ());
     }
