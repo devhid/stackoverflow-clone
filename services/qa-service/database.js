@@ -304,6 +304,7 @@ async function getQuestion(qid, username, ip, update){
     let dbResult = new DBResult();
     let question = undefined;
     if (update){
+        console.log(`Calling updateViewCount`);
         dbResult = await updateViewCount(qid, username, ip);
         question = dbResult.data;
     }
@@ -314,6 +315,7 @@ async function getQuestion(qid, username, ip, update){
     //  else:
     //      try searching for the question
     if (question === undefined){
+        console.log(`Performing search`);
         question = (await client.search({
             index: INDEX_QUESTIONS,
             type: "_doc",
@@ -334,6 +336,7 @@ async function getQuestion(qid, username, ip, update){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
     }
+    console.log(`Returning from getQuestion`);
     return dbResult;
 }
 
@@ -492,14 +495,20 @@ async function deleteQuestion(qid, username){
 
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
-        
+        console.log(`Deleting ${qid} by ${username}`);
         // 1) DELETE from INDEX_QUESTIONS the Question document
-        response = await client.delete({
+        response = await client.deleteByQuery({
             index: INDEX_QUESTIONS,
             type: "_doc",
-            id: qid
+            body: {
+                query: {
+                    term: {
+                        _id: qid
+                    }
+                }
+            }
         });
-        if (response.result !== 'deleted'){
+        if (response.deleted != 1){
             console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
             console.log(response);
         }
