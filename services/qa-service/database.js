@@ -309,6 +309,25 @@ async function getQuestion(qid, username, ip, update){
 async function addAnswer(qid, username, body, media){
     let dbResult = new DBResult();
     media = (media == undefined) ? [] : media;
+
+    // check if the Question exists first
+    let question = (await client.search({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        body: {
+            query: {
+                term: {
+                    _id: qid
+                }
+            }
+        }
+    })).hits.hits[0];
+
+    if (!question){
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
+        return dbResult;
+    }
     
     let response = await client.index({
         index: INDEX_ANSWERS,
