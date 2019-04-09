@@ -333,6 +333,18 @@ async function addAnswer(qid, username, body, media){
 async function getAnswers(qid){
     let dbResult = new DBResult();
 
+    // check if the Question exists first
+    const question = await client.get({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        id: qid
+    });
+    if (!question){
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
+        return dbResult;
+    }
+
     // grab all Answer documents for the specified Question
     let answers = (await client.search({
         index: INDEX_ANSWERS,
