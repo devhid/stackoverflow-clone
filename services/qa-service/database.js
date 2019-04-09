@@ -871,7 +871,7 @@ async function acceptAnswer(aid, username){
         }
 
         // update the Question document's "accepted_answer_id" field
-        const updateQuestionResponse = client.update({
+        const updateQuestionResponse = await client.update({
             index: INDEX_QUESTIONS,
             type: "_doc",
             id: question._id,
@@ -889,7 +889,7 @@ async function acceptAnswer(aid, username){
         console.log(updateQuestionResponse);
 
         // update the Answer document's "is_accepted" field
-        const updateAnswerResponse = client.update({
+        const updateAnswerResponse = await client.update({
             index: INDEX_ANSWERS,
             type: "_doc",
             id: aid,
