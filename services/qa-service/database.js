@@ -300,6 +300,7 @@ async function updateViewCount(qid, username, ip){
  * @param {boolean} update whether or not to update the view count of the question
  */
 async function getQuestion(qid, username, ip, update){
+    console.log(`getQuestion(${qid},${username},${ip},${update})`);
     let dbResult = new DBResult();
     let question = undefined;
     if (update){
@@ -480,6 +481,7 @@ async function getAnswers(qid){
  * @param {string} username the user who originally posted the question
  */
 async function deleteQuestion(qid, username){
+    console.log(`deleteQuestion(${qid},${username})`);
     let dbResult = new DBResult();
     const getRes = await getQuestion(qid, username);
     let response = undefined;
