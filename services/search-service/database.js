@@ -10,7 +10,6 @@ const client = new elasticsearch.Client({
 const INDEX = "questions";
 
 async function searchQuestions(timestamp, limit, q, sort_by, tags, has_media, accepted) {
-    console.log(timestamp)
     let body = { query: { bool: { must: [] } } };
     
     if(timestamp) {
