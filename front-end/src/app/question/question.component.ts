@@ -1,10 +1,11 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { FormGroup, FormControl } from '@angular/forms';
 
-import { Observable } from 'rxjs';
-import { QuestionRetrievalService } from '../question-retrieval.service';
-import { Question } from '../question';
-import { Answer, Answers } from '../answer';
+import { RetrievalService } from '../services/retrieval.service';
+import { AddqaService } from '../services/addqa.service';
+import { Question } from '../classes/question';
+import { Answer, Answers } from '../classes/answer';
 import { map } from 'rxjs/operators';
 
 @Component({
@@ -18,8 +19,13 @@ export class QuestionComponent implements OnInit {
   answers: Answer[];
   acceptedAnswer: Answer;
 
+  newAnswerForm = new FormGroup({
+    body: new FormControl(''),
+  });
+
   constructor(
-    private questionRetrievalService: QuestionRetrievalService,
+    private retrievalService: RetrievalService,
+    private addqaService: AddqaService,
     private route: ActivatedRoute
   ) { }
 
@@ -37,7 +43,7 @@ export class QuestionComponent implements OnInit {
   }
 
   private retrieveQuestion(id: string): void {
-    this.questionRetrievalService.getQuestion(id)
+    this.retrievalService.getQuestion(id)
     .subscribe((question: Question) => {
       console.log(question);
       this.question = question;
@@ -45,7 +51,7 @@ export class QuestionComponent implements OnInit {
   }
 
   private retrieveAnswers(id: string): void {
-    this.questionRetrievalService.getQuestionAnswers(id)
+    this.retrievalService.getQuestionAnswers(id)
       .subscribe(answers => {
         console.log(answers);
         this.answers = answers;
@@ -59,6 +65,16 @@ export class QuestionComponent implements OnInit {
         console.log(this.acceptedAnswer);
         return;
       }
+    });
+  }
+
+  addAnswerSubmit(): void {
+    let body = this.newAnswerForm.value.body;
+    let id = this.retrieveId();
+    console.log(body);
+    this.addqaService.addAnswer(id, this.newAnswerForm.value.body)
+    .subscribe(response => {
+      console.log(response);
     });
   }
 }

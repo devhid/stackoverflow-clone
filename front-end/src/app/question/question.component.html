@@ -69,4 +69,13 @@
       {{answer.timestamp}}
     </div>
   </div>
+
+  <form [formGroup]="newAnswerForm" (ngSubmit)="addAnswerSubmit()" class="answer-form">
+      <div class="form-group">
+          <label for="body">Answer</label>
+          <input type="text" id="body" required formControlName="body" name="body">
+      </div>
+      
+      <button type="submit">Submit answer</button>
+  </form>
 </div>

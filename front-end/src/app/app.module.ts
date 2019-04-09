@@ -11,6 +11,9 @@ import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { QuestionComponent } from './question/question.component';
 import { ProfileComponent } from './profile/profile.component';
+import { AskQuestionComponent } from './askquestion/askquestion.component';
+import { SearchComponent } from './search/search.component';
+import { SearchResultsComponent } from './search-results/search-results.component';
 
 @NgModule({
   declarations: [
@@ -19,7 +22,10 @@ import { ProfileComponent } from './profile/profile.component';
     LoginComponent,
     RegisterComponent,
     QuestionComponent,
-    ProfileComponent
+    ProfileComponent,
+    AskQuestionComponent,
+    SearchComponent,
+    SearchResultsComponent
   ],
   imports: [
     BrowserModule,

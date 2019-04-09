@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
 
-import { User } from '../user';
-import { RegisterService } from '../register.service';
+import { User } from '../classes/user';
+import { RegisterService } from '../services/register.service';
 
 @Component({
   selector: 'app-register',
@@ -10,7 +10,7 @@ import { RegisterService } from '../register.service';
   styleUrls: ['./register.component.css']
 })
 export class RegisterComponent implements OnInit {
-  user = new User('', '', '');
+  user = new User(null, null, null, null);
 
   verificationForm = new FormGroup({
     email: new FormControl(''),

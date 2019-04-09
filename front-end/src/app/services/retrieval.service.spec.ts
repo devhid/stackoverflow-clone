@@ -1,12 +1,12 @@
 import { TestBed } from '@angular/core/testing';
 
-import { QuestionRetrievalService } from './question-retrieval.service';
+import { RetrievalService } from './retrieval.service';
 
 describe('QuestionRetrievalService', () => {
   beforeEach(() => TestBed.configureTestingModule({}));
 
   it('should be created', () => {
-    const service: QuestionRetrievalService = TestBed.get(QuestionRetrievalService);
+    const service: RetrievalService = TestBed.get(RetrievalService);
     expect(service).toBeTruthy();
   });
 });

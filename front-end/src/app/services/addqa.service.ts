@@ -3,28 +3,36 @@ import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http
 
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap, retry } from 'rxjs/operators';
+import { Question, Questions, QuestionAdapter } from '../classes/question';
+import { Answer, Answers } from '../classes/answer';
 
 const httpHeaders = {
   headers: new HttpHeaders({ 
     'Content-Type': 'application/json'
-  }),
-  //observe: "response"
+  })
 };
 
-const authenticationUrl = "http://64.190.90.243"
+const url = "http://8.9.11.218";
 
 @Injectable({
   providedIn: 'root'
 })
-export class LoginService {
-
+export class AddqaService {
   constructor(
-    private http: HttpClient
+    private http: HttpClient,
   ) { }
 
-  login(username: string, password: string): Observable<any> {
-    let body = { username: username, password: password };
-    return this.http.post(authenticationUrl + "/login", body, httpHeaders)
+  addQuestion(title: string, body: string, tag: Array<string>): Observable<any> {
+    let postBody = { title: title, body: body, tag: tag }
+    return this.http.post(url + "/questions/add", postBody, httpHeaders)
+      .pipe(
+        catchError(this.handleError)
+      )
+  }
+
+  addAnswer(questionId: string, body: string): Observable<any> {
+    let postBody = { body: body };
+    return this.http.post(url + "/questions/" + questionId + "/answers/add", postBody, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )
