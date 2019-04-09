@@ -18,6 +18,12 @@ const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stor
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
+var questionsPosted = {};
+
+function getQuestions(){
+    return questionsPosted;
+}
+
 async function getQuestionsByUser(username){
     let questions = (await client.search({
         index: INDEX_QUESTIONS,
@@ -84,6 +90,12 @@ async function addQuestion(user, title, body, tags, media){
         dbResult.status = constants.DB_RES_ERROR;
         dbResult.data = null;
         return dbResult;
+    }
+    if (user._source.username in questionsPosted){
+        questionsPosted[user._source.username].push(response._id);
+    }
+    else {
+        questionsPosted[user._source.username] = [response._id];
     }
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
@@ -878,6 +890,7 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
+    getQuestions: getQuestions,
     getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,
