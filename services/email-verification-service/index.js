@@ -1,13 +1,12 @@
 /* library imports */
 const express = require('express');
-const asyncWrapper = require('express-async-await');
 
 /* internal imports */
 const database = require('./database');
 
 /* initialize express application */
 const app = express();
-asyncWrapper(app);
+require('express-async-errors');
 
 /* the port the server will listen on */
 const PORT = 8003;

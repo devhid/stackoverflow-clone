@@ -10,6 +10,7 @@ const client = new elasticsearch.Client({
 
 /* index where user account information will be stored */
 const INDEX = "users";
+const KEY_LENGTH = 16;
 
 /* Checks if a user already exists by checking the 
  * existence of the user's email and username in the database. 
@@ -28,11 +29,10 @@ async function userExists(email, username) {
     return emailExists || usernameExists;
 }
 
-const byteLength = 16;
 /* Generate a new random key */
 function generateKey() {
     return new Promise((resolve, reject) => {
-        crypto.randomBytes(byteLength, (err, buffer) => {
+        crypto.randomBytes(KEY_LENGTH, (err, buffer) => {
             if(err) {
                 reject(err);
             } else {
