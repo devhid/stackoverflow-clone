@@ -452,7 +452,7 @@ async function deleteQuestion(qid, username){
                 }, 
             }
         });
-        if (response.result !== 'deleted'){
+        if (response.deleted != 1){
             console.log(`Failed to delete question views ${qid} from ${INDEX_VIEWS}`);
             console.log(response);
         }
@@ -469,7 +469,7 @@ async function deleteQuestion(qid, username){
                 }, 
             }
         });
-        if (response.result !== 'deleted'){
+        if (response.deleted != 1){
             console.log(`Failed to delete question upvotes ${qid} from ${INDEX_Q_UPVOTES}`);
             console.log(response);
         }
