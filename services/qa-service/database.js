@@ -216,18 +216,26 @@ async function updateViewCount(qid, username, ip){
     }
     
     // return the question
-    client.get({
+    let question = (await client.search({
         index: INDEX_QUESTIONS,
         type: "_doc",
-        id: qid
-    }).then(function(resp){
+        body: {
+            query: {
+                term: {
+                    _id: qid
+                }
+            }
+        }
+    })).hits.hits[0];
+
+    if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = resp;
-    }).catch(function(err){
+    }
+    else {
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
-        console.log(err.message);
-    });
+    }
     return dbResult;
 
 }
@@ -339,41 +347,48 @@ async function getAnswers(qid){
     let dbResult = new DBResult();
 
     // check if the Question exists first
-    client.get({
+    let question = (await client.search({
         index: INDEX_QUESTIONS,
         type: "_doc",
-        id: qid
-    }).then(function(resp){
-        // grab all Answer documents for the specified Question
-        let answers = (await client.search({
-            index: INDEX_ANSWERS,
-            body: {
-                query: {
-                    term: {
-                        "qid": qid
-                    }
+        body: {
+            query: {
+                term: {
+                    _id: qid
                 }
             }
-        })).hits.hits;
-
-        // transform them to fit the external model
-        var transformedAnswers = [];
-        for (var i in answers){
-            let ans = answers[i];
-            ans._source[constants.ID_KEY] = ans._id;
-            ans = ans._source;
-            delete ans.qid;
-            transformedAnswers.push(ans);
         }
+    })).hits.hits[0];
 
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = transformedAnswers;
-
-    }).catch(function(err){
+    if (!question){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
-        console.log(err.message);
-    });
+        return dbResult;
+    }
+
+    // grab all Answer documents for the specified Question
+    let answers = (await client.search({
+        index: INDEX_ANSWERS,
+        body: {
+            query: {
+                term: {
+                    "qid": qid
+                }
+            }
+        }
+    })).hits.hits;
+
+    // transform them to fit the external model
+    var transformedAnswers = [];
+    for (var i in answers){
+        let ans = answers[i];
+        ans._source[constants.ID_KEY] = ans._id;
+        ans = ans._source;
+        delete ans.qid;
+        transformedAnswers.push(ans);
+    }
+
+    dbResult.status = constants.DB_RES_SUCCESS;
+    dbResult.data = transformedAnswers;
 
     return dbResult;
 }
