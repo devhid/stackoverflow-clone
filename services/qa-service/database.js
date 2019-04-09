@@ -33,7 +33,7 @@ async function getQuestionsByUser(username){
 
     let qids = [];
     for (var question of questions){
-        qids.push(question._source._id);
+        qids.push(question._id);
     }
     return qids;
 }
