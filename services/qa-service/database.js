@@ -410,14 +410,13 @@ async function getAnswers(qid){
  */
 async function deleteQuestion(qid, username){
     let dbResult = new DBResult();
-    const question = await getQuestion(qid, username);
+    const getRes = await getQuestion(qid, username);
     let response = undefined;
-    if (!question){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+    if (getRes.status === constants.DB_RES_Q_NOTFOUND){
+        return getRes;
     }
-    
+    let question = getRes.data;
+
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
         
@@ -663,14 +662,14 @@ async function upvoteQA(qid, aid, username, upvote){
         // if upvoted, then we "undo" the upvote by subtracting 1 from the score
         //  else, we "undo" the downvote by adding 1 to the score
         score_diff = (upvoted) ? -1 : 1;
-        let undoVoteResp = await undoVote(qid, aid, username, in_upvotes);
-        if (!undoVoteResp){
+        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes);
+        if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
     }
     if ((upvote && downvoted) || (!upvote && upvoted)){
-        let addVoteResp = await addVote(qid, aid, username, upvote);
-        if (addVoteResp){
+        let addVoteRes = await addVote(qid, aid, username, upvote);
+        if (undoVoteRes.status === constants.DB_RES_SUCCESS){
             // if the user wishes to UPVOTE but DOWNVOTED, we must add the UPVOTE
             if (upvote && downvoted){
                 score_diff += 1;
@@ -687,11 +686,11 @@ async function upvoteQA(qid, aid, username, upvote){
     }
 
     // update the score of the question or answer
-    let updateResp = await updateScore(qid, aid, score_diff);
-    if (updateResp[constants.DB_RES_STATUS_KEY] !== constants.DB_RES_SUCCESS){
+    let updateRes = await updateScore(qid, aid, score_diff);
+    if (updateRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
-    return updateResp;
+    return updateRes;
 }
 
 /** POST /questions/:qid/upvote
