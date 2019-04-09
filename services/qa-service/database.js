@@ -89,7 +89,8 @@ async function addQuestion(user, title, body, tags, media){
         console.log(response);
     }
     if (response){
-        dbResult.modify(constants.DB_RES_SUCCESS, response._id);
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = response._id;
     }
     return dbResult;
 }
@@ -118,7 +119,8 @@ async function updateViewCount(qid, username, ip){
 
     // check whether or not the question exists
     if (question_view == undefined){
-        dbResult.modify(constants.DB_RES_Q_NOTFOUND, null);
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
         return dbResult;
     }
 
@@ -220,10 +222,12 @@ async function updateViewCount(qid, username, ip){
         id: qid
     });
     if (question){
-        dbResult.modify(constants.DB_RES_SUCCESS, question);
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = question;
     }
     else {
-        dbResult.modify(constants.DB_RES_Q_NOTFOUND, null);
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
     }
     return dbResult;
 
@@ -258,10 +262,12 @@ async function getQuestion(qid, username, ip, update){
     }
 
     if (question){
-        dbResult.modify(constants.DB_RES_SUCCESS, question);
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = question;
     }
     else {
-        dbResult.modify(constants.DB_RES_Q_NOTFOUND, null);
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
     }
     return dbResult;
 }
@@ -315,8 +321,8 @@ async function addAnswer(qid, username, body, media){
         console.log(`Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
         console.log(upvoteResponse);
     }
-
-    dbResult.modify(constants.DB_RES_SUCCESS, response._id);
+    dbResult.status = constants.DB_RES_SUCCESS;
+    dbResult.data = response._id;
     return dbResult;
 }
 
@@ -349,7 +355,8 @@ async function getAnswers(qid){
         transformedAnswers.push(ans);
     }
 
-    dbResult.modify(constants.DB_RES_SUCCESS, transformedAnswers);
+    dbResult.status = constants.DB_RES_SUCCESS;
+    dbResult.data = transformedAnswers;
     return dbResult;
 }
 
@@ -373,7 +380,8 @@ async function deleteQuestion(qid, username){
     const question = await getQuestion(qid, username);
     let response = undefined;
     if (!question){
-        dbResult.modify(constants.DB_RES_Q_NOTFOUND, null);
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
         return dbResult;
     }
     
@@ -442,10 +450,12 @@ async function deleteQuestion(qid, username){
 
         // TODO: 5) DELETE any associated media documents
 
-        dbResult.modify(constants.DB_RES_SUCCESS, null);
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = null;
     }
     else {
-        dbResult.modify(constants.DB_RES_NOT_ALLOWED, null);
+        dbResult.status = constants.DB_RES_NOT_ALLOWED;
+        dbResult.data = null;
     }
     return dbResult;
 }
@@ -490,7 +500,8 @@ async function undoVote(qid, aid, username, upvote){
     if (success !== DB_RES_SUCCESS){
         console.log(`Failed undoVote(${qid}, ${aid}, ${username}, ${upvote})`);
     }
-    dbResult.modify(success, null);
+    dbResult.status = success;
+    dbResult.data = null;
     return dbResult;
 }
 
@@ -532,7 +543,8 @@ async function addVote(qid, aid, username, upvote){
     if (success !== DB_RES_SUCCESS){
         console.log(`Failed addVote(${qid}, ${aid}, ${username}, ${upvote})`);
     }
-    dbResult.modify(success, null);
+    dbResult.status = success;
+    dbResult.data = null;
     return dbResult;
 }
 
@@ -572,7 +584,8 @@ async function updateScore(qid, aid, amount){
     if (success !== DB_RES_SUCCESS){
         console.log(`Failed updateScore(${qid}, ${aid}, ${amount})`);
     }
-    dbResult.modify(success, null);
+    dbResult.status = success;
+    dbResult.data = null;
     return dbResult;
 }
 
@@ -601,7 +614,8 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // if it could not be found, the question does not exist
     if (qa_votes == undefined){
-        dbResult.modify(constants.DB_RES_Q_NOTFOUND, null);
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
         return dbResult;
     }
 
@@ -685,7 +699,8 @@ async function acceptAnswer(aid, username){
     const question = await getQuestion(qid, username);
     let response = undefined;
     if (!question){
-        dbResult.modify(constants.DB_RES_Q_NOTFOUND, null);
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
         return dbResult;
     }
 
@@ -696,7 +711,8 @@ async function acceptAnswer(aid, username){
         id: aid
     });
     if (!answer){
-        dbResult.modify(constants.DB_RES_A_NOTFOUND, null);
+        dbResult.status = constants.DB_RES_A_NOTFOUND;
+        dbResult.data = null;
         return dbResult;
     }
 
@@ -754,11 +770,12 @@ async function acceptAnswer(aid, username){
         });
         console.log("updateAnswerResponse below");
         console.log(updateAnswerResponse);
-
-        dbResult.modify(constants.DB_RES_SUCCESS, null);
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = null;
     }
     else {
-        dbResult.modify(constants.DB_RES_NOT_ALLOWED, null);
+        dbResult.status = constants.DB_RES_NOT_ALLOWED;
+        dbResult.data = null;
     }
     return dbResult;
 }

@@ -7,10 +7,22 @@ class DBResult {
         this.data = (data === undefined) ? null : data;
     }
 
-    modify(status, data){
-        this.status = status;
-        this.data = data;
+    get status(){
+        return this._status;
     }
+
+    set status(status){
+        this._status = status;
+    }
+
+    get data(){
+        return this._data;
+    }
+
+    set data(data){
+        this._data = data;
+    }
+
 }
 
 module.exports = {
