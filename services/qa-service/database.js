@@ -253,20 +253,18 @@ async function getQuestion(qid, username, ip, update){
     //  else:
     //      try searching for the question
     if (question === null){
-        question = await client.get({
+        client.get({
             index: INDEX_QUESTIONS,
             type: "_doc",
             id: qid
+        }).then(function(resp){
+            dbResult.status = constants.DB_RES_SUCCESS;
+            dbResult.data = resp;
+        }).catch(function(err){
+            dbResult.status = constants.DB_RES_Q_NOTFOUND;
+            dbResult.data = null;
+            console.log(err.message);
         });
-    }
-
-    if (question){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = question;
-    }
-    else {
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
     }
     return dbResult;
 }
@@ -333,14 +331,20 @@ async function getAnswers(qid){
     let dbResult = new DBResult();
 
     // check if the Question exists first
-    const question = await client.get({
+    let question = null;
+    client.get({
         index: INDEX_QUESTIONS,
         type: "_doc",
         id: qid
-    });
-    if (!question){
+    }).then(function(resp){
+        question = resp;
+    }).catch(function(err){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
+        console.log(err.message);
+    });
+
+    if (dbResult.status === constants.DB_RES_Q_NOTFOUND){
         return dbResult;
     }
 
@@ -706,24 +710,39 @@ async function upvoteAnswer(aid, username, upvote){
 async function acceptAnswer(aid, username){
     let dbResult = new DBResult();
 
-    // grab the Question document
-    const question = await getQuestion(qid, username);
-    let response = undefined;
-    if (!question){
+    // grab the Question document and check that it exists
+    let question = null;
+    client.get({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        id: qid
+    }).then(function(resp){
+        question = resp;
+    }).catch(function(err){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
+        console.log(err.message);
+    });
+
+    if (dbResult.status === constants.DB_RES_Q_NOTFOUND){
         return dbResult;
     }
 
     // before we perform any updates, first ensure that the specified Answer exists
-    const answer = await client.get({
+    let answer = null;
+    client.get({
         index: INDEX_ANSWERS,
         type: "_doc",
         id: aid
-    });
-    if (!answer){
+    }).then(function(resp){
+        answer = resp;
+    }).catch(function(err){
         dbResult.status = constants.DB_RES_A_NOTFOUND;
         dbResult.data = null;
+        console.log(err.message);
+    });
+
+    if (dbResult.status === constants.DB_RES_A_NOTFOUND){
         return dbResult;
     }
 
