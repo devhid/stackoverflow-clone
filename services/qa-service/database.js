@@ -18,6 +18,37 @@ const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stor
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
+var questionsPosted = {};
+var failedQuestionsPosted = {};
+
+function getQuestions(){
+    return questionsPosted;
+}
+
+function getFailedQuestions(){
+    return failedQuestionsPosted;
+}
+
+async function getQuestionsByUser(username){
+    let questions = (await client.search({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        body: {
+            query: {
+                term: {
+                    "user.username": username
+                }
+            }
+        }
+    })).hits.hits;
+
+    let qids = [];
+    for (var question of questions){
+        qids.push(question._id);
+    }
+    return qids;
+}
+
 /* milestone 1 */
 
 /** POST /questions/add
@@ -63,7 +94,20 @@ async function addQuestion(user, title, body, tags, media){
         console.log(response);
         dbResult.status = constants.DB_RES_ERROR;
         dbResult.data = null;
+        
+        if (user._source.username in failedQuestionsPosted){
+            failedQuestionsPosted[user._source.username] += 1;
+        }
+        else {
+            failedQuestionsPosted[user._source.username] = 1;
+        }
         return dbResult;
+    }
+    if (user._source.username in questionsPosted){
+        questionsPosted[user._source.username].push(response._id);
+    }
+    else {
+        questionsPosted[user._source.username] = [response._id];
     }
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
@@ -246,7 +290,6 @@ async function updateViewCount(qid, username, ip){
         dbResult.data = null;
     }
     return dbResult;
-
 }
 
 /** GET /questions/:qid
@@ -282,7 +325,6 @@ async function getQuestion(qid, username, ip, update){
             }
         })).hits.hits[0];
     }
-    console.log(question);
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = question;
@@ -411,6 +453,7 @@ async function getAnswers(qid){
         let ans = answers[i];
         ans._source[constants.ID_KEY] = ans._id;
         ans = ans._source;
+        ans.media = (ans.media.length == 0) ? null : ans.media;
         delete ans.qid;
         transformedAnswers.push(ans);
     }
@@ -859,6 +902,9 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
+    getQuestions: getQuestions,
+    getFailedQuestions: getFailedQuestions,
+    getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,
     deleteQuestion: deleteQuestion,
