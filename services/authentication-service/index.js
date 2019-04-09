@@ -1,6 +1,5 @@
 /* external imports */
 const express = require('express');
-const asyncWrapper = require('express-async-await');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 
@@ -9,7 +8,7 @@ const database = require('./database');
 
 /* initialize express application */
 const app = express();
-asyncWrapper(app);
+require('express-async-errors');
 
 /* the port the server will listen on */
 const PORT = 8002;
@@ -92,8 +91,6 @@ app.get('/increment', function incrementCounter(req, res) {
 /* handles log outs. */
 app.post('/logout', function destroySession(req, res) {
     let response = {};
-
-    console.log(req.session);
 
     if(!req.session.user) {
         response = {"status": "error", "error": "Already logged out."};
