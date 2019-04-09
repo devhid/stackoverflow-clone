@@ -162,7 +162,7 @@ async function updateViewCount(qid, username, ip){
     else {
         // unique per username
         let users = question_view._source.authenticated;
-        if (users.includes(user))
+        if (users.includes(username))
             update = false;
         else {
             // update the array of authenticated views by username
