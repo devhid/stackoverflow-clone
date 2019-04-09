@@ -33,6 +33,13 @@ export class LoginService {
       )
   }
 
+  logout(): Observable<any> {
+    return this.http.post(authenticationUrl + "/logout", {}, httpHeaders)
+      .pipe(
+        catchError(this.handleError)
+      )
+  }
+
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {
       // A client-side or network error occurred. Handle it accordingly.

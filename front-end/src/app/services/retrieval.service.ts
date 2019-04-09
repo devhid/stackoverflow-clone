@@ -13,7 +13,7 @@ const httpHeaders = {
   })
 };
 
-const url = 'http://8.9.11.218';  // URL to web api
+const url = 'http://kellogs.cse356.compas.cs.stonybrook.edu';  // URL to web api
 const searchUrl = 'http://64.190.91.125' // URL to search microservice
 
 @Injectable({
