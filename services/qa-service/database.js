@@ -253,18 +253,26 @@ async function getQuestion(qid, username, ip, update){
     //  else:
     //      try searching for the question
     if (question === null){
-        client.get({
+        question = (await client.search({
             index: INDEX_QUESTIONS,
             type: "_doc",
-            id: qid
-        }).then(function(resp){
-            dbResult.status = constants.DB_RES_SUCCESS;
-            dbResult.data = resp;
-        }).catch(function(err){
-            dbResult.status = constants.DB_RES_Q_NOTFOUND;
-            dbResult.data = null;
-            console.log(err.message);
-        });
+            body: {
+                query: {
+                    term: {
+                        _id: qid
+                    }
+                }
+            }
+        })).hits.hits[0];
+    }
+
+    if (question){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = question;
+    }
+    else {
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
     }
     return dbResult;
 }
@@ -331,47 +339,42 @@ async function getAnswers(qid){
     let dbResult = new DBResult();
 
     // check if the Question exists first
-    let question = null;
     client.get({
         index: INDEX_QUESTIONS,
         type: "_doc",
         id: qid
     }).then(function(resp){
-        question = resp;
+        // grab all Answer documents for the specified Question
+        let answers = (await client.search({
+            index: INDEX_ANSWERS,
+            body: {
+                query: {
+                    term: {
+                        "qid": qid
+                    }
+                }
+            }
+        })).hits.hits;
+
+        // transform them to fit the external model
+        var transformedAnswers = [];
+        for (var i in answers){
+            let ans = answers[i];
+            ans._source[constants.ID_KEY] = ans._id;
+            ans = ans._source;
+            delete ans.qid;
+            transformedAnswers.push(ans);
+        }
+
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = transformedAnswers;
+
     }).catch(function(err){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
         console.log(err.message);
     });
 
-    if (dbResult.status === constants.DB_RES_Q_NOTFOUND){
-        return dbResult;
-    }
-
-    // grab all Answer documents for the specified Question
-    let answers = (await client.search({
-        index: INDEX_ANSWERS,
-        body: {
-            query: {
-                term: {
-                    "qid": qid
-                }
-            }
-        }
-    })).hits.hits;
-
-    // transform them to fit the external model
-    var transformedAnswers = [];
-    for (var i in answers){
-        let ans = answers[i];
-        ans._source[constants.ID_KEY] = ans._id;
-        ans = ans._source;
-        delete ans.qid;
-        transformedAnswers.push(ans);
-    }
-
-    dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = transformedAnswers;
     return dbResult;
 }
 
@@ -709,40 +712,44 @@ async function upvoteAnswer(aid, username, upvote){
  */
 async function acceptAnswer(aid, username){
     let dbResult = new DBResult();
+    let qid = undefined;
 
-    // grab the Question document and check that it exists
-    let question = null;
-    client.get({
-        index: INDEX_QUESTIONS,
+    // before we perform any updates, first ensure that the specified Answer exists
+    let answer = (await client.search({
+        index: INDEX_ANSWERS,
         type: "_doc",
-        id: qid
-    }).then(function(resp){
-        question = resp;
-    }).catch(function(err){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        body: {
+            query: {
+                term: {
+                    _id: aid
+                }
+            }
+        }
+    })).hits.hits[0];
+    
+    if (!answer){
+        dbResult.status = constants.DB_RES_A_NOTFOUND;
         dbResult.data = null;
-        console.log(err.message);
-    });
-
-    if (dbResult.status === constants.DB_RES_Q_NOTFOUND){
         return dbResult;
     }
 
-    // before we perform any updates, first ensure that the specified Answer exists
-    let answer = null;
-    client.get({
-        index: INDEX_ANSWERS,
+    // grab the Question document and check that it exists
+    qid = answer._source.qid;
+    let question = (await client.search({
+        index: INDEX_QUESTIONS,
         type: "_doc",
-        id: aid
-    }).then(function(resp){
-        answer = resp;
-    }).catch(function(err){
-        dbResult.status = constants.DB_RES_A_NOTFOUND;
+        body: {
+            query: {
+                term: {
+                    _id: qid
+                }
+            }
+        }
+    })).hits.hits[0];
+    
+    if (!question){
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
-        console.log(err.message);
-    });
-
-    if (dbResult.status === constants.DB_RES_A_NOTFOUND){
         return dbResult;
     }
 
