@@ -24,7 +24,7 @@
   <a class="header-home-button" routerLink="/">
     <h1 class="header-logo">StackOverflow Clone</h1>
   </a>
-  <input class="header-search" id="search-box" (input)="search(searchBox.value)" />
+  <app-search class="header-search"></app-search>
   <nav class="header-session-section">
     <a class="login-button" routerLink="/login">
       Login
@@ -33,6 +33,12 @@
       Register
     </a>
   </nav>
+</div>
+
+<div>
+  <button class="ask-question-button" routerLink="/askquestion">
+    Ask Question
+  </button>
 </div>
 
 <router-outlet></router-outlet>

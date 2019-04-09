@@ -198,6 +198,7 @@ app.delete('/questions/:qid', async(req, res) => {
     
     // check if any mandatory parameters are undefined
     if (user == undefined || qid == undefined){
+        res.status(403);
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }

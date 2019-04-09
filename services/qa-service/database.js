@@ -411,6 +411,7 @@ async function getAnswers(qid){
         let ans = answers[i];
         ans._source[constants.ID_KEY] = ans._id;
         ans = ans._source;
+        ans.media = (ans.media.length == 0) ? null : ans.media;
         delete ans.qid;
         transformedAnswers.push(ans);
     }

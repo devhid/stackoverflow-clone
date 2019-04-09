@@ -7,11 +7,11 @@ import { Question } from '../classes/question';
 import { map } from 'rxjs/operators';
 
 @Component({
-  selector: 'app-home',
-  templateUrl: './home.component.html',
-  styleUrls: ['./home.component.css']
+  selector: 'app-search-results',
+  templateUrl: './search-results.component.html',
+  styleUrls: ['./search-results.component.css']
 })
-export class HomeComponent implements OnInit {
+export class SearchResultsComponent implements OnInit {
   questions: Question[] = [];
 
   constructor(

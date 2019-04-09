@@ -1,11 +1,9 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpErrorResponse, HttpParams } from '@angular/common/http';
 
+import { User, UserAdapter } from '../classes/user'
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap, retry } from 'rxjs/operators';
-import { Question, Questions, QuestionAdapter } from './question';
-import { Answer, Answers } from './answer';
-//import { Questions, QuestionsAdapter } from './questions';
 
 const httpHeaders = {
   headers: new HttpHeaders({ 
@@ -13,38 +11,39 @@ const httpHeaders = {
   })
 };
 
+//const url = "http://localhost:4006";
+const url = 'http://8.9.11.218';  // URL to web api
+
 @Injectable({
   providedIn: 'root'
 })
-export class QuestionRetrievalService {
-  private url = 'http://8.9.11.218';  // URL to web api
-  private searchUrl = 'http://64.190.91.125' // URL to search microservice
+export class UserService {
 
   constructor(
-    private http: HttpClient,
-    private questionAdapter: QuestionAdapter
+    private adapter: UserAdapter,
+    private http: HttpClient
   ) { }
 
-  getRecentQuestions(): Observable<any>{
-    return this.http.post(this.searchUrl + "/search", [], httpHeaders)
+  retrieveUserInfo(username: string): Observable<User> {
+    return this.http.get<any>(url + "/user/" + username, httpHeaders)
       .pipe(
-        map((data: Questions) => data.questions),
+        map(data => this.adapter.adapt(data.user)),
         catchError(this.handleError)
       )
   }
 
-  getQuestion(id: string): Observable<Question>{
-    return this.http.get(this.url + "/questions/" + id)
+  retrieveUserQuestions(username: string): Observable<any> {
+    return this.http.get<any>(url + "/user/" + username + "/questions", httpHeaders)
       .pipe(
-        map(data => this.questionAdapter.adapt(data)),
+        map(data => data.questions),
         catchError(this.handleError)
       )
   }
 
-  getQuestionAnswers(id: string): Observable<any>{
-    return this.http.get(this.url + "/questions/" + id + "/answers")
+  retrieveUserAnswers(username: string): Observable<any> {
+    return this.http.get<any>(url + "/user/" + username + "/answers", httpHeaders)
       .pipe(
-        map((data: Answers) => data.answers),
+        map(data => data.answers),
         catchError(this.handleError)
       )
   }
