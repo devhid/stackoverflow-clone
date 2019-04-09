@@ -48,7 +48,21 @@ app.use(function(req, res, next) {
   next();
 });
 
+
+app.get('/questions/all/questions/posted', async(req, res) => {
+    let result = database.getQuestions();
+    return res.json(result);
+});
+
+
+app.get('/questions/all/questions/posted/:username', async(req, res) => {
+    let result = database.getQuestions();
+    let username = req.params.username;
+    return res.json(result[username]);
+});
+
 /* milestone 1 */
+
 app.post('/questions/add', async(req, res) => {
     let response = new APIResponse();
     let data = {};
@@ -327,11 +341,6 @@ app.get('/questions/:username/questions', async(req, res) => {
     let result = await database.getQuestionsByUser(username);
     let response = {'questions': result};
     return res.json(response);
-});
-
-app.get('/questions/all', async(req, res) => {
-    let result = database.getQuestions();
-    return res.json(result);
 });
 
 /* Start the server. */
