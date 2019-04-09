@@ -251,7 +251,7 @@ async function getQuestion(qid, username, ip, update){
     let dbResult = new DBResult();
     let question = undefined;
     if (update){
-        dbResult = updateViewCount(qid, username, ip);
+        dbResult = await updateViewCount(qid, username, ip);
         question = dbResult.data;
     }
     // if update:
