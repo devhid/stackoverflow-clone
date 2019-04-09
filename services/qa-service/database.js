@@ -230,7 +230,7 @@ async function updateViewCount(qid, username, ip){
 
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = resp;
+        dbResult.data = question;
     }
     else {
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
