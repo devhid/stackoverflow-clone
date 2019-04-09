@@ -61,6 +61,19 @@ app.get('/questions/all/questions/posted/:username', async(req, res) => {
     return res.json(result[username]);
 });
 
+app.get('/questions/all/questions/failed', async(req, res) => {
+    let result = database.getFailedQuestions();
+    return res.json(result);
+});
+
+
+app.get('/questions/all/questions/failed/:username', async(req, res) => {
+    let result = database.getFailedQuestions();
+    let username = req.params.username;
+    return res.json(result[username]);
+});
+
+
 /* milestone 1 */
 
 app.post('/questions/add', async(req, res) => {

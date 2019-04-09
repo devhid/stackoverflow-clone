@@ -19,9 +19,14 @@ const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvot
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
 var questionsPosted = {};
+var failedQuestionsPosted = {};
 
 function getQuestions(){
     return questionsPosted;
+}
+
+function getFailedQuestions(){
+    return failedQuestionsPosted;
 }
 
 async function getQuestionsByUser(username){
@@ -89,6 +94,13 @@ async function addQuestion(user, title, body, tags, media){
         console.log(response);
         dbResult.status = constants.DB_RES_ERROR;
         dbResult.data = null;
+        
+        if (user._source.username in failedQuestionsPosted){
+            failedQuestionsPosted[user._source.username] += 1;
+        }
+        else {
+            failedQuestionsPosted[user._source.username] = 1;
+        }
         return dbResult;
     }
     if (user._source.username in questionsPosted){
@@ -891,6 +903,7 @@ async function acceptAnswer(aid, username){
 
 module.exports = {
     getQuestions: getQuestions,
+    getFailedQuestions: getFailedQuestions,
     getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,
