@@ -20,15 +20,21 @@ app.use(express.json());
 app.post('/search', async (req, res) => {
     const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.currentTime();
     const limit = Math.min(constants.DEFAULT_MAX_LIMIT, req.body['limit'] ? req.body['limit'] : constants.DEFAULT_LIMIT);
+    const q = req.body['q'] ? req.body['q'] : constants.DEFAULT_Q
+    const sort_by = req.body['sort_by'] ? req.body['sort_by'] : constants.DEFAULT_SORT_BY
+    const tags = req.body['tags'] ? req.body['tags'] : constants.DEFAULT_TAGS
+    const has_media = req.body['has_media'] ? req.body['has_media'] : constants.DEFAULT_HAS_MEDIA
     const accepted = req.body['accepted'] ? req.body['accepted'] : constants.DEFAULT_ACCEPTED;
 
-    const searchResults = await database.searchQuestions(timestamp, limit, accepted);
+    let response = {};
 
-    let response = {"status": "OK", "questions": searchResults};
-    console.log(timestamp);
-    console.log(limit);
-    console.log(accepted);
-    console.log(response);
+    if(sort_by != "timestamp" && sort_by != "score") {
+        response = { "status":"error", "message": constants.ERR_INVALID_SORT };
+    }
+
+    const searchResults = await database.searchQuestions(timestamp, limit, q, sort_by, tags, has_media, accepted);
+
+    response = { "status": "OK", "questions": searchResults };
     return res.json(response);
 
 });
