@@ -144,7 +144,10 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     let addRes = await database.addAnswer(qid, username, body, media);
     
     // check response result
-    if (addRes.status === constants.DB_RES_ERROR){
+    if (addRes.status === constants.DB_RES_Q_NOTFOUND){
+        response.setERR(constants.ERR_Q_NOTFOUND);
+    }
+    else if (addRes.status === constants.DB_RES_ERROR){
         response.setERR(constants.ERR_GENERAL);
     }
     else if (addRes.status === constants.DB_RES_SUCCESS){
