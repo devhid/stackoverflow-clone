@@ -260,7 +260,7 @@ async function getQuestion(qid, username, ip, update){
     //      if updateViewCount returned a response, question will not be null
     //  else:
     //      try searching for the question
-    if (question === null){
+    if (question === undefined){
         question = (await client.search({
             index: INDEX_QUESTIONS,
             type: "_doc",
@@ -273,7 +273,7 @@ async function getQuestion(qid, username, ip, update){
             }
         })).hits.hits[0];
     }
-
+    console.log(question);
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = question;
