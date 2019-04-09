@@ -12,6 +12,9 @@ const client = new elasticsearch.Client({
 const INDEX_QUESTIONS = "questions";  // INDEX_QUESTIONS is where questions are stored
 const INDEX_VIEWS = "views";          // INDEX_VIEWS is where views for a question are stored
 const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stored
+
+// NOTE: for INDEX_Q_UPVOTES and INDEX_A_UPVOTES, searching by term for 'qid' or 'aid' requires
+//          specifying it as 'qid.keyword' and 'aid.keyword' due to mapping.
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
@@ -58,6 +61,8 @@ async function addQuestion(user, title, body, tags, media){
     if (response.result !== "created"){
         console.log(`Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
+        dbResult.status = constants.DB_RES_ERROR;
+        dbResult.data = null;
         return dbResult;
     }
     let viewResponse = await client.index({
@@ -70,7 +75,7 @@ async function addQuestion(user, title, body, tags, media){
             "unauthenticated": []
         }
     });
-    if (response.result !== "created"){
+    if (viewResponse.result !== "created"){
         console.log(`Failed to create Question Views metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
     }
@@ -84,13 +89,17 @@ async function addQuestion(user, title, body, tags, media){
             "downvotes": []
         }
     });
-    if (response.result !== "created"){
+    if (upvoteResponse.result !== "created"){
         console.log(`Failed to create Question Upvotes metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
     }
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = response._id;
+    }
+    else {
+        dbResult.status = constants.DB_RES_ERROR;
+        dbResult.data = null;
     }
     return dbResult;
 }
@@ -426,7 +435,7 @@ async function deleteQuestion(qid, username){
             type: "_doc",
             id: qid
         });
-        if (response.deleted != 1){
+        if (response.result !== 'deleted'){
             console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
             console.log(response);
         }
@@ -443,7 +452,7 @@ async function deleteQuestion(qid, username){
                 }, 
             }
         });
-        if (response.deleted != 1){
+        if (response.result !== 'deleted'){
             console.log(`Failed to delete question views ${qid} from ${INDEX_VIEWS}`);
             console.log(response);
         }
@@ -455,12 +464,12 @@ async function deleteQuestion(qid, username){
             body: { 
                 query: { 
                     term: { 
-                        qid: qid
+                        "qid.keyword": qid
                     } 
                 }, 
             }
         });
-        if (response.deleted != 1){
+        if (response.result !== 'deleted'){
             console.log(`Failed to delete question upvotes ${qid} from ${INDEX_Q_UPVOTES}`);
             console.log(response);
         }
@@ -504,7 +513,7 @@ async function deleteQuestion(qid, username){
 async function undoVote(qid, aid, username, upvote){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
     let param_user = "user";
@@ -547,7 +556,7 @@ async function undoVote(qid, aid, username, upvote){
 async function addVote(qid, aid, username, upvote){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
     let param_user = "user";
@@ -589,7 +598,7 @@ async function addVote(qid, aid, username, upvote){
 async function updateScore(qid, aid, amount){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let param_amount = "amount";
     let inline_script = `ctx._source.score += params.${param_amount}`
@@ -631,7 +640,7 @@ async function updateScore(qid, aid, amount){
 async function upvoteQA(qid, aid, username, upvote){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let qa_votes = (await client.search({
         index: which_index,
@@ -673,7 +682,6 @@ async function upvoteQA(qid, aid, username, upvote){
             // if the user wishes to UPVOTE but DOWNVOTED, we must add the UPVOTE
             if (upvote && downvoted){
                 score_diff += 1;
-                
             }
             // if the user wishes to DOWNVOTE but UPVOTED, we must add the DOWNVOTE
             else if (!upvote && upvoted){
