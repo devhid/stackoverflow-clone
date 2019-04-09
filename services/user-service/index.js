@@ -22,7 +22,7 @@ app.use(function(req, res, next) {
 });
 
 /* the port the server will listen on */
-const PORT = 4006;
+const PORT = 8006;
 
 /* get information about user */
 app.get('/user/:uid', async (req, res) => {
