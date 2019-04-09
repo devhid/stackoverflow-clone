@@ -262,7 +262,7 @@ app.post('/answers/:aid/upvote', async(req, res) => {
     // grab parameters
     let user = req.session.user;
     let username = (user == undefined) ? user : user._source.username;
-    let aid = req.params.qid;
+    let aid = req.params.aid;
     let upvote = req.body.upvote;
 
     // check if any mandatory parameters are unspecified
@@ -295,7 +295,7 @@ app.post('/answers/:aid/accept', async(req, res) => {
     // grab parameters
     let user = req.session.user;
     let username = (user == undefined) ? user : user._source.username;
-    let aid = req.params.qid;
+    let aid = req.params.aid;
 
     // check if any mandatory parameters are unspecified
     if (username == undefined || aid == undefined){
@@ -322,6 +322,14 @@ app.post('/answers/:aid/accept', async(req, res) => {
 
     // return HTTP response
     return res.json(response.toOBJ());
+});
+
+app.get('/questions/:username/questions', async(req, res) => {
+    let username = req.params.username;
+
+    let result = await database.getQuestionsByUser(username);
+    let response = {'questions': result};
+    return res.json(response);
 });
 
 /* Start the server. */

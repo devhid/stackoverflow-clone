@@ -18,6 +18,26 @@ const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stor
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
+async function getQuestionsByUser(username){
+    let questions = (await client.search({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        body: {
+            query: {
+                term: {
+                    "user.username": username
+                }
+            }
+        }
+    })).hits.hits;
+
+    let qids = [];
+    for (var question of questions){
+        qids.push(question._source._id);
+    }
+    return qids;
+}
+
 /* milestone 1 */
 
 /** POST /questions/add
@@ -246,7 +266,6 @@ async function updateViewCount(qid, username, ip){
         dbResult.data = null;
     }
     return dbResult;
-
 }
 
 /** GET /questions/:qid
@@ -859,6 +878,7 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
+    getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,
     deleteQuestion: deleteQuestion,
