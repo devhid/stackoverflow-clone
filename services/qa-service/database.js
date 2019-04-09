@@ -216,19 +216,18 @@ async function updateViewCount(qid, username, ip){
     }
     
     // return the question
-    let question = await client.get({
+    client.get({
         index: INDEX_QUESTIONS,
         type: "_doc",
         id: qid
-    });
-    if (question){
+    }).then(function(resp){
         dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = question;
-    }
-    else {
+        dbResult.data = resp;
+    }).catch(function(err){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
-    }
+        console.log(err.message);
+    });
     return dbResult;
 
 }
