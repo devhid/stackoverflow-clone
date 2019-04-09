@@ -282,7 +282,6 @@ async function getQuestion(qid, username, ip, update){
             }
         })).hits.hits[0];
     }
-    console.log(question);
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = question;
