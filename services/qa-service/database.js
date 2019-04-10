@@ -12,8 +12,42 @@ const client = new elasticsearch.Client({
 const INDEX_QUESTIONS = "questions";  // INDEX_QUESTIONS is where questions are stored
 const INDEX_VIEWS = "views";          // INDEX_VIEWS is where views for a question are stored
 const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stored
+
+// NOTE: for INDEX_Q_UPVOTES and INDEX_A_UPVOTES, searching by term for 'qid' or 'aid' requires
+//          specifying it as 'qid.keyword' and 'aid.keyword' due to mapping.
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
+
+var questionsPosted = {};
+var failedQuestionsPosted = {};
+
+function getQuestions(){
+    return questionsPosted;
+}
+
+function getFailedQuestions(){
+    return failedQuestionsPosted;
+}
+
+async function getQuestionsByUser(username){
+    let questions = (await client.search({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        body: {
+            query: {
+                term: {
+                    "user.username": username
+                }
+            }
+        }
+    })).hits.hits;
+
+    let qids = [];
+    for (var question of questions){
+        qids.push(question._id);
+    }
+    return qids;
+}
 
 /* milestone 1 */
 
@@ -59,7 +93,22 @@ async function addQuestion(user, title, body, tags, media, uuid){
     if (response.result !== "created"){
         console.log(`Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
+        dbResult.status = constants.DB_RES_ERROR;
+        dbResult.data = null;
+        
+        if (user._source.username in failedQuestionsPosted){
+            failedQuestionsPosted[user._source.username] += 1;
+        }
+        else {
+            failedQuestionsPosted[user._source.username] = 1;
+        }
         return dbResult;
+    }
+    if (user._source.username in questionsPosted){
+        questionsPosted[user._source.username].push(response._id);
+    }
+    else {
+        questionsPosted[user._source.username] = [response._id];
     }
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
@@ -71,7 +120,7 @@ async function addQuestion(user, title, body, tags, media, uuid){
             "unauthenticated": []
         }
     });
-    if (response.result !== "created"){
+    if (viewResponse.result !== "created"){
         console.log(`Failed to create Question Views metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
     }
@@ -85,13 +134,17 @@ async function addQuestion(user, title, body, tags, media, uuid){
             "downvotes": []
         }
     });
-    if (response.result !== "created"){
+    if (upvoteResponse.result !== "created"){
         console.log(`Failed to create Question Upvotes metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
     }
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = response._uuid;
+    }
+    else {
+        dbResult.status = constants.DB_RES_ERROR;
+        dbResult.data = null;
     }
     return dbResult;
 }
@@ -217,11 +270,23 @@ async function updateViewCount(qid, username, ip){
     }
     
     // return the question
-    let question = await client.get({
+    let question = (await client.search({
         index: INDEX_QUESTIONS,
         type: "_doc",
+<<<<<<< HEAD
         id: uuid
     });
+=======
+        body: {
+            query: {
+                term: {
+                    _id: qid
+                }
+            }
+        }
+    })).hits.hits[0];
+
+>>>>>>> f9dacd71027e8358c792ea9908af730e6d7ed149
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = question;
@@ -231,7 +296,6 @@ async function updateViewCount(qid, username, ip){
         dbResult.data = null;
     }
     return dbResult;
-
 }
 
 /** GET /questions/:qid
@@ -242,10 +306,12 @@ async function updateViewCount(qid, username, ip){
  * @param {boolean} update whether or not to update the view count of the question
  */
 async function getQuestion(qid, username, ip, update){
+    console.log(`getQuestion(${qid},${username},${ip},${update})`);
     let dbResult = new DBResult();
     let question = undefined;
     if (update){
-        dbResult = updateViewCount(qid, username, ip);
+        console.log(`Calling updateViewCount`);
+        dbResult = await updateViewCount(qid, username, ip);
         question = dbResult.data;
     }
     // if update:
@@ -254,14 +320,20 @@ async function getQuestion(qid, username, ip, update){
     //      if updateViewCount returned a response, question will not be null
     //  else:
     //      try searching for the question
-    if (question === null){
-        question = await client.get({
+    if (question === undefined){
+        console.log(`Performing search`);
+        question = (await client.search({
             index: INDEX_QUESTIONS,
             type: "_doc",
-            id: qid
-        });
+            body: {
+                query: {
+                    term: {
+                        _id: qid
+                    }
+                }
+            }
+        })).hits.hits[0];
     }
-
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = question;
@@ -270,6 +342,7 @@ async function getQuestion(qid, username, ip, update){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
     }
+    console.log(`Returning from getQuestion`);
     return dbResult;
 }
 
@@ -288,6 +361,25 @@ async function getQuestion(qid, username, ip, update){
 async function addAnswer(qid, username, body, media){
     let dbResult = new DBResult();
     media = (media == undefined) ? [] : media;
+
+    // check if the Question exists first
+    let question = (await client.search({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        body: {
+            query: {
+                term: {
+                    _id: qid
+                }
+            }
+        }
+    })).hits.hits[0];
+
+    if (!question){
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
+        return dbResult;
+    }
     
     let response = await client.index({
         index: INDEX_ANSWERS,
@@ -334,6 +426,25 @@ async function addAnswer(qid, username, body, media){
 async function getAnswers(qid){
     let dbResult = new DBResult();
 
+    // check if the Question exists first
+    let question = (await client.search({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        body: {
+            query: {
+                term: {
+                    _id: qid
+                }
+            }
+        }
+    })).hits.hits[0];
+
+    if (!question){
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
+        return dbResult;
+    }
+
     // grab all Answer documents for the specified Question
     let answers = (await client.search({
         index: INDEX_ANSWERS,
@@ -352,12 +463,14 @@ async function getAnswers(qid){
         let ans = answers[i];
         ans._source[constants.ID_KEY] = ans._id;
         ans = ans._source;
+        ans.media = (ans.media.length == 0) ? null : ans.media;
         delete ans.qid;
         transformedAnswers.push(ans);
     }
 
     dbResult.status = constants.DB_RES_SUCCESS;
     dbResult.data = transformedAnswers;
+
     return dbResult;
 }
 
@@ -377,23 +490,29 @@ async function getAnswers(qid){
  * @param {string} username the user who originally posted the question
  */
 async function deleteQuestion(qid, username){
+    console.log(`deleteQuestion(${qid},${username})`);
     let dbResult = new DBResult();
-    const question = await getQuestion(qid, username);
+    const getRes = await getQuestion(qid, username);
     let response = undefined;
-    if (!question){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+    if (getRes.status === constants.DB_RES_Q_NOTFOUND){
+        return getRes;
     }
-    
+    let question = getRes.data;
+
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
-        
+        console.log(`Deleting ${qid} by ${username}`);
         // 1) DELETE from INDEX_QUESTIONS the Question document
-        response = await client.delete({
+        response = await client.deleteByQuery({
             index: INDEX_QUESTIONS,
             type: "_doc",
-            id: qid
+            body: {
+                query: {
+                    term: {
+                        _id: qid
+                    }
+                }
+            }
         });
         if (response.deleted != 1){
             console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
@@ -424,7 +543,7 @@ async function deleteQuestion(qid, username){
             body: { 
                 query: { 
                     term: { 
-                        qid: qid
+                        "qid.keyword": qid
                     } 
                 }, 
             }
@@ -473,7 +592,7 @@ async function deleteQuestion(qid, username){
 async function undoVote(qid, aid, username, upvote){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
     let param_user = "user";
@@ -516,7 +635,7 @@ async function undoVote(qid, aid, username, upvote){
 async function addVote(qid, aid, username, upvote){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
     let param_user = "user";
@@ -558,7 +677,7 @@ async function addVote(qid, aid, username, upvote){
 async function updateScore(qid, aid, amount){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let param_amount = "amount";
     let inline_script = `ctx._source.score += params.${param_amount}`
@@ -600,7 +719,7 @@ async function updateScore(qid, aid, amount){
 async function upvoteQA(qid, aid, username, upvote){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let qa_votes = (await client.search({
         index: which_index,
@@ -631,18 +750,17 @@ async function upvoteQA(qid, aid, username, upvote){
         // if upvoted, then we "undo" the upvote by subtracting 1 from the score
         //  else, we "undo" the downvote by adding 1 to the score
         score_diff = (upvoted) ? -1 : 1;
-        let undoVoteResp = await undoVote(qid, aid, username, in_upvotes);
-        if (!undoVoteResp){
+        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes);
+        if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
     }
     if ((upvote && downvoted) || (!upvote && upvoted)){
-        let addVoteResp = await addVote(qid, aid, username, upvote);
-        if (addVoteResp){
+        let addVoteRes = await addVote(qid, aid, username, upvote);
+        if (undoVoteRes.status === constants.DB_RES_SUCCESS){
             // if the user wishes to UPVOTE but DOWNVOTED, we must add the UPVOTE
             if (upvote && downvoted){
                 score_diff += 1;
-                
             }
             // if the user wishes to DOWNVOTE but UPVOTED, we must add the DOWNVOTE
             else if (!upvote && upvoted){
@@ -655,11 +773,11 @@ async function upvoteQA(qid, aid, username, upvote){
     }
 
     // update the score of the question or answer
-    let updateResp = await updateScore(qid, aid, score_diff);
-    if (updateResp[constants.DB_RES_STATUS_KEY] !== constants.DB_RES_SUCCESS){
+    let updateRes = await updateScore(qid, aid, score_diff);
+    if (updateRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
-    return updateResp;
+    return updateRes;
 }
 
 /** POST /questions/:qid/upvote
@@ -695,24 +813,43 @@ async function upvoteAnswer(aid, username, upvote){
  */
 async function acceptAnswer(aid, username){
     let dbResult = new DBResult();
+    let qid = undefined;
 
-    // grab the Question document
-    const question = await getQuestion(qid, username);
-    let response = undefined;
-    if (!question){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+    // before we perform any updates, first ensure that the specified Answer exists
+    let answer = (await client.search({
+        index: INDEX_ANSWERS,
+        type: "_doc",
+        body: {
+            query: {
+                term: {
+                    _id: aid
+                }
+            }
+        }
+    })).hits.hits[0];
+    
+    if (!answer){
+        dbResult.status = constants.DB_RES_A_NOTFOUND;
         dbResult.data = null;
         return dbResult;
     }
 
-    // before we perform any updates, first ensure that the specified Answer exists
-    const answer = await client.get({
-        index: INDEX_ANSWERS,
+    // grab the Question document and check that it exists
+    qid = answer._source.qid;
+    let question = (await client.search({
+        index: INDEX_QUESTIONS,
         type: "_doc",
-        id: aid
-    });
-    if (!answer){
-        dbResult.status = constants.DB_RES_A_NOTFOUND;
+        body: {
+            query: {
+                term: {
+                    _id: qid
+                }
+            }
+        }
+    })).hits.hits[0];
+    
+    if (!question){
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
         return dbResult;
     }
@@ -740,7 +877,7 @@ async function acceptAnswer(aid, username){
         }
 
         // update the Question document's "accepted_answer_id" field
-        const updateQuestionResponse = client.update({
+        const updateQuestionResponse = await client.update({
             index: INDEX_QUESTIONS,
             type: "_doc",
             id: question._id,
@@ -758,7 +895,7 @@ async function acceptAnswer(aid, username){
         console.log(updateQuestionResponse);
 
         // update the Answer document's "is_accepted" field
-        const updateAnswerResponse = client.update({
+        const updateAnswerResponse = await client.update({
             index: INDEX_ANSWERS,
             type: "_doc",
             id: aid,
@@ -782,6 +919,9 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
+    getQuestions: getQuestions,
+    getFailedQuestions: getFailedQuestions,
+    getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,
     deleteQuestion: deleteQuestion,

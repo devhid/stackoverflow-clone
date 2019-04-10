@@ -3,48 +3,39 @@ import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http
 
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap, retry } from 'rxjs/operators';
-import { Question, Questions, QuestionAdapter } from './question';
-import { Answer, Answers } from './answer';
-//import { Questions, QuestionsAdapter } from './questions';
 
 const httpHeaders = {
   headers: new HttpHeaders({ 
     'Content-Type': 'application/json'
-  })
+  }),
+  withCredentials: true,
+  observe: 'response' as 'response'
+  //observe: "response"
 };
+
+const authenticationUrl = "http://8.9.11.218"
 
 @Injectable({
   providedIn: 'root'
 })
-export class QuestionRetrievalService {
-  private url = 'http://8.9.11.218';  // URL to web api
-  private searchUrl = 'http://64.190.91.125' // URL to search microservice
+export class LoginService {
 
   constructor(
-    private http: HttpClient,
-    private questionAdapter: QuestionAdapter
+    private http: HttpClient
   ) { }
 
-  getRecentQuestions(): Observable<any>{
-    return this.http.post(this.searchUrl + "/search", [], httpHeaders)
+  login(username: string, password: string): Observable<any> {
+    let body = { username: username, password: password };
+    console.log(body);
+    return this.http.post(authenticationUrl + "/login", body, httpHeaders)
       .pipe(
-        map((data: Questions) => data.questions),
         catchError(this.handleError)
       )
   }
 
-  getQuestion(id: string): Observable<Question>{
-    return this.http.get(this.url + "/questions/" + id)
+  logout(): Observable<any> {
+    return this.http.post(authenticationUrl + "/logout", {}, httpHeaders)
       .pipe(
-        map(data => this.questionAdapter.adapt(data)),
-        catchError(this.handleError)
-      )
-  }
-
-  getQuestionAnswers(id: string): Observable<any>{
-    return this.http.get(this.url + "/questions/" + id + "/answers")
-      .pipe(
-        map((data: Answers) => data.answers),
         catchError(this.handleError)
       )
   }

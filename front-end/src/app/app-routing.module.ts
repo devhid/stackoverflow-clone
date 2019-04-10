@@ -6,17 +6,20 @@ import { LoginComponent } from './login/login.component';
 import { RegisterComponent } from './register/register.component';
 import { QuestionComponent } from './question/question.component';
 import { ProfileComponent } from './profile/profile.component';
+import { AskQuestionComponent } from './askquestion/askquestion.component';
 
 const routes: Routes = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
-  { path: 'login', component: LoginComponent },
+  { path: 'search', component: HomeComponent},
+  { path: 'signin', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'question/:id', component: QuestionComponent },
-  { path: 'user/:username', component: ProfileComponent }
+  { path: 'user/:username', component: ProfileComponent },
+  { path: 'askquestion', component: AskQuestionComponent }
 ];
 
 @NgModule({
-  imports: [RouterModule.forRoot(routes)],
+  imports: [RouterModule.forRoot(routes, {onSameUrlNavigation: 'reload'})],
   exports: [RouterModule]
 })
 

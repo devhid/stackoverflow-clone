@@ -44,12 +44,39 @@ app.use(express.json());
 /* enable CORS */
 app.use(function(req, res, next) {
   res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   next();
 });
 
+
+app.get('/questions/all/questions/posted', async(req, res) => {
+    let result = database.getQuestions();
+    return res.json(result);
+});
+
+
+app.get('/questions/all/questions/posted/:username', async(req, res) => {
+    let result = database.getQuestions();
+    let username = req.params.username;
+    return res.json(result[username]);
+});
+
+app.get('/questions/all/questions/failed', async(req, res) => {
+    let result = database.getFailedQuestions();
+    return res.json(result);
+});
+
+
+app.get('/questions/all/questions/failed/:username', async(req, res) => {
+    let result = database.getFailedQuestions();
+    let username = req.params.username;
+    return res.json(result[username]);
+});
+
+
 /* milestone 1 */
+
 app.post('/questions/add', async(req, res) => {
     let response = new APIResponse();
     let data = {};
@@ -80,11 +107,8 @@ app.post('/questions/add', async(req, res) => {
     else if (addRes.status === constants.DB_RES_SUCCESS){
         response.setOK();
         data[constants.ID_KEY] = addRes.data;
-        console.log(data);
-        console.log(response.toOBJ());
     }
     let merged = {...response.toOBJ(), ...data};
-    console.log(merged);
     return res.json(merged);
 });
 
@@ -146,7 +170,10 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     let addRes = await database.addAnswer(qid, username, body, media);
     
     // check response result
-    if (addRes.status === constants.DB_RES_ERROR){
+    if (addRes.status === constants.DB_RES_Q_NOTFOUND){
+        response.setERR(constants.ERR_Q_NOTFOUND);
+    }
+    else if (addRes.status === constants.DB_RES_ERROR){
         response.setERR(constants.ERR_GENERAL);
     }
     else if (addRes.status === constants.DB_RES_SUCCESS){
@@ -197,6 +224,7 @@ app.delete('/questions/:qid', async(req, res) => {
     
     // check if any mandatory parameters are undefined
     if (user == undefined || qid == undefined){
+        res.status(403);
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -260,7 +288,7 @@ app.post('/answers/:aid/upvote', async(req, res) => {
     // grab parameters
     let user = req.session.user;
     let username = (user == undefined) ? user : user._source.username;
-    let aid = req.params.qid;
+    let aid = req.params.aid;
     let upvote = req.body.upvote;
 
     // check if any mandatory parameters are unspecified
@@ -293,7 +321,7 @@ app.post('/answers/:aid/accept', async(req, res) => {
     // grab parameters
     let user = req.session.user;
     let username = (user == undefined) ? user : user._source.username;
-    let aid = req.params.qid;
+    let aid = req.params.aid;
 
     // check if any mandatory parameters are unspecified
     if (username == undefined || aid == undefined){
@@ -320,6 +348,14 @@ app.post('/answers/:aid/accept', async(req, res) => {
 
     // return HTTP response
     return res.json(response.toOBJ());
+});
+
+app.get('/questions/:username/questions', async(req, res) => {
+    let username = req.params.username;
+
+    let result = await database.getQuestionsByUser(username);
+    let response = {'questions': result};
+    return res.json(response);
 });
 
 /* Start the server. */

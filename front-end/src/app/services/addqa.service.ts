@@ -1,48 +1,41 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpErrorResponse, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
 
-import { User, UserAdapter } from './user'
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap, retry } from 'rxjs/operators';
+import { Question, Questions, QuestionAdapter } from '../classes/question';
+import { Answer, Answers } from '../classes/answer';
 
 const httpHeaders = {
   headers: new HttpHeaders({ 
     'Content-Type': 'application/json'
-  })
+  }),
+  withCredentials: true
 };
 
-const url = "http://localhost:4006";
+const url = "http://8.9.11.218";
 
 @Injectable({
   providedIn: 'root'
 })
-export class UserService {
-
+export class AddqaService {
   constructor(
-    private adapter: UserAdapter,
-    private http: HttpClient
+    private http: HttpClient,
   ) { }
 
-  retrieveUserInfo(username: string): Observable<any> {
-    return this.http.get<any>(url + "/user/" + username, httpHeaders)
+  addQuestion(title: string, body: string, tags: Array<string>): Observable<any> {
+    let postBody = { title: title, body: body, tags: tags, media: null }
+    console.log(postBody);
+    return this.http.post(url + "/questions/add", postBody, httpHeaders)
       .pipe(
-        map(data => data.user),
         catchError(this.handleError)
       )
   }
 
-  retrieveUserQuestions(username: string): Observable<any> {
-    return this.http.get<any>(url + "/user/" + username + "/questions", httpHeaders)
+  addAnswer(questionId: string, body: string): Observable<any> {
+    let postBody = { body: body };
+    return this.http.post(url + "/questions/" + questionId + "/answers/add", postBody, httpHeaders)
       .pipe(
-        map(data => data.questions),
-        catchError(this.handleError)
-      )
-  }
-
-  retrieveUserAnswers(username: string): Observable<any> {
-    return this.http.get<any>(url + "/user/" + username + "/answers", httpHeaders)
-      .pipe(
-        map(data => data.answers),
         catchError(this.handleError)
       )
   }

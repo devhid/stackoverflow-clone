@@ -1,7 +1,9 @@
 import { Component, OnInit } from '@angular/core';
+import { FormGroup, FormControl } from '@angular/forms';
+import { HttpResponse } from '@angular/common/http';
 
-import { User } from '../user';
-import { LoginService } from '../login.service';
+import { User } from '../classes/user';
+import { LoginService } from '../services/login.service';
 
 const url = "8.9.11.218/search";
 
@@ -11,7 +13,10 @@ const url = "8.9.11.218/search";
   styleUrls: ['./login.component.css']
 })
 export class LoginComponent implements OnInit {
-  user = new User(null, null, null, null);
+  loginForm = new FormGroup({
+    username: new FormControl(''),
+    password: new FormControl(''),
+  });
   
   constructor(
     private loginService: LoginService
@@ -21,11 +26,21 @@ export class LoginComponent implements OnInit {
   }
 
   onSubmit() {
-    this.loginService.login(this.user.username, this.user.password)
-    .subscribe(response => {
-      console.log(response.headers.get('set-cookie'));
+    let username = this.loginForm.value.username;
+    let password = this.loginForm.value.password;
+    console.log(username);
+    console.log(password);
+    this.loginService.login(username, password)
+    .subscribe((response: HttpResponse<any>) => {
+      //console.log(response.headers.get('set-cookie'));
       console.log(response);
     });
   }
 
+  logoutClick() {
+    this.loginService.logout()
+    .subscribe(response => {
+      console.log(response);
+    });
+  }
 }

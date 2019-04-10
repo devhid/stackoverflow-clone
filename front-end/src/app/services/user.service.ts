@@ -1,31 +1,49 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpHeaders, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpHeaders, HttpErrorResponse, HttpParams } from '@angular/common/http';
 
+import { User, UserAdapter } from '../classes/user'
 import { Observable, of, throwError } from 'rxjs';
 import { catchError, map, tap, retry } from 'rxjs/operators';
 
 const httpHeaders = {
   headers: new HttpHeaders({ 
     'Content-Type': 'application/json'
-  }),
-  //observe: "response"
+  })
 };
 
-const authenticationUrl = "http://64.190.90.243"
+//const url = "http://localhost:4006";
+const url = 'http://8.9.11.218';  // URL to web api
 
 @Injectable({
   providedIn: 'root'
 })
-export class LoginService {
+export class UserService {
 
   constructor(
+    private adapter: UserAdapter,
     private http: HttpClient
   ) { }
 
-  login(username: string, password: string): Observable<any> {
-    let body = { username: username, password: password };
-    return this.http.post(authenticationUrl + "/login", body, httpHeaders)
+  retrieveUserInfo(username: string): Observable<User> {
+    return this.http.get<any>(url + "/user/" + username, httpHeaders)
       .pipe(
+        map(data => this.adapter.adapt(data.user)),
+        catchError(this.handleError)
+      )
+  }
+
+  retrieveUserQuestions(username: string): Observable<any> {
+    return this.http.get<any>(url + "/user/" + username + "/questions", httpHeaders)
+      .pipe(
+        map(data => data.questions),
+        catchError(this.handleError)
+      )
+  }
+
+  retrieveUserAnswers(username: string): Observable<any> {
+    return this.http.get<any>(url + "/user/" + username + "/answers", httpHeaders)
+      .pipe(
+        map(data => data.answers),
         catchError(this.handleError)
       )
   }
