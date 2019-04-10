@@ -2,6 +2,7 @@
 const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
+const uuidv4 = require('uuid/v4');
 
 /* internal imports */
 const database = require('./database');
@@ -69,7 +70,8 @@ app.post('/questions/add', async(req, res) => {
     }
 
     // perform database operations
-    let addRes = await database.addQuestion(user, title, body, tags, media);
+    let uuid = uuidv4();
+    let addRes = await database.addQuestion(user, title, body, tags, media, uuid);
     
     // check response result
     if (addRes.status === constants.DB_RES_ERROR){

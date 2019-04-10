@@ -16,6 +16,14 @@ const PORT = 8005;
 /* parse incoming requests data as json */
 app.use(express.json());
 
+/* enable CORS */
+app.use(function(req, res, next) {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    next();
+  });
+
 /* handle searching */
 app.post('/search', async (req, res) => {
     const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.currentTime();

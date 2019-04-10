@@ -31,7 +31,7 @@ const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes
  * @param {string[]} tags the tags of the question
  * @param {id[]} media the ids of any attached media
  */
-async function addQuestion(user, title, body, tags, media){
+async function addQuestion(user, title, body, tags, media, uuid){
     let dbResult = new DBResult();
     
     media = (media == undefined) ? [] : media;
@@ -40,6 +40,7 @@ async function addQuestion(user, title, body, tags, media){
         type: "_doc",
         refresh: "true",
         body: {
+            "uuid": uuid,
             "user": {
                 "username": user._source.username,
                 "reputation": user._source.reputation
@@ -65,7 +66,7 @@ async function addQuestion(user, title, body, tags, media){
         type: "_doc",
         refresh: "true",
         body: {
-            "qid": response._id,
+            "qid": uuid,
             "authenticated": [],
             "unauthenticated": []
         }
@@ -79,7 +80,7 @@ async function addQuestion(user, title, body, tags, media){
         type: "_doc",
         refresh: "true",
         body: {
-            "qid": response._id,
+            "qid": uuid,
             "upvotes": [],
             "downvotes": []
         }
@@ -90,7 +91,7 @@ async function addQuestion(user, title, body, tags, media){
     }
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = response._id;
+        dbResult.data = response._uuid;
     }
     return dbResult;
 }
@@ -201,7 +202,7 @@ async function updateViewCount(qid, username, ip){
             body: { 
                 query: { 
                     term: { 
-                        "_id": qid
+                        "_id": uuid
                     } 
                 }, 
                 script: { 
@@ -219,7 +220,7 @@ async function updateViewCount(qid, username, ip){
     let question = await client.get({
         index: INDEX_QUESTIONS,
         type: "_doc",
-        id: qid
+        id: uuid
     });
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;

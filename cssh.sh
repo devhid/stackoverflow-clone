@@ -1,6 +1,7 @@
 #!/usr/local/bin/python3
 import sys
 import subprocess
+import requests
 
 user = "root"
 
@@ -22,6 +23,14 @@ if len(sys.argv) != 2 and len(sys.argv) != 4:
 if sys.argv[1] == "list":
     for key in instances.keys():
         print("{key}: {ip}".format(key=key, ip=instances[key]))
+    exit(0)
+
+if sys.argv[1] == "clear":
+    data = { "query": { "match_all": {} } }
+    indices = ["views", "answers", "questions", "users", "q-upvotes", "a-upvotes"]
+
+    for index in indices:
+        response = requests.post("http://admin:ferdman123@107.191.43.73:92/{index}/_delete_by_query".format(index=index), json=data)
     exit(0)
 
 hostname = sys.argv[1]
