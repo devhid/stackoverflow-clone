@@ -2,8 +2,6 @@
 const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
-const crypto = require('crypto');
-const uuidv4 = require('uuid/v4');
 
 /* internal imports */
 const database = require('./database');
@@ -98,9 +96,7 @@ app.post('/questions/add', async(req, res) => {
     }
 
     // perform database operations
-    //let uuid = crypto.randomBytes(16);
-    let uuid = uuidv4();
-    let addRes = await database.addQuestion(user, title, body, tags, media, uuid);
+    let addRes = await database.addQuestion(user, title, body, tags, media);
     
     // check response result
     if (addRes.status === constants.DB_RES_ERROR){
