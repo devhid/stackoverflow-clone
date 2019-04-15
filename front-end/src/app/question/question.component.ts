@@ -77,4 +77,12 @@ export class QuestionComponent implements OnInit {
       console.log(response);
     });
   }
+
+  deleteQuestion(): void {
+    let id = this.retrieveId();
+    this.addqaService.deleteQuestion(id)
+    .subscribe(response =>{
+      console.log(response);
+    })
+  }
 }

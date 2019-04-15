@@ -22,6 +22,11 @@
         {{question.username}}
       </div>
     </div>
+    <div class="question-delete">
+      <button class="question-delete-button" (click)="deleteQuestion()">
+        Delete question
+      </button>
+    </div>
   </div> 
 
   <div *ngIf="acceptedAnswer" class="accepted-answer"> <!--If exist-->
