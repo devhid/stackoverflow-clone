@@ -67,7 +67,7 @@ async function getQuestionsByUser(username){
  * @param {string[]} tags the tags of the question
  * @param {id[]} media the ids of any attached media
  */
-async function addQuestion(user, title, body, tags, media, uuid){
+async function addQuestion(user, title, body, tags, media){
     let dbResult = new DBResult();
     
     media = (media == undefined) ? [] : media;
@@ -75,9 +75,7 @@ async function addQuestion(user, title, body, tags, media, uuid){
         index: INDEX_QUESTIONS,
         type: "_doc",
         refresh: "true",
-        id: crypto.randomBytes(12)
         body: {
-            "uuid": uuid,
             "user": {
                 "username": user._source.username,
                 "reputation": user._source.reputation
