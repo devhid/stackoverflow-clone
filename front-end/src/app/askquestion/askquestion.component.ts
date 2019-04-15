@@ -25,6 +25,7 @@ export class AskQuestionComponent implements OnInit {
 
   askQuestionSubmit() {
     let tags = this.newQuestionForm.value.tags.split(" ");
+    console.log(tags);
     this.addqaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags)
     .subscribe(response => {
       console.log(response);

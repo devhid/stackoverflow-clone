@@ -20,6 +20,17 @@ const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stor
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
+var questionsPosted = {};
+var failedQuestionsPosted = {};
+
+function getQuestions(){
+    return questionsPosted;
+}
+
+function getFailedQuestions(){
+    return failedQuestionsPosted;
+}
+
 async function getQuestionsByUser(username){
     let questions = (await client.search({
         index: INDEX_QUESTIONS,
@@ -36,8 +47,6 @@ async function getQuestionsByUser(username){
     let qids = [];
     for (var question of questions){
         qids.push(question._id);
-        if (question._source.user.username !== username)
-            console.log(question);
     }
     return qids;
 }
@@ -58,7 +67,7 @@ async function getQuestionsByUser(username){
  * @param {string[]} tags the tags of the question
  * @param {id[]} media the ids of any attached media
  */
-async function addQuestion(user, title, body, tags, media){
+async function addQuestion(user, title, body, tags, media, uuid){
     let dbResult = new DBResult();
     
     media = (media == undefined) ? [] : media;
@@ -68,6 +77,7 @@ async function addQuestion(user, title, body, tags, media){
         refresh: "true",
         id: crypto.randomBytes(12)
         body: {
+            "uuid": uuid,
             "user": {
                 "username": user._source.username,
                 "reputation": user._source.reputation
@@ -89,14 +99,27 @@ async function addQuestion(user, title, body, tags, media){
         console.log(response);
         dbResult.status = constants.DB_RES_ERROR;
         dbResult.data = null;
+        
+        if (user._source.username in failedQuestionsPosted){
+            failedQuestionsPosted[user._source.username] += 1;
+        }
+        else {
+            failedQuestionsPosted[user._source.username] = 1;
+        }
         return dbResult;
+    }
+    if (user._source.username in questionsPosted){
+        questionsPosted[user._source.username].push(response._id);
+    }
+    else {
+        questionsPosted[user._source.username] = [response._id];
     }
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
         type: "_doc",
         refresh: "true",
         body: {
-            "qid": response._id,
+            "qid": uuid,
             "authenticated": [],
             "unauthenticated": []
         }
@@ -110,7 +133,7 @@ async function addQuestion(user, title, body, tags, media){
         type: "_doc",
         refresh: "true",
         body: {
-            "qid": response._id,
+            "qid": uuid,
             "upvotes": [],
             "downvotes": []
         }
@@ -121,7 +144,8 @@ async function addQuestion(user, title, body, tags, media){
     }
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = response._source.uuid;
+        //dbResult.data = response._source.uuid;
+        dbResult.data = response._uuid;
     }
     else {
         dbResult.status = constants.DB_RES_ERROR;
@@ -236,7 +260,7 @@ async function updateViewCount(qid, username, ip){
             body: { 
                 query: { 
                     term: { 
-                        "_id": qid
+                        "_id": uuid
                     } 
                 }, 
                 script: { 
@@ -262,7 +286,6 @@ async function updateViewCount(qid, username, ip){
             }
         }
     })).hits.hits[0];
-
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = question;
@@ -282,9 +305,11 @@ async function updateViewCount(qid, username, ip){
  * @param {boolean} update whether or not to update the view count of the question
  */
 async function getQuestion(qid, username, ip, update){
+    console.log(`getQuestion(${qid},${username},${ip},${update})`);
     let dbResult = new DBResult();
     let question = undefined;
     if (update){
+        console.log(`Calling updateViewCount`);
         dbResult = await updateViewCount(qid, username, ip);
         question = dbResult.data;
     }
@@ -295,6 +320,7 @@ async function getQuestion(qid, username, ip, update){
     //  else:
     //      try searching for the question
     if (question === undefined){
+        console.log(`Performing search`);
         question = (await client.search({
             index: INDEX_QUESTIONS,
             type: "_doc",
@@ -315,6 +341,7 @@ async function getQuestion(qid, username, ip, update){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
     }
+    console.log(`Returning from getQuestion`);
     return dbResult;
 }
 
@@ -462,6 +489,7 @@ async function getAnswers(qid){
  * @param {string} username the user who originally posted the question
  */
 async function deleteQuestion(qid, username){
+    console.log(`deleteQuestion(${qid},${username})`);
     let dbResult = new DBResult();
     const getRes = await getQuestion(qid, username);
     let response = undefined;
@@ -472,14 +500,20 @@ async function deleteQuestion(qid, username){
 
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
-        
+        console.log(`Deleting ${qid} by ${username}`);
         // 1) DELETE from INDEX_QUESTIONS the Question document
-        response = await client.delete({
+        response = await client.deleteByQuery({
             index: INDEX_QUESTIONS,
             type: "_doc",
-            id: qid
+            body: {
+                query: {
+                    term: {
+                        _id: qid
+                    }
+                }
+            }
         });
-        if (response.result !== 'deleted'){
+        if (response.deleted != 1){
             console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
             console.log(response);
         }
@@ -842,7 +876,7 @@ async function acceptAnswer(aid, username){
         }
 
         // update the Question document's "accepted_answer_id" field
-        const updateQuestionResponse = client.update({
+        const updateQuestionResponse = await client.update({
             index: INDEX_QUESTIONS,
             type: "_doc",
             id: question._id,
@@ -860,7 +894,7 @@ async function acceptAnswer(aid, username){
         console.log(updateQuestionResponse);
 
         // update the Answer document's "is_accepted" field
-        const updateAnswerResponse = client.update({
+        const updateAnswerResponse = await client.update({
             index: INDEX_ANSWERS,
             type: "_doc",
             id: aid,
@@ -884,6 +918,8 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
+    getQuestions: getQuestions,
+    getFailedQuestions: getFailedQuestions,
     getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,

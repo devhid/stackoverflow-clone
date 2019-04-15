@@ -9,7 +9,8 @@ import { Answer, Answers } from '../classes/answer';
 const httpHeaders = {
   headers: new HttpHeaders({ 
     'Content-Type': 'application/json'
-  })
+  }),
+  withCredentials: true
 };
 
 const url = "http://8.9.11.218";
@@ -22,8 +23,9 @@ export class AddqaService {
     private http: HttpClient,
   ) { }
 
-  addQuestion(title: string, body: string, tag: Array<string>): Observable<any> {
-    let postBody = { title: title, body: body, tag: tag }
+  addQuestion(title: string, body: string, tags: Array<string>): Observable<any> {
+    let postBody = { title: title, body: body, tags: tags, media: null }
+    console.log(postBody);
     return this.http.post(url + "/questions/add", postBody, httpHeaders)
       .pipe(
         catchError(this.handleError)

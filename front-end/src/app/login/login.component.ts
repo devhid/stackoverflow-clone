@@ -36,4 +36,11 @@ export class LoginComponent implements OnInit {
       console.log(response);
     });
   }
+
+  logoutClick() {
+    this.loginService.logout()
+    .subscribe(response => {
+      console.log(response);
+    });
+  }
 }

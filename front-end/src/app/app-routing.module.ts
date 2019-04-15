@@ -11,7 +11,7 @@ import { AskQuestionComponent } from './askquestion/askquestion.component';
 const routes: Routes = [
   { path: '', component: HomeComponent, pathMatch: 'full' },
   { path: 'search', component: HomeComponent},
-  { path: 'login', component: LoginComponent },
+  { path: 'signin', component: LoginComponent },
   { path: 'register', component: RegisterComponent },
   { path: 'question/:id', component: QuestionComponent },
   { path: 'user/:username', component: ProfileComponent },

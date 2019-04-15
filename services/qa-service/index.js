@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const crypto = require('crypto');
+const uuidv4 = require('uuid/v4');
 
 /* internal imports */
 const database = require('./database');
@@ -49,7 +50,34 @@ app.use(function(req, res, next) {
   next();
 });
 
+
+app.get('/questions/all/questions/posted', async(req, res) => {
+    let result = database.getQuestions();
+    return res.json(result);
+});
+
+
+app.get('/questions/all/questions/posted/:username', async(req, res) => {
+    let result = database.getQuestions();
+    let username = req.params.username;
+    return res.json(result[username]);
+});
+
+app.get('/questions/all/questions/failed', async(req, res) => {
+    let result = database.getFailedQuestions();
+    return res.json(result);
+});
+
+
+app.get('/questions/all/questions/failed/:username', async(req, res) => {
+    let result = database.getFailedQuestions();
+    let username = req.params.username;
+    return res.json(result[username]);
+});
+
+
 /* milestone 1 */
+
 app.post('/questions/add', async(req, res) => {
     let response = new APIResponse();
     let data = {};
@@ -70,7 +98,8 @@ app.post('/questions/add', async(req, res) => {
     }
 
     // perform database operations
-    let uuid = crypto.randomBytes(16);
+    //let uuid = crypto.randomBytes(16);
+    let uuid = uuidv4();
     let addRes = await database.addQuestion(user, title, body, tags, media, uuid);
     
     // check response result
@@ -80,11 +109,8 @@ app.post('/questions/add', async(req, res) => {
     else if (addRes.status === constants.DB_RES_SUCCESS){
         response.setOK();
         data[constants.ID_KEY] = addRes.data;
-        console.log(data);
-        console.log(response.toOBJ());
     }
     let merged = {...response.toOBJ(), ...data};
-    console.log(merged);
     return res.json(merged);
 });
 
