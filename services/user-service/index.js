@@ -63,9 +63,9 @@ app.get('/user/:uid/questions', async (req, res) => {
     }
 
     const qids = await database.getUserQuestions(username);
-
     response = generateOK();
     response[constants.QUESTIONS_KEY] = qids;
+    console.log(response);
 
     return res.json(response);
 });

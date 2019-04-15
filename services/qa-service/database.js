@@ -1,6 +1,8 @@
 /* library imports */
 const elasticsearch = require('elasticsearch');
+const crypto = require('crypto');
 
+/* internal imports */
 const constants = require('./constants');
 const DBResult = require('./dbresult').DBResult;
 
@@ -32,16 +34,16 @@ function getFailedQuestions(){
 async function getQuestionsByUser(username){
     let questions = (await client.search({
         index: INDEX_QUESTIONS,
+        size: 10000,
         type: "_doc",
         body: {
             query: {
                 term: {
-                    "user.username": username
+                    "user.username": username.toLowerCase()
                 }
             }
         }
     })).hits.hits;
-
     let qids = [];
     for (var question of questions){
         qids.push(question._id);
@@ -73,12 +75,14 @@ async function addQuestion(user, title, body, tags, media, uuid){
         index: INDEX_QUESTIONS,
         type: "_doc",
         refresh: "true",
+        id: crypto.randomBytes(12)
         body: {
             "uuid": uuid,
             "user": {
                 "username": user._source.username,
                 "reputation": user._source.reputation
             },
+            "uuid": uuid,
             "title": title,
             "body": body,
             "score": 0,
@@ -140,6 +144,7 @@ async function addQuestion(user, title, body, tags, media, uuid){
     }
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
+        //dbResult.data = response._source.uuid;
         dbResult.data = response._uuid;
     }
     else {
@@ -281,7 +286,6 @@ async function updateViewCount(qid, username, ip){
             }
         }
     })).hits.hits[0];
-
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = question;
