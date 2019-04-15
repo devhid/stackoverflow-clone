@@ -44,17 +44,6 @@ async function getUserQuestions(username) {
         for(var question of questions) {
             qids.push(question._id);
         }
-        
-        for (var i in questions){
-            let q1 = questions[i];
-            for (var j = i+1; j < questions.length; j++){
-                let q2 = questions[j];
-                if (q1._source.title == q2._source.title){
-                    console.log(q1);
-                    console.log(q2);
-                }
-            }
-        }
 
         return qids;
     }
