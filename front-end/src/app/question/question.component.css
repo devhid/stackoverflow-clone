@@ -9,6 +9,7 @@
     display: flex;
     width: 100%;
     justify-content: space-around;
+    margin-bottom: 5%;
 }
 
 .question-score-section{
@@ -30,5 +31,9 @@
     width: 100%;
     justify-content: space-around;
     align-items: center;
+    margin-bottom: 1%;
 }
 
+.answer-score-section {
+    width: 10%;
+}

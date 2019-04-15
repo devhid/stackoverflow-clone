@@ -30,6 +30,7 @@ export class SearchResultsComponent implements OnInit {
       .subscribe(response => {
         console.log(response);
         this.questions = response;
+        
       })
   }
 }

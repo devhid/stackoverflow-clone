@@ -20,8 +20,9 @@ export class HomeComponent implements OnInit {
   ) { }
 
   ngOnInit() {
+    this.questions = [];
     let query = this.transferService.getData();
-    console.log(query);
+    console.log("query: " + query);
     this.searchQuestions(query);
   }
 
