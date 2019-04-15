@@ -80,7 +80,6 @@ async function addQuestion(user, title, body, tags, media){
                 "username": user._source.username,
                 "reputation": user._source.reputation
             },
-            "uuid": uuid,
             "title": title,
             "body": body,
             "score": 0,
@@ -117,7 +116,7 @@ async function addQuestion(user, title, body, tags, media){
         type: "_doc",
         refresh: "true",
         body: {
-            "qid": uuid,
+            "qid": response._id,
             "authenticated": [],
             "unauthenticated": []
         }
@@ -131,7 +130,7 @@ async function addQuestion(user, title, body, tags, media){
         type: "_doc",
         refresh: "true",
         body: {
-            "qid": uuid,
+            "qid": response._id,
             "upvotes": [],
             "downvotes": []
         }
@@ -143,7 +142,7 @@ async function addQuestion(user, title, body, tags, media){
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
         //dbResult.data = response._source.uuid;
-        dbResult.data = response._uuid;
+        dbResult.data = response._id;
     }
     else {
         dbResult.status = constants.DB_RES_ERROR;
