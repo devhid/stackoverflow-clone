@@ -2,6 +2,7 @@
 const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
+const crypto = require('crypto');
 
 /* internal imports */
 const database = require('./database');
@@ -42,9 +43,9 @@ app.use(express.json());
 
 /* enable CORS */
 app.use(function(req, res, next) {
-  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   next();
 });
 
@@ -69,7 +70,8 @@ app.post('/questions/add', async(req, res) => {
     }
 
     // perform database operations
-    let addRes = await database.addQuestion(user, title, body, tags, media);
+    let uuid = crypto.randomBytes(16);
+    let addRes = await database.addQuestion(user, title, body, tags, media, uuid);
     
     // check response result
     if (addRes.status === constants.DB_RES_ERROR){
@@ -328,6 +330,8 @@ app.get('/questions/:username/questions', async(req, res) => {
     let username = req.params.username;
 
     let result = await database.getQuestionsByUser(username);
+    console.log(result);
+    console.log(`${result.length} results`);
     let response = {'questions': result};
     return res.json(response);
 });

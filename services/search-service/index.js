@@ -16,8 +16,18 @@ const PORT = 8005;
 /* parse incoming requests data as json */
 app.use(express.json());
 
+/* enable CORS */
+/* enable CORS */
+app.use(function(req, res, next) {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  next();
+});
+
 /* handle searching */
 app.post('/search', async (req, res) => {
+    console.log(req.body);
     const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.currentTime();
     const limit = Math.min(constants.DEFAULT_MAX_LIMIT, req.body['limit'] ? req.body['limit'] : constants.DEFAULT_LIMIT);
     const q = req.body['q'] ? req.body['q'] : constants.DEFAULT_Q
@@ -35,6 +45,8 @@ app.post('/search', async (req, res) => {
     const searchResults = await database.searchQuestions(timestamp, limit, q, sort_by, tags, has_media, accepted);
 
     response = { "status": "OK", "questions": searchResults };
+//    console.log(response);
+    console.log("length: " + response['questions'].length);
     return res.json(response);
 
 });

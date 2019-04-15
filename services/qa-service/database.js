@@ -1,6 +1,8 @@
 /* library imports */
 const elasticsearch = require('elasticsearch');
+const crypto = require('crypto');
 
+/* internal imports */
 const constants = require('./constants');
 const DBResult = require('./dbresult').DBResult;
 
@@ -21,19 +23,21 @@ const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes
 async function getQuestionsByUser(username){
     let questions = (await client.search({
         index: INDEX_QUESTIONS,
+        size: 10000,
         type: "_doc",
         body: {
             query: {
                 term: {
-                    "user.username": username
+                    "user.username": username.toLowerCase()
                 }
             }
         }
     })).hits.hits;
-
     let qids = [];
     for (var question of questions){
-        qids.push(question._source._id);
+        qids.push(question._id);
+        if (question._source.user.username !== username)
+            console.log(question);
     }
     return qids;
 }
@@ -62,11 +66,13 @@ async function addQuestion(user, title, body, tags, media){
         index: INDEX_QUESTIONS,
         type: "_doc",
         refresh: "true",
+        id: crypto.randomBytes(12)
         body: {
             "user": {
                 "username": user._source.username,
                 "reputation": user._source.reputation
             },
+            "uuid": uuid,
             "title": title,
             "body": body,
             "score": 0,
@@ -115,7 +121,7 @@ async function addQuestion(user, title, body, tags, media){
     }
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = response._id;
+        dbResult.data = response._source.uuid;
     }
     else {
         dbResult.status = constants.DB_RES_ERROR;
