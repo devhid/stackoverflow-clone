@@ -97,7 +97,6 @@ app.post('/questions/add', async(req, res) => {
     }
 
     // perform database operations
-    let uuid = uuidv4();
     let addRes = await database.addQuestion(user, title, body, tags, media, uuid);
     
     // check response result

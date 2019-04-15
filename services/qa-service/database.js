@@ -273,10 +273,6 @@ async function updateViewCount(qid, username, ip){
     let question = (await client.search({
         index: INDEX_QUESTIONS,
         type: "_doc",
-<<<<<<< HEAD
-        id: uuid
-    });
-=======
         body: {
             query: {
                 term: {
@@ -286,7 +282,6 @@ async function updateViewCount(qid, username, ip){
         }
     })).hits.hits[0];
 
->>>>>>> f9dacd71027e8358c792ea9908af730e6d7ed149
     if (question){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = question;
