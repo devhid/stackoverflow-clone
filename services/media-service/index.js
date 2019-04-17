@@ -69,7 +69,13 @@ app.post('/addmedia', upload.single('content'), async (req, res) => {
     const mimetype = req.file.mimetype;
 
     /* get generated id from uploading media */
-    const mediaId = await database.uploadMedia(filename, content, mimetype);
+    let mediaId = null;
+    try {
+        mediaId = await database.uploadMedia(filename, content, mimetype);
+    } catch(err) {
+        response[constants.STATUS_ERR] = err;
+        return res.json(response);
+    }
 
     response = generateOK();
     response[constants.ID_KEY] = mediaId;
@@ -79,7 +85,7 @@ app.post('/addmedia', upload.single('content'), async (req, res) => {
 app.get('/media/:id', async (req, res) => {
     let response = generateERR();
 
-    const mediaId = req.query['id'];
+    const mediaId = req.params['id'];
     let image = null;
 
     try {
