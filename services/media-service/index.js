@@ -1,0 +1,108 @@
+/* library imports */
+const express = require('express');
+const session = require('express-session');
+const cassandra = require('cassandra-driver');
+const multer = require('multer');
+const RedisStore = require('connect-redis')(session);
+
+/* internal imports */
+const database = require('./database');
+const constants = require('./constants');
+
+/* initialize express application */
+const app = express();
+require('express-async-errors');
+
+/* the port the server will listen on */
+const PORT = 8007;
+
+/* image upload destination */
+const upload = multer();
+
+/* options for the redis store */
+const redisOptions = {
+    host: '64.52.162.153',
+    port: 6379,
+    pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
+};
+
+/* options for the session */
+const sessionOptions = {
+    name: 'soc_login',
+    secret: 'EditThisLaterWithARealSecret',
+    unset: 'destroy',
+    resave: false,
+    saveUninitialized: true,
+    logErrors: true,
+    store: new RedisStore(redisOptions)
+};
+
+/* enable CORS */
+app.use(function(req, res, next) {
+    res.set('Access-Control-Allow-Origin', '*');
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    next();
+  });
+
+  
+/* handle user sessions */
+app.use(session(sessionOptions));
+
+/* parse incoming requests data as json */
+app.use(express.json());
+
+app.post('/addmedia', multer.single('content'), async (req, res) => {
+    let response = generateERR();
+
+    if(req.user === undefined) {
+        response[constants.STATUS_ERR] = constants.ERR_NOT_LOGGED_IN;
+        return res.json(response);
+    }
+
+    if(req.file === undefined) {
+        response[constants.STATUS_ERR] = constants.ERR_MISSING_FILE;
+        return res.json(response);
+    }
+
+    const filename = req.file.originalname;
+    const content = req.file.buffer;
+    const mimetype = req.file.mimetype;
+
+    database.uploadMedia(filename, content, mimetype);
+
+    response = generateOK();
+    return res.json(response);
+});
+
+app.get('/media/:id', async (req, res) => {
+    let response = generateERR();
+
+    if(req.user === undefined) {
+        response[constants.STATUS_ERR] = constants.ERR_NOT_LOGGED_IN;
+        return res.json(response);
+    }
+
+    const filename = req.query['filename'];
+    const image = await getMedia(filename);
+
+    res.set({ 'Content-Type': image.mimetype });
+    return res.send(image.content);
+});
+
+/* helper funcs */
+function generateOK(){
+    let response = {};
+    response[constants.STATUS_KEY] = constants.STATUS_OK;
+    return response;
+}
+
+function generateERR(){
+    let response = {};
+    response[constants.STATUS_KEY] = constants.STATUS_ERR;
+    response[constants.STATUS_ERR] = '';
+    return response;
+}
+
+/* Start the server. */
+app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
