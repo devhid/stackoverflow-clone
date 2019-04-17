@@ -43,16 +43,15 @@ app.use(function(req, res, next) {
     res.set('Access-Control-Allow-Headers', 'Content-Type');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     next();
-  });
+});
 
-  
 /* handle user sessions */
 app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
 
-app.post('/addmedia', multer.single('content'), async (req, res) => {
+app.post('/addmedia', upload.single('content'), async (req, res) => {
     let response = generateERR();
 
     if(req.user === undefined) {
@@ -69,22 +68,26 @@ app.post('/addmedia', multer.single('content'), async (req, res) => {
     const content = req.file.buffer;
     const mimetype = req.file.mimetype;
 
-    database.uploadMedia(filename, content, mimetype);
+    /* get generated id from uploading media */
+    const mediaId = await database.uploadMedia(filename, content, mimetype);
 
     response = generateOK();
+    response[constants.ID_KEY] = mediaId;
     return res.json(response);
 });
 
 app.get('/media/:id', async (req, res) => {
     let response = generateERR();
 
-    if(req.user === undefined) {
-        response[constants.STATUS_ERR] = constants.ERR_NOT_LOGGED_IN;
+    const mediaId = req.query['id'];
+    let image = null;
+
+    try {
+        image = await database.getMedia(mediaId);
+    } catch(err) {
+        response[constants.STATUS_ERR] = err;
         return res.json(response);
     }
-
-    const filename = req.query['filename'];
-    const image = await getMedia(filename);
 
     res.set({ 'Content-Type': image.mimetype });
     return res.send(image.content);
@@ -105,4 +108,4 @@ function generateERR(){
 }
 
 /* Start the server. */
-app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}...`));
