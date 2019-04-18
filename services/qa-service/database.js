@@ -38,8 +38,8 @@ async function getQuestionsByUser(username){
         type: "_doc",
         body: {
             query: {
-                term: {
-                    "user.username": username.toLowerCase()
+                match: {
+                    "user.username": username
                 }
             }
         }

@@ -15,7 +15,7 @@ const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stor
 async function getUser(username) {
     const user = (await client.search({
         index: INDEX_USERS,
-        body: { query: { term: { "username": username } } }
+        body: { query: { match: { "username": username } } }
     }))['hits']['hits'];
 
     if(user.length == 0) {
@@ -33,7 +33,7 @@ async function getUserQuestions(username) {
     const questions = (await client.search({
         index: INDEX_QUESTIONS,
         size: 1000,
-        body: { query: { term: { "user.username": username.toLowerCase() } } }
+        body: { query: { match: { "user.username": username } } }
     }))['hits']['hits'];
 
     if(questions.length == 0) {
@@ -54,7 +54,7 @@ async function getUserAnswers(username) {
     const answers = (await client.search({
         index: INDEX_ANSWERS,
         size: 1000,
-        body: { query: { term: { "user": username.toLowerCase() } } }
+        body: { query: { match: { "user": username } } }
     }))['hits']['hits'];
 
     if(answers.length == 0) {
