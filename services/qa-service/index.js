@@ -48,34 +48,7 @@ app.use(function(req, res, next) {
   next();
 });
 
-
-app.get('/questions/all/questions/posted', async(req, res) => {
-    let result = database.getQuestions();
-    return res.json(result);
-});
-
-
-app.get('/questions/all/questions/posted/:username', async(req, res) => {
-    let result = database.getQuestions();
-    let username = req.params.username;
-    return res.json(result[username]);
-});
-
-app.get('/questions/all/questions/failed', async(req, res) => {
-    let result = database.getFailedQuestions();
-    return res.json(result);
-});
-
-
-app.get('/questions/all/questions/failed/:username', async(req, res) => {
-    let result = database.getFailedQuestions();
-    let username = req.params.username;
-    return res.json(result[username]);
-});
-
-
 /* milestone 1 */
-
 app.post('/questions/add', async(req, res) => {
     let response = new APIResponse();
     let data = {};
@@ -90,7 +63,12 @@ app.post('/questions/add', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
-        console.log("missing params");
+        if (user == undefined){
+            res.status(constants.STATUS_401);
+        }
+        else {
+            res.status(constants.STATUS_400);
+        }   
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -100,9 +78,11 @@ app.post('/questions/add', async(req, res) => {
     
     // check response result
     if (addRes.status === constants.DB_RES_ERROR){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_GENERAL);
     }
     else if (addRes.status === constants.DB_RES_SUCCESS){
+        res.status(constants.STATUS_200);
         response.setOK();
         data[constants.ID_KEY] = addRes.data;
     }
@@ -125,6 +105,7 @@ app.get('/questions/:qid', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (qid == undefined){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -134,9 +115,11 @@ app.get('/questions/:qid', async(req, res) => {
     
     // check response result
     if (getRes.status === constants.DB_RES_Q_NOTFOUND){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (getRes.status === constants.DB_RES_SUCCESS){
+        res.status(constants.STATUS_200);
         response.setOK();
         let question = getRes.data;
         question._source['id'] = question._id;
@@ -160,6 +143,12 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (qid == undefined || body == undefined || user == undefined){
+        if (user == undefined){
+            res.status(constants.STATUS_401);
+        }
+        else {
+            res.status(constants.STATUS_400);
+        }
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -169,12 +158,15 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     
     // check response result
     if (addRes.status === constants.DB_RES_Q_NOTFOUND){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (addRes.status === constants.DB_RES_ERROR){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_GENERAL);
     }
     else if (addRes.status === constants.DB_RES_SUCCESS){
+        res.status(constants.STATUS_200);
         response.setOK();
         data[constants.ID_KEY] = addRes.data;
     }
@@ -191,6 +183,7 @@ app.get('/questions/:qid/answers', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (qid == undefined){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -200,9 +193,11 @@ app.get('/questions/:qid/answers', async(req, res) => {
     
     // check response result
     if (getRes.status === constants.DB_RES_Q_NOTFOUND){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (getRes.status === constants.DB_RES_SUCCESS){
+        res.status(constants.STATUS_200);
         response.setOK();
         data[constants.ANSWERS_KEY] = getRes.data;
     }
@@ -222,7 +217,12 @@ app.delete('/questions/:qid', async(req, res) => {
     
     // check if any mandatory parameters are undefined
     if (user == undefined || qid == undefined){
-        res.status(403);
+        if (user == undefined){
+            res.status(constants.STATUS_401);
+        }
+        else {
+            res.status(constants.STATUS_400);
+        }
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -232,15 +232,15 @@ app.delete('/questions/:qid', async(req, res) => {
     
     // check response result
     if (deleteRes.status === constants.DB_RES_NOT_ALLOWED){
-        res.status(403);
+        res.status(constants.STATUS_403);
         response.setERR(constants.ERR_DEL_NOTOWN_Q);
     }
     else if (deleteRes.status === constants.DB_RES_Q_NOTFOUND){
-        res.status(404);
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (deleteRes.status === constants.DB_RES_SUCCESS){
-        res.status(200);
+        res.status(constants.STATUS_200);
         response.setOK();
     }
     return res.json(response.toOBJ());
@@ -257,7 +257,13 @@ app.post('/questions/:qid/upvote', async(req, res) => {
     let upvote = req.body.upvote;
 
     // check if any mandatory parameters are unspecified
-    if (username == undefined || qid == undefined || upvote == undefined){
+    if (user == undefined || qid == undefined || upvote == undefined){
+        if (user == undefined){
+            res.status(constants.STATUS_401);
+        }
+        else {
+            res.status(constants.STATUS_400);
+        }
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -267,12 +273,15 @@ app.post('/questions/:qid/upvote', async(req, res) => {
     
     // check response result
     if (updateRes.status === constants.DB_RES_Q_NOTFOUND){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (updateRes.status === constants.DB_RES_ERROR){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_GENERAL);
     }
     else if (updateRes.status === constants.DB_RES_SUCCESS){
+        res.status(constants.STATUS_200);
         response.setOK();
     }
 
@@ -290,7 +299,13 @@ app.post('/answers/:aid/upvote', async(req, res) => {
     let upvote = req.body.upvote;
 
     // check if any mandatory parameters are unspecified
-    if (username == undefined || aid == undefined || upvote == undefined){
+    if (user == undefined || aid == undefined || upvote == undefined){
+        if (user == undefined){
+            res.status(constants.STATUS_401);
+        }
+        else {
+            res.status(constants.STATUS_400);
+        }
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -300,12 +315,15 @@ app.post('/answers/:aid/upvote', async(req, res) => {
 
     // check response result
     if (updateRes.status === constants.DB_RES_A_NOTFOUND){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_A_NOTFOUND);
     }
     else if (updateRes.status === constants.DB_RES_ERROR){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_GENERAL);
     }
     else {
+        res.status(constants.STATUS_200);
         response.setOK();
     }
 
@@ -322,7 +340,13 @@ app.post('/answers/:aid/accept', async(req, res) => {
     let aid = req.params.aid;
 
     // check if any mandatory parameters are unspecified
-    if (username == undefined || aid == undefined){
+    if (user == undefined || aid == undefined){
+        if (user == undefined){
+            res.status(constants.STATUS_401);
+        }
+        else {
+            res.status(constants.STATUS_400);
+        }
         response.setERR(constants.ERR_MISSING_PARAMS);
         return res.json(response.toOBJ());
     }
@@ -332,15 +356,23 @@ app.post('/answers/:aid/accept', async(req, res) => {
 
     // check response result
     if (acceptRes.status === constants.DB_RES_Q_NOTFOUND){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (acceptRes.status === constants.DB_RES_A_NOTFOUND){
+        res.status(constants.STATUS_400);
         response.setERR(constants.ERR_A_NOTFOUND);
     }
     else if (acceptRes.status === constants.DB_RES_NOT_ALLOWED){
+        res.status(constants.STATUS_403);
+        response.setERR(constants.ERR_NOT_ALLOWED);
+    }
+    else if (acceptRes.status === constants.DB_RES_ALRDY_ACCEPTED){
+        res.status(constants.STATUS_409);
         response.setERR(constants.ERR_NOT_ALLOWED);
     }
     else if (acceptRes.status === constants.DB_RES_SUCCESS){
+        res.status(constants.STATUS_200);
         response.setOK();
     }
 

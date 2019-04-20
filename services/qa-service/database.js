@@ -14,22 +14,12 @@ const client = new elasticsearch.Client({
 const INDEX_QUESTIONS = "questions";  // INDEX_QUESTIONS is where questions are stored
 const INDEX_VIEWS = "views";          // INDEX_VIEWS is where views for a question are stored
 const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stored
+const INDEX_USERS = "users";          // INDEX_USERS is where users are stored
 
 // NOTE: for INDEX_Q_UPVOTES and INDEX_A_UPVOTES, searching by term for 'qid' or 'aid' requires
 //          specifying it as 'qid.keyword' and 'aid.keyword' due to mapping.
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
-
-var questionsPosted = {};
-var failedQuestionsPosted = {};
-
-function getQuestions(){
-    return questionsPosted;
-}
-
-function getFailedQuestions(){
-    return failedQuestionsPosted;
-}
 
 async function getQuestionsByUser(username){
     let questions = (await client.search({
@@ -49,6 +39,49 @@ async function getQuestionsByUser(username){
         qids.push(question._id);
     }
     return qids;
+}
+
+/**
+ * Gets the username of a User by a post.
+ * @param {string} qid the _id of the question (if the post is a Question)
+ * @param {string} aid the _id of the answer (if the post is an Answer)
+ */
+async function getUserByPost(qid, aid){
+    let which_index = (aid == undefined) ? INDEX_QUESTIONS : INDEX_ANSWERS;
+    let which_id = (aid == undefined) ? "qid" : "aid";
+    let which_id_value = (aid == undefined) ? qid : aid;
+    let post = (await client.search({
+        index: which_index,
+        body: {
+            query: {
+                term: {
+                    [which_id]: which_id_value
+                }
+            }
+        }
+    })).hits.hits[0];
+    let user = (which_index == INDEX_QUESTIONS) ? post._source.user.username : post._source.user;
+    return user;
+}
+
+/** /questions/:id/upvote, /answers/:id/upvote
+ * Retrieves the reputation of a specified user.
+ * @param {string} username the username of the user
+ */
+async function getReputation(username){
+    let user = (await client.search({
+        index: INDEX_USERS,
+        size: 1,
+        type: "_doc",
+        body: {
+            query: {
+                match: {
+                    "username": username
+                }
+            }
+        }
+    })).hits.hits[0];
+    return user._source.reputation;
 }
 
 /* milestone 1 */
@@ -96,20 +129,7 @@ async function addQuestion(user, title, body, tags, media){
         console.log(response);
         dbResult.status = constants.DB_RES_ERROR;
         dbResult.data = null;
-        
-        if (user._source.username in failedQuestionsPosted){
-            failedQuestionsPosted[user._source.username] += 1;
-        }
-        else {
-            failedQuestionsPosted[user._source.username] = 1;
-        }
         return dbResult;
-    }
-    if (user._source.username in questionsPosted){
-        questionsPosted[user._source.username].push(response._id);
-    }
-    else {
-        questionsPosted[user._source.username] = [response._id];
     }
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
@@ -132,7 +152,8 @@ async function addQuestion(user, title, body, tags, media){
         body: {
             "qid": response._id,
             "upvotes": [],
-            "downvotes": []
+            "downvotes": [],
+            "waived_downvotes": []
         }
     });
     if (upvoteResponse.result !== "created"){
@@ -165,7 +186,6 @@ async function updateViewCount(qid, username, ip){
         index: INDEX_VIEWS,
         body: {
             query: {
-                // match_all: {}
                 term: {
                     "qid": qid
                 }
@@ -257,7 +277,7 @@ async function updateViewCount(qid, username, ip){
             body: { 
                 query: { 
                     term: { 
-                        "_id": uuid
+                        "_id": qid
                     } 
                 }, 
                 script: { 
@@ -403,7 +423,8 @@ async function addAnswer(qid, username, body, media){
         body: {
             "aid": response._id,
             "upvotes": [],
-            "downvotes": []
+            "downvotes": [],
+            "waived_downvotes": []
         }
     });
     if (upvoteResponse.result !== "created"){
@@ -466,7 +487,6 @@ async function getAnswers(qid){
 
     dbResult.status = constants.DB_RES_SUCCESS;
     dbResult.data = transformedAnswers;
-
     return dbResult;
 }
 
@@ -584,13 +604,18 @@ async function deleteQuestion(qid, username){
  * @param {string} aid the _id of the answer (if used for undoing the vote to an answer)
  * @param {string} username the user who wishes to undo his vote for the question/answer
  * @param {boolean} upvote whether the user's vote is in upvotes or downvotes
+ * @param {boolean} waived whether or not the user's vote was waived
+ * 
+ * Currently, only waived_downvotes are supported. Don't call this with (upvote,waived) == (true,true).
  */
-async function undoVote(qid, aid, username, upvote){
+async function undoVote(qid, aid, username, upvote, waived){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
+    if (waived)
+        arr = "waived_" + arr;
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.${param_user}))`
     const undoVoteResponse = await client.updateByQuery({
@@ -627,13 +652,18 @@ async function undoVote(qid, aid, username, upvote){
  * @param {string} aid the _id of the answer (if used for adding the vote to an answer)
  * @param {string} username the user who wishes to add his vote for the question/answer
  * @param {boolean} upvote whether the user's vote is to upvote or downvote
+ * @param {boolean} waived whether or not the user's vote is waived
+ * 
+ * Currently, only waived_downvotes are supported. Don't call this with (upvote,waived) == (true,true).
  */
-async function addVote(qid, aid, username, upvote){
+async function addVote(qid, aid, username, upvote, waived){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
+    if (waived)
+        arr = "waived_" + arr;
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.add(${param_user})`
     const addVoteResponse = await client.updateByQuery({
@@ -706,6 +736,43 @@ async function updateScore(qid, aid, amount){
 }
 
 /**
+ * Updates the reputation of a User by the specified amount.
+ * @param {string} username username of the user
+ * @param {int} amount amount by which to update the reputation
+ */
+async function updateReputation(username, amount){
+    let dbResult = new DBResult();
+    let param_amount = "amount";
+    let inline_script = `ctx._source.reputation += params.${param_amount}`
+    const updateResponse = await client.updateByQuery({
+        index: INDEX_USERS,
+        type: "_doc",
+        refresh: "true",
+        body: { 
+            query: { 
+                match: { 
+                    "username": username
+                } 
+            }, 
+            script: { 
+                lang: "painless",
+                inline: inline_script,
+                params: {
+                    [param_amount]: amount
+                }
+            } 
+        }
+    });
+    let success = (updateResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    if (success !== DB_RES_SUCCESS){
+        console.log(`Failed updateReputation(${username}, ${amount})`);
+    }
+    dbResult.status = success;
+    dbResult.data = null;
+    return dbResult;
+}
+
+/**
  * Up/downvotes the specified Question or Answer according to the user.
  * @param {string} qid the _id of the question (if used for adding the vote to a question)
  * @param {string} aid the _id of the answer (if used for adding the vote to an answer)
@@ -717,6 +784,8 @@ async function upvoteQA(qid, aid, username, upvote){
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
+    
+    // check that the specified question or answer exists
     let qa_votes = (await client.search({
         index: which_index,
         body: {
@@ -728,7 +797,7 @@ async function upvoteQA(qid, aid, username, upvote){
         }
     })).hits.hits[0];
 
-    // if it could not be found, the question does not exist
+    // if it could not be found, the question or answer does not exist
     if (qa_votes == undefined){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
@@ -736,43 +805,60 @@ async function upvoteQA(qid, aid, username, upvote){
     }
 
     // check if the user downvoted or upvoted the question
-    let score_diff = 0;
+    let score_diff = 0;     // the difference in the "score" of a question
+    let rep_diff = 0;       // the difference in the "reputation" of a user, >= 1
     let upvoted = qa_votes.upvotes.includes(username);
     let downvoted  = qa_votes.downvotes.includes(username);
+    let waived = qa_votes.waived_downvotes.includes(username);
+    let poster = await getUserByPost(qid,aid);
 
     // if the user already voted, undo the vote
-    if (upvoted || downvoted){
+    if (upvoted || downvoted || waived){
         let in_upvotes = (upvoted) ? true : false;
-        // if upvoted, then we "undo" the upvote by subtracting 1 from the score
-        //  else, we "undo" the downvote by adding 1 to the score
+        // if the downvote was waived, then there should be no rep diff from undoing it
+        //      else if it was upvoted, then subtract 1
+        //      else if it was downvoted, add 1
+        rep_diff = (waived) ? 0 : ((upvoted) ? -1 : 1);
         score_diff = (upvoted) ? -1 : 1;
-        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes);
+        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
         if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
     }
+    // if the user wishes to UPVOTE but previously DOWNVOTED, we must add the UPVOTE
+    // if the user wishes to DOWNVOTE but previously UPVOTED, we must add the DOWNVOTE
     if ((upvote && downvoted) || (!upvote && upvoted)){
-        let addVoteRes = await addVote(qid, aid, username, upvote);
-        if (undoVoteRes.status === constants.DB_RES_SUCCESS){
-            // if the user wishes to UPVOTE but DOWNVOTED, we must add the UPVOTE
-            if (upvote && downvoted){
-                score_diff += 1;
-            }
-            // if the user wishes to DOWNVOTE but UPVOTED, we must add the DOWNVOTE
-            else if (!upvote && upvoted){
-                score_diff -= 1;
+        let waive_vote = false;
+        rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
+        score_diff = (upvote && downvoted) ? score_diff + 1 : score_diff - 1;
+
+        // check if we need to waive this user's vote
+        if (!upvote){
+            let user_rep = await getReputation(poster);
+            if (user_rep + rep_diff < 1){
+                rep_diff = 1 - user_rep;    // later, user_rep + rep_diff = user_rep + (1 - user_rep) = 1
+                waive_vote = true;
             }
         }
-        else {
+
+        let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
+        if (addVoteRes.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
     }
 
     // update the score of the question or answer
-    let updateRes = await updateScore(qid, aid, score_diff);
-    if (updateRes.status !== constants.DB_RES_SUCCESS){
+    let updateScoreRes = await updateScore(qid, aid, score_diff);
+    if (updateScoreRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
+
+    // update the reputation of the poster
+    let updateRepRes = await updateReputation(poster, rep_diff);
+    if (updateRepRes.status !== constants.DB_RES_SUCCESS){
+        console.log(`Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+    }
+
     return updateRes;
 }
 
@@ -806,6 +892,8 @@ async function upvoteAnswer(aid, username, upvote){
  * Accepts an Answer if the requestor is the original asker of the Question.
  * @param {string} aid the _id of the answer
  * @param {string} username the user who sent the request
+ * 
+ * TODO: cleanup, cannot accept a diff answer
  */
 async function acceptAnswer(aid, username){
     let dbResult = new DBResult();
@@ -846,6 +934,13 @@ async function acceptAnswer(aid, username){
     
     if (!question){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
+        return dbResult;
+    }
+
+    // check that the Question does not already have an accepted answer
+    if (question._source.accepted_answer_id != null){
+        dbResult.status = constants.DB_RES_ALRDY_ACCEPTED;
         dbResult.data = null;
         return dbResult;
     }
@@ -915,8 +1010,6 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
-    getQuestions: getQuestions,
-    getFailedQuestions: getFailedQuestions,
     getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,
