@@ -3,13 +3,14 @@ const express = require('express');
 
 /* internal imports */
 const database = require('./database');
+const constants = require('./constants');
 
 /* initialize express application */
 const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 8001;
+const PORT = 2000;
 
 /* connect to the email server */
 const emailjs = require('emailjs')
@@ -22,6 +23,14 @@ const mail_server = emailjs.server.connect({
 
 /* parse incoming requests data as json */
 app.use(express.json());
+
+/* enable CORS */
+app.use(function(req, res, next) {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  next();
+});
 
 app.get('/emailtest', async(req, res) => {
     console.log(mail_server);
@@ -38,6 +47,7 @@ app.get('/emailtest', async(req, res) => {
 
 /* Register a user if they do not already exist. */
 app.post('/adduser', async (req, res) => {
+    console.log(req.body);
     const email = req.body["email"];
     const username = req.body["username"];
     const password = req.body["password"];
@@ -45,12 +55,14 @@ app.post('/adduser', async (req, res) => {
     let response = {};
 
     if(!notEmpty([email, username, password])) {
+        res.status(constants.STATUS_400);
         response = {"status": "error", "error": "One or more fields are empty."};
         return res.json(response);
     }
     let userExists = await database.userExists(email, username);
 
     if(userExists) {
+        res.status(constants.STATUS_400)
         response = {"status": "error", "error": "A user with that email or username already exists."};
         return res.json(response);
     }
@@ -68,6 +80,7 @@ app.post('/adduser', async (req, res) => {
             //console.log(message);
     });
 
+    res.status = constants.STATUS_200;
     response = {"status": "OK"};
     return res.json(response);
 });

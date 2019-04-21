@@ -1,0 +1,26 @@
+---
+# 
+# Installing Cassandra 2.2
+#
+
+# Add Cassandra repository signing keys to APT
+
+- name: Add Apache Cassandra repository keys
+  apt_key:
+    url: https://www.apache.org/dist/cassandra/KEYS
+    state: present
+
+# Add Cassandra repository to APT
+
+- name: Add Apache repository of Cassandra
+  apt_repository:
+    repo: deb http://www.apache.org/dist/cassandra/debian 22x main
+    filename: cassandra
+    state: present
+
+# Update Apt Cache and Install Cassandra 2.2
+
+- name: Update APT cache and install Cassandra 2.2
+  apt:
+    name: cassandra
+    update_cache: yes

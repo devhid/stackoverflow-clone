@@ -1,0 +1,11 @@
+---
+#
+# Install Nginx
+#
+
+# Install Nginx from APT
+
+  - name: Update APT cache and install Nginx
+    apt:
+      name: nginx
+      update_cache: yes

@@ -17,22 +17,12 @@ const PORT = 8005;
 app.use(express.json());
 
 /* enable CORS */
-<<<<<<< HEAD
-/* enable CORS */
-app.use(function(req, res, next) {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  next();
-});
-=======
 app.use(function(req, res, next) {
     res.set('Access-Control-Allow-Origin', '*');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     next();
-  });
->>>>>>> 461fb2ffa23b195bf3c97ea4855d28e40cbf19a5
+});
 
 /* handle searching */
 app.post('/search', async (req, res) => {
@@ -48,6 +38,7 @@ app.post('/search', async (req, res) => {
     let response = {};
 
     if(sort_by != "timestamp" && sort_by != "score") {
+        res.status = constants.status_400;
         response = { "status":"error", "message": constants.ERR_INVALID_SORT };
     }
 
@@ -56,6 +47,7 @@ app.post('/search', async (req, res) => {
     response = { "status": "OK", "questions": searchResults };
 //    console.log(response);
     console.log("length: " + response['questions'].length);
+    res.status = constants.STATUS_200;
     return res.json(response);
 
 });

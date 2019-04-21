@@ -30,12 +30,14 @@ app.get('/user/:uid', async (req, res) => {
 
     const username = req.params['uid'];
     if(username === undefined) {
+        res.status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_MISSING_UID;
         return res.json(response);
     }
 
     const user = await database.getUser(username);
     if(user === null) {
+        res.status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
         return res.json(response);
     }
@@ -43,6 +45,7 @@ app.get('/user/:uid', async (req, res) => {
     response = generateOK();
     response[constants.USER_KEY] = user;
 
+    res.status = constants.STATUS_200;
     return res.json(response);
 });
 
@@ -52,12 +55,14 @@ app.get('/user/:uid/questions', async (req, res) => {
 
     const username = req.params['uid'];
     if(username === undefined) {
+        res.status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_MISSING_UID;
         return res.json(response);
     }
 
     const user = await database.getUser(username);
     if(user === null) {
+        res.status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
         return res.json(response);
     }
@@ -67,6 +72,7 @@ app.get('/user/:uid/questions', async (req, res) => {
     response[constants.QUESTIONS_KEY] = qids;
     console.log(response);
 
+    res.status = constants.STATUS_200;
     return res.json(response);
 });
 
@@ -76,12 +82,14 @@ app.get('/user/:uid/answers', async (req, res) => {
 
     const username = req.params['uid'];
     if(username === undefined) {
+        res.status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_MISSING_UID;
         return res.json(response);
     }
 
     const user = await database.getUser(username);
     if(user === null) {
+        res.status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
         return res.json(response);
     }
@@ -91,6 +99,7 @@ app.get('/user/:uid/answers', async (req, res) => {
     response = generateOK();
     response[constants.ANSWERS_KEY] = aids;
 
+    res.status = constants.STATUS_200;
     return res.json(response);
 });
 

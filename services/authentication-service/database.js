@@ -13,7 +13,7 @@ const INDEX = "users";
 async function getUser(username) {
     const results = (await client.search({
         index: INDEX,
-        body: { query: { term: { "username": username.toLowerCase() } } }
+        body: { query: { match: { "username": username } } }
     }))['hits']['hits'];
 
     return results ? results[0] : null;
@@ -22,7 +22,7 @@ async function getUser(username) {
 async function userExists(username) {
     const usernameExists = (await client.count({
         index: INDEX,
-        body: { query: { term: { "username": username.toLowerCase() } } }
+        body: { query: { match: { "username": username } } }
     })).count != 0;
     
     return usernameExists;
@@ -31,7 +31,7 @@ async function userExists(username) {
 async function canLogin(username) {
     const user = (await client.search({
         index: INDEX,
-        body: { query: { term: {"username": username.toLowerCase() } } }
+        body: { query: { match: {"username": username } } }
     }))['hits']['hits'][0];
 
     return user._source.email_verified;
@@ -40,7 +40,7 @@ async function canLogin(username) {
 async function authenticate(username, password) {
     const user = (await client.search({
         index: INDEX,
-        body: { query: { term: {"username": username.toLowerCase() } } }
+        body: { query: { match: {"username": username } } }
     }))['hits']['hits'][0];
 
     return bcrypt.compareSync(password, user._source.password);
