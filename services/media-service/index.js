@@ -53,14 +53,15 @@ app.use(express.json());
 
 app.post('/addmedia', upload.single('content'), async (req, res) => {
     let response = generateERR();
+    let user = req.session.user;
 
-    if(req.user === undefined) {
+    if (user === undefined) {
         res.status(constants.STATUS_401);
         response[constants.STATUS_ERR] = constants.ERR_NOT_LOGGED_IN;
         return res.json(response);
     }
 
-    if(req.file === undefined) {
+    if (req.file === undefined) {
         res.status(constants.STATUS_400);
         response[constants.STATUS_ERR] = constants.ERR_MISSING_FILE;
         return res.json(response);
