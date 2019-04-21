@@ -22,7 +22,7 @@ app.use(function(req, res, next) {
     res.set('Access-Control-Allow-Headers', 'Content-Type');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     next();
-  });
+});
 
 /* handle searching */
 app.post('/search', async (req, res) => {
