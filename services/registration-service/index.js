@@ -24,6 +24,14 @@ const mail_server = emailjs.server.connect({
 /* parse incoming requests data as json */
 app.use(express.json());
 
+/* enable CORS */
+app.use(function(req, res, next) {
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  next();
+});
+
 app.get('/emailtest', async(req, res) => {
     console.log(mail_server);
     mail_server.send({
