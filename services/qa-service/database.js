@@ -701,9 +701,8 @@ async function addVote(qid, aid, username, upvote, waived){
  */
 async function updateScore(qid, aid, amount){
     let dbResult = new DBResult();
-    let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
-    let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
-    let which_id_value = (aid == undefined) ? qid : aid;
+    let which_index = (aid == undefined) ? INDEX_QUESTIONS : INDEX_ANSWERS;
+    let id_value = (aid == undefined) ? qid : aid;
     let param_amount = "amount";
     let inline_script = `ctx._source.score += params.${param_amount}`
     const updateResponse = await client.updateByQuery({
@@ -713,7 +712,7 @@ async function updateScore(qid, aid, amount){
         body: { 
             query: { 
                 term: { 
-                    [which_id]: which_id_value
+                    _id: id_value
                 } 
             }, 
             script: { 
