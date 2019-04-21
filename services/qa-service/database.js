@@ -688,7 +688,7 @@ async function deleteQuestion(qid, username){
             response = await deleteListOfMedia(media_ids);
         }
         catch(err){
-            console.log(`Failed to delete media ${err}`);
+            console.log(`Failed to delete media items ${media_ids}, error ${err}`);
         }
 
         dbResult.status = constants.DB_RES_SUCCESS;
