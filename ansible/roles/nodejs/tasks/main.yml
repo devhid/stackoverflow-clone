@@ -1,0 +1,33 @@
+---
+#
+# Install NodeJS and pm2 
+#
+
+# Install gpg key for NodeJS in APT
+
+  - name: Install the gpg key for NodeJS
+    apt_key:
+      url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"
+      state: present
+
+# Install NodeJS repositories in APT repositories
+
+  - name: Install the NodeJS repositories
+    apt_repository:
+      repo: "deb https://deb.nodesource.com/node_11.x bionic main"
+      state: present
+      update_cache: yes
+
+# Install NodeJS from APT
+
+  - name: Install NodeJS
+    apt:
+      name: nodejs
+      state: present
+
+# Install latest pm2 package globally
+
+  - name: Install latest "pm2" package globally
+    npm:
+      name: pm2@latest
+      global: yes
