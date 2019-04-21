@@ -789,7 +789,7 @@ async function updateReputation(username, amount){
             } 
         }
     });
-    let success2 = (updateQResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    let success2 = (updateQResponse.updated >= 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     if (success2 !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateQReputation(${username}, ${amount})`);
     }
@@ -838,19 +838,20 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // first check if there are any elements in the upvotes, downvotes, and waived_downvotes arrays
     //      ElasticSearch treats them as missing fields if they are empty
-    qa_votes.upvotes = (qa_votes.upvotes == undefined) ? [] : qa_votes.upvotes;
-    qa_votes.downvotes = (qa_votes.downvotes == undefined) ? [] : qa_votes.downvotes;
-    qa_votes.waived_downvotes = (qa_votes.waived_downvotes == undefined) ? [] : qa_votes.waived_downvotes;
-    console.log(`upvotes = ${qa_votes.upvotes}`);
-    console.log(`downvotes = ${qa_votes.downvotes}`);
-    console.log(`waived_downvotes = ${qa_votes.waived_downvotes}`);
+    console.log(`source upvotes = ${qa_votes._source.upvotes}`);
+    let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
+    let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
+    let waived_downvotes = (qa_votes._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
+    console.log(`upvotes = ${upvotes}`);
+    console.log(`downvotes = ${downvotes}`);
+    console.log(`waived_downvotes = ${waived_downvotes}`);
 
     // check if the user downvoted or upvoted the question
     let score_diff = 0;     // the difference in the "score" of a question
     let rep_diff = 0;       // the difference in the "reputation" of a user, >= 1
-    let upvoted = qa_votes.upvotes.includes(username);
-    let downvoted  = qa_votes.downvotes.includes(username);
-    let waived = qa_votes.waived_downvotes.includes(username);
+    let upvoted = upvotes.includes(username);
+    let downvoted  = downvotes.includes(username);
+    let waived = waived_downvotes.includes(username);
     let poster = await getUserByPost(qid,aid);
     console.log(`poster = ${poster}`);
     console.log(`upvoted = ${upvoted}`);
