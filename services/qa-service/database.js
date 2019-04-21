@@ -637,7 +637,7 @@ async function undoVote(qid, aid, username, upvote, waived){
         }
     });
     let success = (undoVoteResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success !== DB_RES_SUCCESS){
+    if (success !== constants.DB_RES_SUCCESS){
         console.log(`Failed undoVote(${qid}, ${aid}, ${username}, ${upvote})`);
     }
     dbResult.status = success;
@@ -685,7 +685,7 @@ async function addVote(qid, aid, username, upvote, waived){
         }
     });
     let success = (addVoteResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success !== DB_RES_SUCCESS){
+    if (success !== constants.DB_RES_SUCCESS){
         console.log(`Failed addVote(${qid}, ${aid}, ${username}, ${upvote})`);
     }
     dbResult.status = success;
@@ -725,7 +725,7 @@ async function updateScore(qid, aid, amount){
         }
     });
     let success = (updateResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success !== DB_RES_SUCCESS){
+    if (success !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateScore(${qid}, ${aid}, ${amount})`);
     }
     dbResult.status = success;
@@ -762,7 +762,7 @@ async function updateReputation(username, amount){
         }
     });
     let success = (updateResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success !== DB_RES_SUCCESS){
+    if (success !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateReputation(${username}, ${amount})`);
     }
     dbResult.status = success;
