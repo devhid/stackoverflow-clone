@@ -35,11 +35,95 @@ const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvot
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
 /* media */
+
+/**
+ * Transforms a JavaScript array of strings into a Cassandra parenthesized list of strings.
+ * @param {string[]} arr JS array of strings
+ */
+function transformArrToCassandraList(arr){
+    var list = `(`;
+    for (var elem of arr){
+        list += `'${elem}',`;
+    }
+    list = list.substring(0,list.length-1);
+    list += `)`;
+    return list;
+}
+
+/**
+ * Associates the free media in Cassandra with a Question.
+ * @param {string} qid the _id of a Question
+ * @param {id[]} ids array of media IDs in Cassandra
+ */
+async function associateFreeMedia(qid, ids){
+    var dbResult = new DBResult();
+
+    // if no media, no need to do anything
+    if (ids == null || ids.length == 0){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = null;
+        return dbResult;
+    }
+
+    var list_ids = transformArrToCassandraList(ids);
+    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qid=${qid} WHERE id in ${list_ids}`;
+    console.log(`[Cassandra]: associateFreeMedia query=${query}`);
+
+    // execute the query in a Promise
+    return new Promise( (resolve, reject) => {
+        client.execute(query, [], { prepare: true }, (error, result) => {
+            if (error) {
+                dbResult.status = constants.DB_ES_ERROR;
+                dbResult.data = error;
+                reject(dbResult);
+            } else {
+                dbResult.status = constants.DB_RES_SUCCESS;
+                dbResult.data = result;
+                resolve(dbResult);
+            }
+        });
+    });
+}
+
+/**
+ * Checks if the given media IDs are valid and can be associated with a new Question.
+ * @param {id[]} ids array of media IDs in Cassandra
+ */
+async function checkFreeMedia(ids){
+    var dbResult = new DBResult();
+
+    // if no media, no need to do anything
+    if (ids == null || ids.length == 0){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = 0;
+        return dbResult;
+    }
+
+    var list_ids = transformArrToCassandraList(ids);
+    const query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids} AND qid=NULL`;
+    console.log(`[Cassandra]: checkFreeMedia query=${query}`);
+
+    // execute the query in a Promise
+    return new Promise( (resolve, reject) => {
+        client.execute(query, [], { prepare: true }, (error, result) => {
+            if (error) {
+                dbResult.status = constants.DB_ES_ERROR;
+                dbResult.data = error;
+                reject(dbResult);
+            } else {
+                dbResult.status = constants.DB_RES_SUCCESS;
+                dbResult.data = result;
+                resolve(dbResult);
+            }
+        });
+    });
+}
+
 /**
  * Deletes media from Cassandra given an array of their IDs.
- * @param {id[]} ids list of media IDs in Cassandra
+ * @param {id[]} ids array of media IDs in Cassandra
  */
-async function deleteListOfMedia(ids){
+async function deleteArrOfMedia(ids){
     var dbResult = new DBResult();
 
     // if no media, no need to do anything
@@ -50,22 +134,19 @@ async function deleteListOfMedia(ids){
     }
 
     // transform the array of media IDs to the expected format Cassandra wants them in ('id', 'id')
-    var list_ids = `(`;
-    for (var id of ids){
-        list_ids += `'${id}',`;
-    }
-    list_ids = list_ids.substring(0,list_ids.length-1);
-    list_ids += `)`;
+    var list_ids = transformArrToCassandraList(ids);
 
     // prepare the query
     const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
-    console.log(`[Cassandra]: deleteListOfMedia query=${query}`);
+    console.log(`[Cassandra]: deleteArrOfMedia query=${query}`);
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
         client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
-                reject(error);
+                dbResult.status = constants.DB_ES_ERROR;
+                dbResult.data = error;
+                reject(dbResult);
             } else {
                 dbResult.status = constants.DB_RES_SUCCESS;
                 dbResult.data = null;
@@ -159,6 +240,26 @@ async function addQuestion(user, title, body, tags, media){
     let dbResult = new DBResult();
     
     media = (media == undefined) ? [] : media;
+    let cassandraResp = null;
+
+    // first, check that the media IDs specified are not already associated with another Question
+    try {
+        cassandraResp = await checkFreeMedia(media);
+        console.log(`checkFreeMedia, media=${media}, count=${cassandraResp.data}`);
+    }
+    catch(err) {
+        cassandraResp = err;
+        console.log(`checkFreeMedia failed on media=${media}, err=${err.data}`);
+    }
+    if (cassandraResp.status === constants.DB_RES_SUCCESS){
+        if (cassandraResp.data != media.length){
+            dbResult.status = constants.DB_RES_MEDIA_IN_USE;
+            dbResult.data = null;
+            return dbResult;
+        }
+    }
+
+    // create the Question document in INDEX_QUESTIONS
     let response = await client.index({
         index: INDEX_QUESTIONS,
         type: "_doc",
@@ -186,6 +287,8 @@ async function addQuestion(user, title, body, tags, media){
         dbResult.data = null;
         return dbResult;
     }
+    
+    // create the Question Views document in INDEX_VIEWS
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
         type: "_doc",
@@ -200,6 +303,8 @@ async function addQuestion(user, title, body, tags, media){
         console.log(`Failed to create Question Views metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
     }
+
+    // create the Question Upvotes document in INDEX_Q_UPVOTES
     let upvoteResponse = await client.index({
         index: INDEX_Q_UPVOTES,
         type: "_doc",
@@ -214,6 +319,14 @@ async function addQuestion(user, title, body, tags, media){
         console.log(`Failed to create Question Upvotes metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
     }
+
+    // associate the free media IDs with the new Question
+    let associateMediaResponse = await associateFreeMedia(response._id,media);
+    if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
+        console.log(`associateFreeMedia failed with qid=${response._id}, media=${media}`);
+        console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
+    }
+
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = response._id;
@@ -685,10 +798,10 @@ async function deleteQuestion(qid, username){
 
         // TODO: 6) DELETE any associated media documents
         try {
-            response = await deleteListOfMedia(media_ids);
+            response = await deleteArrOfMedia(media_ids);
         }
         catch(err){
-            console.log(`Failed to delete media ${err}`);
+            console.log(`Failed to delete media items ${media_ids}, error ${err.data}`);
         }
 
         dbResult.status = constants.DB_RES_SUCCESS;

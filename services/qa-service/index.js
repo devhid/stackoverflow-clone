@@ -82,6 +82,10 @@ app.post('/questions/add', async(req, res) => {
         res.status(constants.STATUS_400);
         response.setERR(constants.ERR_GENERAL);
     }
+    else if (addRes.status === constants.DB_RES_MEDIA_IN_USE){
+        res.status(constants.STATUS_400);
+        response.setERR(constants.ERR_MEDIA_IN_USE);
+    }
     else if (addRes.status === constants.DB_RES_SUCCESS){
         res.status(constants.STATUS_200);
         response.setOK();

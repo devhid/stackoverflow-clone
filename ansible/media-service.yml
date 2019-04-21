@@ -1,0 +1,20 @@
+---
+#
+# Playbook to setup the media service.
+#
+- hosts: test
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  roles:
+  # - { role: ssh }
+  # - { role: nginx }
+  # - { role: nodejs }
+  # - { role: cassandra }
+
+  tasks:
+    - name: Create key_space 'media_service' in Cassandra
+      shell: cqlsh -e "create keyspace media_service with replication = {'class':'SimpleStrategy', 'replication_factor':'1'};"
+
+    - name: Create table 'imgs' in Cassandra
+      shell: cqlsh -e "create table media_service.imgs (id uuid PRIMARY KEY, content blob, filename text, mimetype text);"

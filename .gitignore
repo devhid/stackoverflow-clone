@@ -67,3 +67,5 @@ typings/
 venv
 
 secrets.sh
+
+*.retry
