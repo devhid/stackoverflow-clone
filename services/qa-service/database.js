@@ -60,7 +60,7 @@ async function getUserByPost(qid, aid){
             }
         }
     })).hits.hits[0];
-    let user = (which_index == INDEX_QUESTIONS) ? post._source.user.username : post._source.user;
+    let user = (post == undefined) ? post : ((which_index == INDEX_QUESTIONS) ? post._source.user.username : post._source.user);
     return user;
 }
 
