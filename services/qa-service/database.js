@@ -81,7 +81,7 @@ async function getReputation(username){
             }
         }
     })).hits.hits[0];
-    return user._source.actual_reputation;
+    return user._source.reputation;
 }
 
 /* milestone 1 */
@@ -111,8 +111,7 @@ async function addQuestion(user, title, body, tags, media){
         body: {
             "user": {
                 "username": user._source.username,
-                "reputation": user._source.reputation,
-                "actual_reputation": user._source.actual_reputation
+                "reputation": user._source.reputation
             },
             "title": title,
             "body": body,
@@ -778,7 +777,7 @@ async function updateScore(qid, aid, amount){
 async function updateReputation(username, original_rep, amount){
     let dbResult = new DBResult();
     let param_amount = "amount";
-    let inline_script = `ctx._source.actual_reputation += params.${param_amount}`;
+    let inline_script = `ctx._source.reputation += params.${param_amount}`;
     const updateUserResponse = await client.updateByQuery({
         index: INDEX_USERS,
         type: "_doc",
@@ -803,7 +802,7 @@ async function updateReputation(username, original_rep, amount){
         console.log(`Failed updateUserReputation(${username}, ${amount})`);
     }
 
-    inline_script = `ctx._source.user.actual_reputation += params.${param_amount}`;
+    inline_script = `ctx._source.user.reputation += params.${param_amount}`;
     const updateQResponse = await client.updateByQuery({
         index: INDEX_QUESTIONS,
         size: 10000,

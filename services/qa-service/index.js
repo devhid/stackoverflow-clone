@@ -123,9 +123,8 @@ app.get('/questions/:qid', async(req, res) => {
         res.status(constants.STATUS_200);
         response.setOK();
         let question = getRes.data;
-        let actual_rep = question._source.user.actual_reputation;
+        let actual_rep = question._source.user.reputation;
         question._source.user.reputation = (actual_rep < 1) ? 1 : actual_rep;
-        delete question._source.user.actual_reputation;
         question._source['id'] = question._id;
         question._source['media'] = (question._source['media'].length == 0) ? null : question._source['media'];
         data[constants.QUESTION_KEY] = question._source;
