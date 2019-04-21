@@ -812,6 +812,9 @@ async function upvoteQA(qid, aid, username, upvote){
     qa_votes.upvotes = (qa_votes.upvotes == undefined) ? [] : qa_votes.upvotes;
     qa_votes.downvotes = (qa_votes.downvotes == undefined) ? [] : qa_votes.downvotes;
     qa_votes.waived_downvotes = (qa_votes.waived_downvotes == undefined) ? [] : qa_votes.waived_downvotes;
+    console.log(`upvotes = ${qa_votes.upvotes}`);
+    console.log(`downvotes = ${qa_votes.downvotes}`);
+    console.log(`waived_downvotes = ${qa_votes.waived_downvotes}`);
 
     // check if the user downvoted or upvoted the question
     let score_diff = 0;     // the difference in the "score" of a question
@@ -820,6 +823,10 @@ async function upvoteQA(qid, aid, username, upvote){
     let downvoted  = qa_votes.downvotes.includes(username);
     let waived = qa_votes.waived_downvotes.includes(username);
     let poster = await getUserByPost(qid,aid);
+    console.log(`poster = ${poster}`);
+    console.log(`upvoted = ${upvoted}`);
+    console.log(`downvoted = ${downvoted}`);
+    console.log(`waived = ${waived}`);
 
     // if the user already voted, undo the vote
     if (upvoted || downvoted || waived){
@@ -829,7 +836,9 @@ async function upvoteQA(qid, aid, username, upvote){
         //      else if it was downvoted, add 1
         rep_diff = (waived) ? 0 : ((upvoted) ? -1 : 1);
         score_diff = (upvoted) ? -1 : 1;
+        console.log(`undoing vote by ${poster}`);
         let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
+        console.log(`undoVoteRes = ${undoVoteRes}`);
         if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
@@ -846,21 +855,25 @@ async function upvoteQA(qid, aid, username, upvote){
         if (user_rep + rep_diff < 1){
             rep_diff = 1 - user_rep;    // later, user_rep + rep_diff = user_rep + (1 - user_rep) = 1
             waive_vote = true;
+            console.log(`waiving rep, user_rep=${user_rep}, rep_diff=${rep_diff}`);
         }
     }
 
+    console.log(`adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
     let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
     if (addVoteRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
     // update the score of the question or answer
+    console.log(`updating score ${qid}, ${aid}, ${score_diff}`);
     let updateScoreRes = await updateScore(qid, aid, score_diff);
     if (updateScoreRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
     // update the reputation of the poster
+    console.log(`updating rep ${poster}, ${rep_diff}`);
     let updateRepRes = await updateReputation(poster, rep_diff);
     if (updateRepRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
