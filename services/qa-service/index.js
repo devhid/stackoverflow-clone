@@ -255,7 +255,7 @@ app.post('/questions/:qid/upvote', async(req, res) => {
     let user = req.session.user;
     let username = (user == undefined) ? user : user._source.username;
     let qid = req.params.qid;
-    let upvote = req.body.upvote;
+    let upvote = (req.body.upvote == undefined) ? true : req.body.upvote;
 
     // check if any mandatory parameters are unspecified
     if (user == undefined || qid == undefined || upvote == undefined){
@@ -297,7 +297,7 @@ app.post('/answers/:aid/upvote', async(req, res) => {
     let user = req.session.user;
     let username = (user == undefined) ? user : user._source.username;
     let aid = req.params.aid;
-    let upvote = req.body.upvote;
+    let upvote = (req.body.upvote == undefined) ? true : req.body.upvote;
 
     // check if any mandatory parameters are unspecified
     if (user == undefined || aid == undefined || upvote == undefined){
