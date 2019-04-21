@@ -12,11 +12,13 @@ const client = new elasticsearch.Client({
 
 const INDEX_QUESTIONS = "questions";  // INDEX_QUESTIONS is where questions are stored
 const INDEX_VIEWS = "views";          // INDEX_VIEWS is where views for a question are stored
+
+// NOTE: for INDEX_ANSWERS, searching by 'qid' requires "term" 'qid.keyword'
 const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stored
 const INDEX_USERS = "users";          // INDEX_USERS is where users are stored
 
 // NOTE: for INDEX_Q_UPVOTES and INDEX_A_UPVOTES, searching by term for 'qid' or 'aid' requires
-//          specifying it as 'qid.keyword' and 'aid.keyword' due to mapping.
+//          specifying it as "term" 'qid.keyword' and 'aid.keyword' due to mapping.
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
@@ -598,7 +600,7 @@ async function deleteQuestion(qid, username){
             body: {
                 query: {
                     term: {
-                        qid: qid
+                        "qid.keyword": qid
                     }
                 }
             }
