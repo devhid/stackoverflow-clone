@@ -39,9 +39,10 @@ const sessionOptions = {
 
 /* enable CORS */
 app.use(function(req, res, next) {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.set('Access-Control-Allow-Credentials', 'true');
     next();
 });
 
@@ -51,9 +52,13 @@ app.use(session(sessionOptions));
 /* parse incoming requests data as json */
 app.use(express.json());
 
+app.post('/addmediatest', async(req,res) => {
+    console.log('got request');
+});
+
 app.post('/addmedia', upload.single('content'), async (req, res) => {
     let response = generateERR();
-
+    console.log(`got request`);
     if(req.user === undefined) {
         res.status = constants.STATUS_401;
         response[constants.STATUS_ERR] = constants.ERR_NOT_LOGGED_IN;
