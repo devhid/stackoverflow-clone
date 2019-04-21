@@ -1067,17 +1067,6 @@ async function acceptAnswer(aid, username){
         }
 
         // update the Answer document's "is_accepted" field
-        const updateAnswerResponse = await client.update({
-            index: INDEX_ANSWERS,
-            type: "_doc",
-            id: aid,
-            body: {
-                script: {
-                    lang: "painless",
-                    inline: "ctx._source.is_accepted = true"
-                }
-            }
-        });
         const updateAnswerResponse = await client.updateByQuery({
             index: INDEX_ANSWERS,
             type: "_doc",
