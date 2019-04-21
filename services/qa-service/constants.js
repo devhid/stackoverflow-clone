@@ -25,5 +25,6 @@ module.exports = {
     ERR_GENERAL: 'An error occurred while handling the request.',
     ERR_Q_NOTFOUND: 'The specified question does not exist.',
     ERR_A_NOTFOUND: 'The specified answer does not exist.',
-    ERR_NOT_ALLOWED: 'The specified operation is not allowed for the current user.'
+    ERR_NOT_ALLOWED: 'The specified operation is not allowed for the current user.',
+    ERR_ALRDY_ACCEPTED: 'An answer has already been accepted.'
 };

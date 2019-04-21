@@ -372,8 +372,8 @@ app.post('/answers/:aid/accept', async(req, res) => {
         response.setERR(constants.ERR_NOT_ALLOWED);
     }
     else if (acceptRes.status === constants.DB_RES_ALRDY_ACCEPTED){
-        res.status(constants.STATUS_409);
-        response.setERR(constants.ERR_NOT_ALLOWED);
+        res.status(constants.STATUS_400);
+        response.setERR(constants.ERR_ALRDY_ACCEPTED);
     }
     else if (acceptRes.status === constants.DB_RES_SUCCESS){
         res.status(constants.STATUS_200);
