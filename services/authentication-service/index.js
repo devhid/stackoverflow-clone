@@ -5,6 +5,7 @@ const RedisStore = require('connect-redis')(session);
 
 /* internal imports */
 const database = require('./database');
+const constants = require('./constants');
 
 /* initialize express application */
 const app = express();
@@ -54,35 +55,41 @@ app.post('/login', async (req, res) => {
     let response = {};
 
     if(req.session.user) {
+        res.status = constants.STATUS_400;
         response = {"status": "error", "error": "Already logged in."};
         return res.json(response);
     }
 
     if(!notEmpty([username, password])) {
+        res.status = constants.STATUS_400;
         response = {"status": "error", "error": "One or more fields are missing."};
         return res.json(response);
     }
 
     const userExists = await database.userExists(username);
     if(!userExists) {
+        res.status = constants.STATUS_400;
         response = {"status": "error", "error": "No user exists with that username."};
         return res.json(response);
     }
 
     const canLogin = await database.canLogin(username);
     if(!canLogin) {
+        res.status = constants.STATUS_400;
         response = {"status": "error", "error": "Email must be verified before logging in."};
         return res.json(response);
     }
 
     const success = await database.authenticate(username, password);
     if(!success) {
+        res.status = constants.STATUS_400;
         response = {"status": "error", "error": "The password entered is incorrect."};
         return res.json(response);
     }
 
     req.session.user = await database.getUser(username);
-    
+
+    res.status = constants.STATUS_200;
     response = {"status": "OK"};
     return res.json(response);
 });
@@ -102,11 +109,13 @@ app.post('/logout', function destroySession(req, res) {
     let response = {};
 
     if(!req.session.user) {
+        res.status = constants.STATUS_400;
         response = {"status": "error", "error": "Already logged out."};
         return res.json(response);
     }
 
     req.session.destroy(function done() {
+        res.status = constants.status_200;
         response = {"status": "OK"};
         return res.json(response);
     });
