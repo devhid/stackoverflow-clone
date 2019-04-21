@@ -735,14 +735,16 @@ async function updateScore(qid, aid, amount){
 
 /**
  * Updates the reputation of a User by the specified amount.
+ * 
+ * Needs to update the reputation of the User document as well as the associated Question documents.
  * @param {string} username username of the user
  * @param {int} amount amount by which to update the reputation
  */
 async function updateReputation(username, amount){
     let dbResult = new DBResult();
     let param_amount = "amount";
-    let inline_script = `ctx._source.reputation += params.${param_amount}`
-    const updateResponse = await client.updateByQuery({
+    let inline_script = `ctx._source.reputation += params.${param_amount}`;
+    const updateUserResponse = await client.updateByQuery({
         index: INDEX_USERS,
         type: "_doc",
         refresh: "true",
@@ -761,10 +763,37 @@ async function updateReputation(username, amount){
             } 
         }
     });
-    let success = (updateResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    let success = (updateUserResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     if (success !== constants.DB_RES_SUCCESS){
-        console.log(`Failed updateReputation(${username}, ${amount})`);
+        console.log(`Failed updateUserReputation(${username}, ${amount})`);
     }
+
+    inline_script = `ctx._source.user.reputation += params.${param_amount}`;
+    const updateQResponse = await client.updateByQuery({
+        index: INDEX_QUESTIONS,
+        size: 10000,
+        type: "_doc",
+        refresh: "true",
+        body: { 
+            query: { 
+                match: { 
+                    "user.username": username
+                } 
+            }, 
+            script: { 
+                lang: "painless",
+                inline: inline_script,
+                params: {
+                    [param_amount]: amount
+                }
+            } 
+        }
+    });
+    let success2 = (updateQResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    if (success2 !== constants.DB_RES_SUCCESS){
+        console.log(`Failed updateQReputation(${username}, ${amount})`);
+    }
+
     dbResult.status = success;
     dbResult.data = null;
     return dbResult;
@@ -853,9 +882,9 @@ async function upvoteQA(qid, aid, username, upvote){
     if (!upvote){
         let user_rep = await getReputation(poster);
         if (user_rep + rep_diff < 1){
+            console.log(`waiving rep, user_rep=${user_rep}, rep_diff=${rep_diff}`);
             rep_diff = 1 - user_rep;    // later, user_rep + rep_diff = user_rep + (1 - user_rep) = 1
             waive_vote = true;
-            console.log(`waiving rep, user_rep=${user_rep}, rep_diff=${rep_diff}`);
         }
     }
 
