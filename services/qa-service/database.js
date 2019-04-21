@@ -1,6 +1,5 @@
 /* library imports */
 const elasticsearch = require('elasticsearch');
-const crypto = require('crypto');
 
 /* internal imports */
 const constants = require('./constants');
@@ -64,7 +63,7 @@ async function getUserByPost(qid, aid){
 }
 
 /** /questions/:id/upvote, /answers/:id/upvote
- * Retrieves the reputation of a specified user.
+ * Retrieves the "actual" reputation of a specified user.
  * @param {string} username the username of the user
  */
 async function getReputation(username){
@@ -80,7 +79,7 @@ async function getReputation(username){
             }
         }
     })).hits.hits[0];
-    return user._source.reputation;
+    return user._source.actual_reputation;
 }
 
 /* milestone 1 */
@@ -110,7 +109,8 @@ async function addQuestion(user, title, body, tags, media){
         body: {
             "user": {
                 "username": user._source.username,
-                "reputation": user._source.reputation
+                "reputation": user._source.reputation,
+                "actual_reputation": user._source.actual_reputation
             },
             "title": title,
             "body": body,
@@ -151,8 +151,7 @@ async function addQuestion(user, title, body, tags, media){
         body: {
             "qid": response._id,
             "upvotes": [],
-            "downvotes": [],
-            "waived_downvotes": []
+            "downvotes": []
         }
     });
     if (upvoteResponse.result !== "created"){
@@ -161,7 +160,6 @@ async function addQuestion(user, title, body, tags, media){
     }
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
-        //dbResult.data = response._source.uuid;
         dbResult.data = response._id;
     }
     else {
@@ -321,11 +319,9 @@ async function updateViewCount(qid, username, ip){
  * @param {boolean} update whether or not to update the view count of the question
  */
 async function getQuestion(qid, username, ip, update){
-    console.log(`getQuestion(${qid},${username},${ip},${update})`);
     let dbResult = new DBResult();
     let question = undefined;
     if (update){
-        console.log(`Calling updateViewCount`);
         dbResult = await updateViewCount(qid, username, ip);
         question = dbResult.data;
     }
@@ -336,7 +332,6 @@ async function getQuestion(qid, username, ip, update){
     //  else:
     //      try searching for the question
     if (question === undefined){
-        console.log(`Performing search`);
         question = (await client.search({
             index: INDEX_QUESTIONS,
             type: "_doc",
@@ -357,7 +352,6 @@ async function getQuestion(qid, username, ip, update){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
     }
-    console.log(`Returning from getQuestion`);
     return dbResult;
 }
 
@@ -422,8 +416,7 @@ async function addAnswer(qid, username, body, media){
         body: {
             "aid": response._id,
             "upvotes": [],
-            "downvotes": [],
-            "waived_downvotes": []
+            "downvotes": []
         }
     });
     if (upvoteResponse.result !== "created"){
@@ -499,7 +492,8 @@ async function getAnswers(qid){
  *  2) in INDEX_VIEWS, the Question Views metadata document
  *  3) in INDEX_Q_UPVOTES, the Question Upvotes metadata document
  *  4) in INDEX_ANSWERS, any associated Answer documents
- *  5) any associated media documents
+ *  5) in INDEX_A_UPVOTES, the Answer Upvotes metadata document
+ *  6) any associated media documents
  * 
  * @param {string} qid the _id of the question
  * @param {string} username the user who originally posted the question
@@ -583,7 +577,25 @@ async function deleteQuestion(qid, username){
         console.log(`Deleted ${response.deleted} Answers for Question ${qid}`);
         console.log(response);
 
-        // TODO: 5) DELETE any associated media documents
+
+        // 5) DELETE from INDEX_A_UPVOTES the Answer Upvotes metadata document
+        response = await client.deleteByQuery({
+            index: INDEX_A_UPVOTES,
+            type: "_doc",
+            body: {
+                query: {
+                    term: {
+                        "aid.keyword": aid
+                    }
+                }
+            }
+        });
+        if (response.deleted != 1){
+            console.log(`Failed to delete answer upvotes ${aid} from ${INDEX_A_UPVOTES}`);
+            console.log(response);
+        }
+
+        // TODO: 6) DELETE any associated media documents
 
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
@@ -603,18 +615,13 @@ async function deleteQuestion(qid, username){
  * @param {string} aid the _id of the answer (if used for undoing the vote to an answer)
  * @param {string} username the user who wishes to undo his vote for the question/answer
  * @param {boolean} upvote whether the user's vote is in upvotes or downvotes
- * @param {boolean} waived whether or not the user's vote was waived
- * 
- * Currently, only waived_downvotes are supported. Don't call this with (upvote,waived) == (true,true).
  */
-async function undoVote(qid, aid, username, upvote, waived){
+async function undoVote(qid, aid, username, upvote){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
-    if (waived)
-        arr = "waived_" + arr;
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.${param_user}))`
     const undoVoteResponse = await client.updateByQuery({
@@ -651,18 +658,13 @@ async function undoVote(qid, aid, username, upvote, waived){
  * @param {string} aid the _id of the answer (if used for adding the vote to an answer)
  * @param {string} username the user who wishes to add his vote for the question/answer
  * @param {boolean} upvote whether the user's vote is to upvote or downvote
- * @param {boolean} waived whether or not the user's vote is waived
- * 
- * Currently, only waived_downvotes are supported. Don't call this with (upvote,waived) == (true,true).
  */
-async function addVote(qid, aid, username, upvote, waived){
+async function addVote(qid, aid, username, upvote){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
-    if (waived)
-        arr = "waived_" + arr;
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.add(params.${param_user})`
     const addVoteResponse = await client.updateByQuery({
@@ -740,10 +742,10 @@ async function updateScore(qid, aid, amount){
  * @param {string} username username of the user
  * @param {int} amount amount by which to update the reputation
  */
-async function updateReputation(username, amount){
+async function updateReputation(username, original_rep, amount){
     let dbResult = new DBResult();
     let param_amount = "amount";
-    let inline_script = `ctx._source.reputation += params.${param_amount}`;
+    let inline_script = `ctx._source.actual_reputation += params.${param_amount}`;
     const updateUserResponse = await client.updateByQuery({
         index: INDEX_USERS,
         type: "_doc",
@@ -768,7 +770,7 @@ async function updateReputation(username, amount){
         console.log(`Failed updateUserReputation(${username}, ${amount})`);
     }
 
-    inline_script = `ctx._source.user.reputation += params.${param_amount}`;
+    inline_script = `ctx._source.user.actual_reputation += params.${param_amount}`;
     const updateQResponse = await client.updateByQuery({
         index: INDEX_QUESTIONS,
         size: 10000,
@@ -836,61 +838,46 @@ async function upvoteQA(qid, aid, username, upvote){
         return dbResult;
     }
 
-    // first check if there are any elements in the upvotes, downvotes, and waived_downvotes arrays
+    // first check if there are any elements in the upvotes and downvotes
     //      ElasticSearch treats them as missing fields if they are empty
-    console.log(`source upvotes = ${qa_votes._source.upvotes}`);
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
-    let waived_downvotes = (qa_votes._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
     console.log(`upvotes = ${upvotes}`);
     console.log(`downvotes = ${downvotes}`);
-    console.log(`waived_downvotes = ${waived_downvotes}`);
 
     // check if the user downvoted or upvoted the question
     let score_diff = 0;     // the difference in the "score" of a question
     let rep_diff = 0;       // the difference in the "reputation" of a user, >= 1
     let upvoted = upvotes.includes(username);
     let downvoted  = downvotes.includes(username);
-    let waived = waived_downvotes.includes(username);
     let poster = await getUserByPost(qid,aid);
+    let poster_rep = await getReputation(poster);
     console.log(`poster = ${poster}`);
+    console.log(`poster_rep = ${poster_rep}`);
     console.log(`upvoted = ${upvoted}`);
     console.log(`downvoted = ${downvoted}`);
-    console.log(`waived = ${waived}`);
 
     // if the user already voted, undo the vote
-    if (upvoted || downvoted || waived){
+    if (upvoted || downvoted){
         let in_upvotes = (upvoted) ? true : false;
-        // if the downvote was waived, then there should be no rep diff from undoing it
-        //      else if it was upvoted, then subtract 1
+        //  if it was upvoted, then subtract 1
         //      else if it was downvoted, add 1
-        rep_diff = (waived) ? 0 : ((upvoted) ? -1 : 1);
+        rep_diff = (upvoted) ? -1 : 1;
         score_diff = (upvoted) ? -1 : 1;
         console.log(`undoing vote by ${poster}`);
-        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
-        console.log(`undoVoteRes = ${undoVoteRes}`);
+        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes);
         if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
     }
 
     // add the vote
-    let waive_vote = false;
+    let waive_vote = false; 
     rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
     score_diff = (upvote) ? score_diff + 1 : score_diff - 1;
 
-    // check if we need to waive this user's vote
-    if (!upvote){
-        let user_rep = await getReputation(poster);
-        if (user_rep + rep_diff < 1){
-            console.log(`waiving rep, user_rep=${user_rep}, rep_diff=${rep_diff}`);
-            rep_diff = 1 - user_rep;    // later, user_rep + rep_diff = user_rep + (1 - user_rep) = 1
-            waive_vote = true;
-        }
-    }
-
     console.log(`adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
-    let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
+    let addVoteRes = await addVote(qid, aid, username, upvote);
     if (addVoteRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
@@ -904,7 +891,7 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // update the reputation of the poster
     console.log(`updating rep ${poster}, ${rep_diff}`);
-    let updateRepRes = await updateReputation(poster, rep_diff);
+    let updateRepRes = await updateReputation(poster, poster_rep, rep_diff);
     if (updateRepRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
@@ -951,7 +938,7 @@ async function acceptAnswer(aid, username){
     let dbResult = new DBResult();
     let qid = undefined;
 
-    // before we perform any updates, first ensure that the specified Answer exists
+    // grab the Answer document
     let answer = (await client.search({
         index: INDEX_ANSWERS,
         type: "_doc",
@@ -964,13 +951,14 @@ async function acceptAnswer(aid, username){
         }
     })).hits.hits[0];
     
+    // check that the Answer exists
     if (!answer){
         dbResult.status = constants.DB_RES_A_NOTFOUND;
         dbResult.data = null;
         return dbResult;
     }
 
-    // grab the Question document and check that it exists
+    // grab the Question document
     qid = answer._source.qid;
     let question = (await client.search({
         index: INDEX_QUESTIONS,
@@ -984,6 +972,7 @@ async function acceptAnswer(aid, username){
         }
     })).hits.hits[0];
     
+    // check that the Question exists
     if (!question){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
@@ -999,43 +988,50 @@ async function acceptAnswer(aid, username){
 
     // if the user is the original asker, update the Question and Answer documents
     if (username == question._source.user.username){
-        // check if the asker has already accepted a different answer
-        //      if the asker has, then we must update the old accepted Answer document
-        const accepted_answer_id = question.accepted_answer_id;
-        if (accepted_answer_id != null && accepted_answer_id != aid){
-            const updateOldAcceptedResponse = await client.update({
-                index: INDEX_ANSWERS,
-                type: "_doc",
-                id: accepted_answer_id,
-                body: {
-                    script: {
-                        lang: "painless",
-                        inline: "ctx._source.is_accepted = false"
-                    }
-                }
-            });
-            // TODO: check the format of the response for failure handling
-            console.log("updateOldAcceptedResponse below");
-            console.log(updateOldAcceptedResponse);
-        }
+        // // check if the asker has already accepted a different answer
+        // //      if the asker has, then we must update the old accepted Answer document
+        // const accepted_answer_id = question.accepted_answer_id;
+        // if (accepted_answer_id != null && accepted_answer_id != aid){
+        //     const updateOldAcceptedResponse = await client.update({
+        //         index: INDEX_ANSWERS,
+        //         type: "_doc",
+        //         id: accepted_answer_id,
+        //         body: {
+        //             script: {
+        //                 lang: "painless",
+        //                 inline: "ctx._source.is_accepted = false"
+        //             }
+        //         }
+        //     });
+        //     // TODO: check the format of the response for failure handling
+        //     console.log("updateOldAcceptedResponse below");
+        //     console.log(updateOldAcceptedResponse);
+        // }
 
         // update the Question document's "accepted_answer_id" field
-        const updateQuestionResponse = await client.update({
+        const updateQuestionResponse = await client.updateByQuery({
             index: INDEX_QUESTIONS,
             type: "_doc",
-            id: question._id,
+            refresh: "true",
             body: {
+                query: {
+                    term: {
+                        _id: qid
+                    }
+                },
                 script: {
                     lang: "painless",
-                    inline: "ctx._source.accepted_answer_id = params.answerID"
-                },
-                params: {
-                    answerID: aid
+                    inline: "ctx._source.accepted_answer_id = params.answerID",
+                    params: {
+                        "answerID": aid
+                    }
                 }
             }
         });
-        console.log("updateQuestionResponse below");
-        console.log(updateQuestionResponse);
+        if (updateQuestionResponse.updated != 1){
+            console.log(`Failed to update Question ${qid}'s accepted answer to ${aid}`);
+            console.log(updateQuestionResponse);
+        }
 
         // update the Answer document's "is_accepted" field
         const updateAnswerResponse = await client.update({
@@ -1049,8 +1045,26 @@ async function acceptAnswer(aid, username){
                 }
             }
         });
-        console.log("updateAnswerResponse below");
-        console.log(updateAnswerResponse);
+        const updateAnswerResponse = await client.updateByQuery({
+            index: INDEX_ANSWERS,
+            type: "_doc",
+            refresh: "true",
+            body: {
+                query: {
+                    term: {
+                        _id: aid
+                    }
+                },
+                script: {
+                    lang: "painless",
+                    inline: "ctx._source.is_accepted = true"
+                }
+            }
+        });
+        if (updateAnswerResponse.updated != 1){
+            console.log(`Failed to update Answer ${aid}'s is_accepted field to true`);
+            console.log(updateAnswerResponse);
+        }
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
     }
