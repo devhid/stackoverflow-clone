@@ -31,7 +31,7 @@ module.exports = {
     ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.',
 
     CASSANDRA_OPTIONS: {
-        contactPoints: ["130.245.171.75"], 
+        contactPoints: ["64.52.162.12"], 
         localDataCenter: 'datacenter1', 
         keyspace: "media_service",
         table: "imgs"
