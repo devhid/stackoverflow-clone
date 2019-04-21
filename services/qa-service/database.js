@@ -607,7 +607,7 @@ async function deleteQuestion(qid, username){
         });
         let num_deleted_answers = response.deleted;
         console.log(`Deleted ${num_deleted_answers} Answers for Question ${qid}`);
-        console.log(response);
+        // console.log(response);
 
 
         // 5) DELETE from INDEX_A_UPVOTES the Answer Upvotes metadata document
