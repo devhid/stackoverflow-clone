@@ -55,7 +55,8 @@ async function addUser(email, username, password) {
             "password": bcrypt.hashSync(password, 10),
             "key": key,
             "email_verified": false,
-            "reputation": 1
+            "reputation": 1,
+            "actual_reputation": 1
         }
     });
 
