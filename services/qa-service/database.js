@@ -488,7 +488,7 @@ async function getAnswers(qid){
         body: {
             query: {
                 term: {
-                    "qid": qid
+                    "qid.keyword": qid
                 }
             }
         }
