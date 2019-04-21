@@ -371,7 +371,7 @@ async function addAnswer(qid, username, body, media){
     let dbResult = new DBResult();
     media = (media == undefined) ? [] : media;
 
-    // check if the Question exists first
+    // grab the Question document
     let question = (await client.search({
         index: INDEX_QUESTIONS,
         type: "_doc",
@@ -384,12 +384,14 @@ async function addAnswer(qid, username, body, media){
         }
     })).hits.hits[0];
 
+    // check that the Question exists
     if (!question){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
         return dbResult;
     }
     
+    // create the Answer document
     let response = await client.index({
         index: INDEX_ANSWERS,
         type: "_doc",
@@ -409,6 +411,8 @@ async function addAnswer(qid, username, body, media){
         console.log(response);
         return dbResult;
     }
+
+    // create the Answer Upvote metadata document
     let upvoteResponse = await client.index({
         index: INDEX_A_UPVOTES,
         type: "_doc",
@@ -423,6 +427,29 @@ async function addAnswer(qid, username, body, media){
         console.log(`Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
         console.log(upvoteResponse);
     }
+
+    // modify the Question document
+    const updateQuestionResponse = await client.updateByQuery({
+        index: INDEX_QUESTIONS,
+        type: "_doc",
+        refresh: "true",
+        body: { 
+            query: { 
+                term: { 
+                    _id: qid
+                } 
+            }, 
+            script: {
+                lang: "painless",
+                inline: "ctx._source.answer_count += 1"
+            }
+        }
+    });
+    if (updateQuestionResponse.updated != 1){
+        console.log(`Failed to update Question ${qid}'s answer_count`);
+        console.log(updateQuestionResponse);
+    }
+
     dbResult.status = constants.DB_RES_SUCCESS;
     dbResult.data = response._id;
     return dbResult;
@@ -457,6 +484,7 @@ async function getAnswers(qid){
     // grab all Answer documents for the specified Question
     let answers = (await client.search({
         index: INDEX_ANSWERS,
+        size: 10000,
         body: {
             query: {
                 term: {
