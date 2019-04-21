@@ -799,7 +799,12 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // if it could not be found, the question or answer does not exist
     if (qa_votes == undefined){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        if (which_index == INDEX_Q_UPVOTES){
+            dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        }
+        else {
+            dbResult.status = constants.DB_RES_A_NOTFOUND;
+        }
         dbResult.data = null;
         return dbResult;
     }
@@ -859,7 +864,9 @@ async function upvoteQA(qid, aid, username, upvote){
         console.log(`Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
-    return updateRes;
+    dbResult.status = constants.DB_RES_SUCCESS;
+    dbResult.data = null;
+    return dbResult;
 }
 
 /** POST /questions/:qid/upvote
