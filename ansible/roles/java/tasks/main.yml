@@ -1,0 +1,17 @@
+---
+#
+# Installing Java 8
+#
+
+# Install OpenJDK 8 JRE 
+
+- name: Install OpenJDK 8 JRE using APT
+  apt:
+    name: openjdk-8-jre-headless
+    update_cache: yes
+
+# install OpenJDK 8 JDK
+
+- name: Install OpenJDK 8 JDK using APT
+  apt:
+    name: openjdk-8-jdk
