@@ -1,6 +1,7 @@
 /* library imports */
 const express = require('express');
-const request = require('request');
+var request = require('request');
+request = request.defaults({jar: true})
 
 /* internal imports */
 const servers = require('./servers');
@@ -20,7 +21,12 @@ app.get('/', (req, res) => {
    return res.send('<html><h1>kellogs</h1></html>');
 });
 
-app.post('/adduser', (req, res) => {
+app.use('/login', (req, res) => {
+    var url = servers.AUTHENTICATION + '/login';
+    req.pipe(request.post(url, { json: true, body: req.body }), { end: false }).pipe(res);
+});
+
+/*app.post('/adduser', (req, res) => {
     request.post(servers.REGISTRATION + '/adduser', { "json": req.body}, (error, response, body) => {
         return res.json(body);
     });
@@ -72,7 +78,7 @@ app.post('/search', (req, res) => {
     request.post(servers.SEARCH + '/search', { "json": req.body }, (error, response, body) => {
         return res.json(body);
     });
-});
+});*/
 
 /* Start the server. */
 app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));

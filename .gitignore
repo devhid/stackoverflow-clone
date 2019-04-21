@@ -65,3 +65,5 @@ typings/
 
 # virtual environments
 venv
+
+secrets.sh

@@ -1,0 +1,86 @@
+<div class="container">
+  <div class="question-section">
+    <div class="question-score-section">
+      <div class="question-upvote">
+        ^
+      </div>
+      <div class="question-score">
+        {{question.score}}
+      </div>
+      <div class="question-downvote">
+        v
+      </div>
+    </div>
+    <div class="question-text-section">
+      <div class="question-title">
+        {{question.title}}
+      </div>
+      <div class="question-body">
+        {{question.body}}
+      </div>
+      <div class="question-user">
+        {{question.username}}
+      </div>
+    </div>
+    <div class="question-delete">
+      <button class="question-delete-button" (click)="deleteQuestion()">
+        Delete question
+      </button>
+    </div>
+  </div> 
+
+  <div *ngIf="acceptedAnswer" class="accepted-answer"> <!--If exist-->
+    <div class="answer-score-section">
+      <div class="answer-upvote">
+        ^
+      </div>
+      <div class="answer-score">
+        {{acceptedAnswer.score}}
+      </div>
+      <div class="answer-downvote">
+        v
+      </div>
+    </div>
+    <div class="answer-body">
+      {{acceptedAnswer.body}}
+    </div>
+    <div class="answer-user">
+      {{acceptedAnswer.username}}
+    </div>
+    <div class="answer-timestamp">
+      {{acceptedAnswer.timestamp}}
+    </div>
+  </div>
+
+  <div *ngFor="let answer of answers" class="answer-section">
+    <div class="answer-score-section">
+      <div class="answer-upvote">
+        ^
+      </div>
+      <div class="answer-score">
+        {{answer.score}}
+      </div>
+      <div class="answer-downvote">
+        v
+      </div>
+    </div>
+    <div class="answer-body">
+      {{answer.body}}
+    </div>
+    <div class="answer-user">
+      {{answer.username}}
+    </div>
+    <div class="answer-timestamp">
+      {{answer.timestamp}}
+    </div>
+  </div>
+
+  <form [formGroup]="newAnswerForm" (ngSubmit)="addAnswerSubmit()" class="answer-form">
+      <div class="form-group">
+          <label for="body">Answer</label>
+          <input type="text" id="body" required formControlName="body" name="body">
+      </div>
+      
+      <button type="submit">Submit answer</button>
+  </form>
+</div>

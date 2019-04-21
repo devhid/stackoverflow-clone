@@ -1,0 +1,32 @@
+<form (ngSubmit)="onRegisterSubmit()" class="register-form">
+  <div class="form-group">
+    <label for="username">Username</label>
+    <input type="text" id="username" required [(ngModel)]="user.username" name="username">
+  </div>
+
+  <div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" id="email" required [(ngModel)]="user.email" name="email">
+  </div>
+
+  <div class="form-group">
+    <label for="password">Password</label>
+    <input type="text" id="password" required [(ngModel)]="user.password" name="password">
+  </div>
+
+  <button type="submit">Submit</button>
+</form>
+
+<form [formGroup]="verificationForm" (ngSubmit)="onVerifySubmit()" class="verify-form">
+  <div class="form-group">
+    <label for="email">Email</label>
+    <input type="text" id="email" required formControlName="email" name="email">
+  </div>
+
+  <div class="form-group">
+    <label for="key">Key</label>
+    <input type="text" id="key" required formControlName="key" name="key">
+  </div>
+
+  <button type="submit">Submit</button>
+</form>

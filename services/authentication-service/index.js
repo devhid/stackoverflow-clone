@@ -1,6 +1,5 @@
 /* external imports */
 const express = require('express');
-const asyncWrapper = require('express-async-await');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 
@@ -9,7 +8,7 @@ const database = require('./database');
 
 /* initialize express application */
 const app = express();
-asyncWrapper(app);
+require('express-async-errors');
 
 /* the port the server will listen on */
 const PORT = 8002;
@@ -37,6 +36,15 @@ app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
+
+/* enable CORS */
+app.use(function(req, res, next) {
+  res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Credentials', 'true'); 
+  next();
+});
 
 /* handle user logins */
 app.post('/login', async (req, res) => {
@@ -92,8 +100,6 @@ app.get('/increment', function incrementCounter(req, res) {
 /* handles log outs. */
 app.post('/logout', function destroySession(req, res) {
     let response = {};
-
-    console.log(req.session);
 
     if(!req.session.user) {
         response = {"status": "error", "error": "Already logged out."};
