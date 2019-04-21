@@ -5,6 +5,11 @@
 
 # Install gpg key for NodeJS in APT
 
+  - name: Install GPG binary if not exists
+    apt:
+      name: gnupg
+      state: present
+
   - name: Install the gpg key for NodeJS
     apt_key:
       url: "https://deb.nodesource.com/gpgkey/nodesource.gpg.key"

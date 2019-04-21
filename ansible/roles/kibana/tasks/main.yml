@@ -1,0 +1,40 @@
+---
+#
+# Installing Kibana 6.7
+#
+
+# Install Kibana using APT
+
+- name: Install Kibana 6.7 with apt
+  apt:
+    name: kibana=6.7.0
+    update_cache: yes
+ 
+# Update Kibana configuration to run on localhost.
+
+- name: Update Kibana configuration to run on localhost
+  lineinfile:
+    destfile: /etc/kibana/kibana.yml
+    regexp: 'server.host:'
+    line: 'server.host: 127.0.0.1'
+
+# Update Kibana configuration to run on port 5601.
+
+- name: Update Kibana configuration to run on port 5601
+  lineinfile:
+    destfile: /etc/kibana/kibana.yml
+    regexp: 'server.port:'
+    line: 'server.port: 5601'
+
+# Specify Elasticsearch host in Kibana configuration
+- name: Specify Elasticsearch host in Kibana configuration
+  lineinfile:
+    destfile: /etc/kibana/kibana.yml
+    regexp: 'elasticsearch.url:'
+    line: 'elasticsearch.url: "http://localhost:9200"'
+   
+# Start Kibana
+- name: Starting Kibana
+  systemd:
+    name: kibana
+    state: started

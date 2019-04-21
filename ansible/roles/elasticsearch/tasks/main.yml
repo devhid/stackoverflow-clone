@@ -1,0 +1,47 @@
+---
+#
+# Installing Elasticsearch 6.7
+#
+
+# Add Elasticsearch repository signing keys to APT
+
+- name: Add Elasticsearch repository keys
+  apt_key:
+    url: "https://packages.elastic.co/GPG-KEY-elasticsearch"
+    state: present
+
+# Add Elasticsearch repository to APT repositories
+
+- name: Add Elasticsearch repository
+  apt_repository:
+    repo: deb https://artifacts.elastic.co/packages/6.x/apt stable main
+    state: present
+
+# Install latest version of Elasticsearch
+
+- name: Install Elasticsearch 6.7
+  apt:
+    name: elasticsearch
+    update_cache: yes
+
+# Make sure Elasticsearch runs on localhost
+
+- name: Update network host in Elasticsearch configuration to 'localhost'
+  lineinfile:
+    destfile: /etc/elasticsearch/elasticsearch.yml
+    regexp: 'network.host:'
+    line: 'network.host: localhost'
+
+# Make sure Elasticsearch runs on port 9200
+
+- name: Updating port in Elasticsearch configuration to 9200
+  lineinfile:
+    destfile: /etc/elasticsearch/elasticsearch.yml
+    regexp: 'http.port:'
+    line: 'http.port: 9200'
+ 
+# Start Elasticsearch
+- name: Start Elasticsearch
+  service:
+    name: elasticsearch
+    state: started
