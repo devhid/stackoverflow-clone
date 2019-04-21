@@ -80,7 +80,7 @@ app.post('/adduser', async (req, res) => {
             //console.log(message);
     });
 
-    res.status = constants.STATUS_200;
+    res.status(constants.STATUS_200);
     response = {"status": "OK"};
     return res.json(response);
 });

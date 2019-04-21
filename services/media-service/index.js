@@ -55,13 +55,13 @@ app.post('/addmedia', upload.single('content'), async (req, res) => {
     let response = generateERR();
 
     if(req.user === undefined) {
-        res.status = constants.STATUS_401;
+        res.status(constants.STATUS_401);
         response[constants.STATUS_ERR] = constants.ERR_NOT_LOGGED_IN;
         return res.json(response);
     }
 
     if(req.file === undefined) {
-        res.status = constants.STATUS_400;
+        res.status(constants.STATUS_400);
         response[constants.STATUS_ERR] = constants.ERR_MISSING_FILE;
         return res.json(response);
     }
@@ -79,7 +79,7 @@ app.post('/addmedia', upload.single('content'), async (req, res) => {
         return res.json(response);
     }
 
-    res.status = constants.STATUS_200;
+    res.status(constants.STATUS_200);
     response = generateOK();
     response[constants.ID_KEY] = mediaId;
     return res.json(response);
@@ -94,12 +94,12 @@ app.get('/media/:id', async (req, res) => {
     try {
         image = await database.getMedia(mediaId);
     } catch(err) {
-        res.status = constants.STATUS_400;
+        res.status(constants.STATUS_400);
         response[constants.STATUS_ERR] = err;
         return res.json(response);
     }
 
-    res.status = constants.STATUS_200;
+    res.status(constants.STATUS_200);
     res.set({ 'Content-Type': image.mimetype });
     return res.send(image.content);
 });
