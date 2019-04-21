@@ -3,7 +3,7 @@ import { Injectable } from '@angular/core';
 export class Answer {
     constructor(
         public id: string,
-        public username: string,
+        public user: string,
         public body: string,
         public score: number,
         public is_accepted: boolean,
@@ -26,7 +26,7 @@ export class AnswerAdapter {
     adapt(item: any): Answer {
         return new Answer(
             item.id,
-            item.username,
+            item.user,
             item.body,
             item.score,
             item.is_accepted,

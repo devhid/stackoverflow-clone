@@ -1,4 +1,5 @@
 /* library imports */
+const cassandra = require('cassandra-driver');
 const elasticsearch = require('elasticsearch');
 
 /* internal imports */
@@ -9,6 +10,17 @@ const DBResult = require('./dbresult').DBResult;
 const client = new elasticsearch.Client({
     host: "http://admin:ferdman123@107.191.43.73:92"
 });
+
+/* client to communicate with cassandra */
+const cassandraOptions = constants.CASSANDRA_OPTIONS;
+const cassandra_client = new cassandra.Client(cassandraOptions);
+cassandra_client.connect()
+    .then(() => {
+        console.log(`[Cassandra] : Successfully established connection to keyspace, '${cassandraOptions.keyspace}'.`)
+    }).catch((error) => {
+        console.log(`[Cassandra] : Could not connect to keyspace, '${cassandraOptions.keyspace}'.`);
+        console.log(`[Cassandra] Error ${error}`)
+    });
 
 const INDEX_QUESTIONS = "questions";  // INDEX_QUESTIONS is where questions are stored
 const INDEX_VIEWS = "views";          // INDEX_VIEWS is where views for a question are stored
@@ -22,25 +34,68 @@ const INDEX_USERS = "users";          // INDEX_USERS is where users are stored
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
-async function getQuestionsByUser(username){
-    let questions = (await client.search({
-        index: INDEX_QUESTIONS,
-        size: 10000,
-        type: "_doc",
-        body: {
-            query: {
-                match: {
-                    "user.username": username
-                }
-            }
-        }
-    })).hits.hits;
-    let qids = [];
-    for (var question of questions){
-        qids.push(question._id);
+/* media */
+/**
+ * Deletes media from Cassandra given an array of their IDs.
+ * @param {id[]} ids list of media IDs in Cassandra
+ */
+async function deleteListOfMedia(ids){
+    var dbResult = new DBResult();
+
+    // if no media, no need to do anything
+    if (ids == null || ids.length == 0){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = null;
+        return dbResult;
     }
-    return qids;
+
+    // transform the array of media IDs to the expected format Cassandra wants them in ('id', 'id')
+    var list_ids = `(`;
+    for (var id of ids){
+        list_ids += `'${id}',`;
+    }
+    list_ids = list_ids.substring(0,list_ids.length-1);
+    list_ids += `)`;
+
+    // prepare the query
+    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
+    console.log(`[Cassandra]: deleteListOfMedia query=${query}`);
+
+    // execute the query in a Promise
+    return new Promise( (resolve, reject) => {
+        client.execute(query, [], { prepare: true }, (error, result) => {
+            if (error) {
+                reject(error);
+            } else {
+                dbResult.status = constants.DB_RES_SUCCESS;
+                dbResult.data = null;
+                resolve(dbResult);
+            }
+        });
+    });
 }
+
+// async function getQuestionsByUser(username){
+//     let questions = (await client.search({
+//         index: INDEX_QUESTIONS,
+//         size: 10000,
+//         type: "_doc",
+//         body: {
+//             query: {
+//                 match: {
+//                     "user.username": username
+//                 }
+//             }
+//         }
+//     })).hits.hits;
+//     let qids = [];
+//     for (var question of questions){
+//         qids.push(question._id);
+//     }
+//     return qids;
+// }
+
+/* helpers */
 
 /**
  * Gets the username of a User by a post.
@@ -537,6 +592,7 @@ async function deleteQuestion(qid, username){
         return getRes;
     }
     let question = getRes.data;
+    let media_ids = question._source.media;
 
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
@@ -628,6 +684,12 @@ async function deleteQuestion(qid, username){
         }
 
         // TODO: 6) DELETE any associated media documents
+        try {
+            response = await deleteListOfMedia(media_ids);
+        }
+        catch(err){
+            console.log(`Failed to delete media ${err}`);
+        }
 
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
@@ -889,6 +951,13 @@ async function upvoteQA(qid, aid, username, upvote){
     console.log(`upvoted = ${upvoted}`);
     console.log(`downvoted = ${downvoted}`);
 
+    // if the user asks to perform the same operation, we don't need to do anything
+    if ((upvote && upvoted) || (downvote && downvoted)){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = null;
+        return dbResult;
+    }
+
     // if the user already voted, undo the vote
     if (upvoted || downvoted){
         let in_upvotes = (upvoted) ? true : false;
@@ -1097,7 +1166,7 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
-    getQuestionsByUser: getQuestionsByUser,
+    // getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,
     deleteQuestion: deleteQuestion,

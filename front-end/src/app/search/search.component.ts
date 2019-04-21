@@ -18,9 +18,9 @@ export class SearchComponent implements OnInit {
   });
 
   constructor(
-    public retrievalService: RetrievalService,
-    public transferService: TransferService,
-    public router: Router
+    private retrievalService: RetrievalService,
+    private  transferService: TransferService,
+    private router: Router
   ) { }
 
   ngOnInit() {
