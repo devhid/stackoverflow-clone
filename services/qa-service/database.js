@@ -418,6 +418,7 @@ async function addAnswer(qid, username, body, media){
         type: "_doc",
         refresh: "true",
         body: {
+            "qid": qid,
             "aid": response._id,
             "upvotes": [],
             "downvotes": []
@@ -602,7 +603,8 @@ async function deleteQuestion(qid, username){
                 }
             }
         });
-        console.log(`Deleted ${response.deleted} Answers for Question ${qid}`);
+        let num_deleted_answers = response.deleted;
+        console.log(`Deleted ${num_deleted_answers} Answers for Question ${qid}`);
         console.log(response);
 
 
@@ -613,13 +615,14 @@ async function deleteQuestion(qid, username){
             body: {
                 query: {
                     term: {
-                        "aid.keyword": aid
+                        "qid.keyword": qid
                     }
                 }
             }
         });
-        if (response.deleted != 1){
-            console.log(`Failed to delete answer upvotes ${aid} from ${INDEX_A_UPVOTES}`);
+        if (response.deleted != num_deleted_answers){
+            console.log(`Deleted ${response.deleted} answer upvotes / ${num_deleted_answers} answers`);
+            console.log(`QID=${qid}`);
             console.log(response);
         }
 
