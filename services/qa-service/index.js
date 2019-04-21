@@ -383,15 +383,15 @@ app.post('/answers/:aid/accept', async(req, res) => {
     return res.json(response.toOBJ());
 });
 
-app.get('/questions/:username/questions', async(req, res) => {
-    let username = req.params.username;
+// app.get('/questions/:username/questions', async(req, res) => {
+//     let username = req.params.username;
 
-    let result = await database.getQuestionsByUser(username);
-    console.log(result);
-    console.log(`${result.length} results`);
-    let response = {'questions': result};
-    return res.json(response);
-});
+//     let result = await database.getQuestionsByUser(username);
+//     console.log(result);
+//     console.log(`${result.length} results`);
+//     let response = {'questions': result};
+//     return res.json(response);
+// });
 
 /* Start the server. */
 app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
