@@ -48,14 +48,13 @@ async function getQuestionsByUser(username){
  */
 async function getUserByPost(qid, aid){
     let which_index = (aid == undefined) ? INDEX_QUESTIONS : INDEX_ANSWERS;
-    let which_id = (aid == undefined) ? "qid" : "aid";
-    let which_id_value = (aid == undefined) ? qid : aid;
+    let id_value = (aid == undefined) ? qid : aid;
     let post = (await client.search({
         index: which_index,
         body: {
             query: {
                 term: {
-                    [which_id]: which_id_value
+                    _id: id_value
                 }
             }
         }
