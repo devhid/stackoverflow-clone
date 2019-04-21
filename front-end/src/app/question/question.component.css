@@ -25,21 +25,52 @@
     overflow: scroll;
 }
 
+.question-title,
+.question-body,
+.question-user {
+    margin-bottom: 2%;
+}
+
 .question-delete {
+    width: auto;
     display: flex;
     justify-content: center;
+    align-items: flex-start;
+}
+
+.accepted-answer {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 5%;
+}
+
+.accepted-answer-section {
+    display: flex;
+    flex-direction: row;
+    width: 100%;
+    justify-content: space-around;
     align-items: center;
 }
 
-.accepted-answer, 
 .answer-section {
     display: flex;
     width: 100%;
     justify-content: space-around;
     align-items: center;
-    margin-bottom: 1%;
+    margin-bottom: 3%;
 }
 
 .answer-score-section {
     width: 10%;
+}
+
+.answer-text-section {
+    width: 80%;
+}
+
+.answer-accept {
+    width: auto;
 }

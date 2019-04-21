@@ -1,15 +1,15 @@
 <div class="container">
   <div class="question-section">
     <div class="question-score-section">
-      <div class="question-upvote">
+      <button class="question-vote" (click)="upvoteQuestion()">
         ^
-      </div>
+      </button>
       <div class="question-score">
         {{question.score}}
       </div>
-      <div class="question-downvote">
+      <button class="question-vote" (click)="downvoteQuestion()">
         v
-      </div>
+      </button>
     </div>
     <div class="question-text-section">
       <div class="question-title">
@@ -30,48 +30,58 @@
   </div> 
 
   <div *ngIf="acceptedAnswer" class="accepted-answer"> <!--If exist-->
-    <div class="answer-score-section">
-      <div class="answer-upvote">
-        ^
+    <h3>Accepted Answer</h3>
+    <div class="accepted-answer-section">
+      <div class="answer-score-section">
+        <button class="answer-vote" (click)="upvoteAnswer(acceptedAnswer.id)">
+          ^
+        </button>
+        <div class="answer-score">
+          {{acceptedAnswer.score}}
+        </div>
+        <button class="answer-vote" (click)="downvoteAnswer(acceptedAnswer.id)">
+          v
+        </button>
       </div>
-      <div class="answer-score">
-        {{acceptedAnswer.score}}
+      <div class="answer-body">
+        {{acceptedAnswer.body}}
       </div>
-      <div class="answer-downvote">
-        v
+      <div class="answer-user">
+        {{acceptedAnswer.user}}
       </div>
-    </div>
-    <div class="answer-body">
-      {{acceptedAnswer.body}}
-    </div>
-    <div class="answer-user">
-      {{acceptedAnswer.username}}
-    </div>
-    <div class="answer-timestamp">
-      {{acceptedAnswer.timestamp}}
+      <div class="answer-timestamp">
+        {{acceptedAnswer.timestamp}}
+      </div>
     </div>
   </div>
 
   <div *ngFor="let answer of answers" class="answer-section">
-    <div class="answer-score-section">
-      <div class="answer-upvote">
+    <div *ngIf="!acceptedAnswer || answer.id !== acceptedAnswer.id" class="answer-score-section">
+      <button class="answer-vote" (click)="upvoteAnswer(answer.id)">
         ^
-      </div>
+      </button>
       <div class="answer-score">
         {{answer.score}}
       </div>
-      <div class="answer-downvote">
+      <button class="answer-vote" (click)="downvoteAnswer(answer.id)">
         v
+      </button>
+    </div>
+    <div *ngIf="!acceptedAnswer || answer.id !== acceptedAnswer.id" class="answer-text-section">
+      <div class="answer-body">
+        {{answer.body}}
+      </div>
+      <div class="answer-user">
+        {{answer.user}}
+      </div>
+      <div class="answer-timestamp">
+        {{answer.timestamp}}
       </div>
     </div>
-    <div class="answer-body">
-      {{answer.body}}
-    </div>
-    <div class="answer-user">
-      {{answer.username}}
-    </div>
-    <div class="answer-timestamp">
-      {{answer.timestamp}}
+    <div *ngIf="!acceptedAnswer || answer.id !== acceptedAnswer.id" class="answer-accept">
+      <button class="answer-accept-button" (click)="acceptAnswer(answer.id)">
+        Accept Answer
+      </button>
     </div>
   </div>
 

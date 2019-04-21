@@ -26,9 +26,13 @@ export class ProfileComponent implements OnInit {
 
   ngOnInit() {
     let username = this.retrieveUsername();
+    console.log(username);
     this.retrieveProfile(username);
     this.retrieveQuestions(username);
     this.retrieveAnswers(username);
+    console.log(this.userInformation);
+    console.log(this.userQuestions);
+    console.log(this.userAnswers);
   }
 
   private retrieveUsername(): string {
@@ -36,12 +40,12 @@ export class ProfileComponent implements OnInit {
   }
 
   // Retrieve user profile
-  private retrieveProfile(username: string): void {
+  private retrieveProfile(username: string) {
     this.userService.retrieveUserInfo(username)
-      .subscribe((profile: User) => {
-        this.userInformation = profile;
-        this.userInformation.username = username;
-      });
+    .subscribe((profile: User) => {
+      this.userInformation = profile;
+      this.userInformation.username = username;
+    });
   }
 
   // Retrieve user questions 

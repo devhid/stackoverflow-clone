@@ -1,7 +1,8 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
+import { Router } from '@angular/router';
 
-import { AddqaService } from '../services/addqa.service';
+import { QAService } from '../services/qa.service';
 
 @Component({
   selector: 'app-askquestion',
@@ -17,7 +18,8 @@ export class AskQuestionComponent implements OnInit {
   });
 
   constructor(
-    private addqaService : AddqaService
+    private qaService : QAService,
+    private router: Router
   ) { }
 
   ngOnInit() {
@@ -26,9 +28,10 @@ export class AskQuestionComponent implements OnInit {
   askQuestionSubmit() {
     let tags = this.newQuestionForm.value.tags.split(" ");
     console.log(tags);
-    this.addqaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags)
+    this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags)
     .subscribe(response => {
       console.log(response);
+      this.router.navigate(['/']); 
     });
   }
 }

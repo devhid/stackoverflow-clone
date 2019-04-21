@@ -14,15 +14,17 @@ const httpHeaders = {
 };
 
 const url = "http://8.9.11.218";
+//const url = "http://kellogs.cse356.compas.cs.stonybrook.edu";
 
 @Injectable({
   providedIn: 'root'
 })
-export class AddqaService {
+export class QAService {
   constructor(
     private http: HttpClient,
   ) { }
 
+  // Question services
   addQuestion(title: string, body: string, tags: Array<string>): Observable<any> {
     let postBody = { title: title, body: body, tags: tags, media: null }
     console.log(postBody);
@@ -32,6 +34,22 @@ export class AddqaService {
       )
   }
 
+  deleteQuestion(questionId: string): Observable<any> {
+    return this.http.delete(url + "/questions/" + questionId, {})
+      .pipe(
+        catchError(this.handleError)
+      )
+  }
+
+  upvoteQuestion(questionId: string, upvote: boolean): Observable<any> {
+    let postBody = { upvote: upvote };
+    return this.http.post(url + "/questions/" + questionId + "/upvote", postBody)
+      .pipe(
+        catchError(this.handleError)
+      )
+  }
+
+  // Answer services
   addAnswer(questionId: string, body: string): Observable<any> {
     let postBody = { body: body };
     return this.http.post(url + "/questions/" + questionId + "/answers/add", postBody, httpHeaders)
@@ -40,7 +58,20 @@ export class AddqaService {
       )
   }
 
-  deleteQuestion
+  upvoteAnswer(answerId: string, upvote: boolean): Observable<any> {
+    let postBody = { upvote: upvote };
+    return this.http.post(url + "/questions/" + answerId + "/upvote", postBody)
+      .pipe(
+        catchError(this.handleError)
+      )
+  }
+
+  acceptAnswer(answerId: string): Observable<any> {
+    return this.http.post(url + "/answers/" + answerId + "/accept", {}, httpHeaders)
+      .pipe(
+        catchError(this.handleError)
+      )
+  }
 
   private handleError(error: HttpErrorResponse) {
     if (error.error instanceof ErrorEvent) {

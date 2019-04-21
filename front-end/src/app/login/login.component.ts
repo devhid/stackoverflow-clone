@@ -33,7 +33,7 @@ export class LoginComponent implements OnInit {
     this.loginService.login(username, password)
     .subscribe((response: HttpResponse<any>) => {
       //console.log(response.headers.get('set-cookie'));
-      console.log(response);
+      console.log(response.body);
     });
   }
 
