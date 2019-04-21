@@ -809,6 +809,12 @@ async function upvoteQA(qid, aid, username, upvote){
         return dbResult;
     }
 
+    // first check if there are any elements in the upvotes, downvotes, and waived_downvotes arrays
+    //      ElasticSearch treats them as missing fields if they are empty
+    qa_votes.upvotes = (qa_votes.upvotes == undefined) ? [] : qa_votes.upvotes;
+    qa_votes.downvotes = (qa_votes.downvotes == undefined) ? [] : qa_votes.downvotes;
+    qa_votes.waived_downvotes = (qa_votes.waived_downvotes == undefined) ? [] : qa_votes.waived_downvotes;
+
     // check if the user downvoted or upvoted the question
     let score_diff = 0;     // the difference in the "score" of a question
     let rep_diff = 0;       // the difference in the "reputation" of a user, >= 1
