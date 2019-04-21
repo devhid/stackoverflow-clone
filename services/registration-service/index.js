@@ -3,6 +3,7 @@ const express = require('express');
 
 /* internal imports */
 const database = require('./database');
+const constants = require('./constants');
 
 /* initialize express application */
 const app = express();
@@ -54,12 +55,14 @@ app.post('/adduser', async (req, res) => {
     let response = {};
 
     if(!notEmpty([email, username, password])) {
+        res.status(constants.STATUS_400);
         response = {"status": "error", "error": "One or more fields are empty."};
         return res.json(response);
     }
     let userExists = await database.userExists(email, username);
 
     if(userExists) {
+        res.status(constants.STATUS_400)
         response = {"status": "error", "error": "A user with that email or username already exists."};
         return res.json(response);
     }
@@ -77,6 +80,7 @@ app.post('/adduser', async (req, res) => {
             //console.log(message);
     });
 
+    res.status = constants.STATUS_200;
     response = {"status": "OK"};
     return res.json(response);
 });

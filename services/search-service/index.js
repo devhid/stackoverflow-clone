@@ -38,6 +38,7 @@ app.post('/search', async (req, res) => {
     let response = {};
 
     if(sort_by != "timestamp" && sort_by != "score") {
+        res.status = constants.status_400;
         response = { "status":"error", "message": constants.ERR_INVALID_SORT };
     }
 
@@ -46,6 +47,7 @@ app.post('/search', async (req, res) => {
     response = { "status": "OK", "questions": searchResults };
 //    console.log(response);
     console.log("length: " + response['questions'].length);
+    res.status = constants.STATUS_200;
     return res.json(response);
 
 });
