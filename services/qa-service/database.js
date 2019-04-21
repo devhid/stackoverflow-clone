@@ -1012,15 +1012,15 @@ async function acceptAnswer(aid, username){
         return dbResult;
     }
 
-    // check that the Question does not already have an accepted answer
-    if (question._source.accepted_answer_id != null){
-        dbResult.status = constants.DB_RES_ALRDY_ACCEPTED;
-        dbResult.data = null;
-        return dbResult;
-    }
-
     // if the user is the original asker, update the Question and Answer documents
     if (username == question._source.user.username){
+        // check that the Question does not already have an accepted answer
+        if (question._source.accepted_answer_id != null){
+            dbResult.status = constants.DB_RES_ALRDY_ACCEPTED;
+            dbResult.data = null;
+            return dbResult;
+        }
+
         // // check if the asker has already accepted a different answer
         // //      if the asker has, then we must update the old accepted Answer document
         // const accepted_answer_id = question.accepted_answer_id;
