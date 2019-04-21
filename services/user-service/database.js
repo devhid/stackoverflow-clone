@@ -21,9 +21,11 @@ async function getUser(username) {
     if(user.length == 0) {
         return null;
     } else {
+        let reputation = user[0]._source.reputation;
+        reputation = (reputation < 1) ? 1 : reputation;
         return {
             "email": user[0]._source.email,
-            "reputation": user[0]._source.reputation
+            "reputation": reputation
         }
     }
 }
