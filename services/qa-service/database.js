@@ -664,7 +664,7 @@ async function addVote(qid, aid, username, upvote, waived){
     if (waived)
         arr = "waived_" + arr;
     let param_user = "user";
-    let inline_script = `ctx._source.${arr}.add(${param_user})`
+    let inline_script = `ctx._source.${arr}.add(params.${param_user})`
     const addVoteResponse = await client.updateByQuery({
         index: which_index,
         type: "_doc",
@@ -834,26 +834,24 @@ async function upvoteQA(qid, aid, username, upvote){
             console.log(`Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
     }
-    // if the user wishes to UPVOTE but previously DOWNVOTED, we must add the UPVOTE
-    // if the user wishes to DOWNVOTE but previously UPVOTED, we must add the DOWNVOTE
-    if ((upvote && downvoted) || (!upvote && upvoted)){
-        let waive_vote = false;
-        rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
-        score_diff = (upvote && downvoted) ? score_diff + 1 : score_diff - 1;
 
-        // check if we need to waive this user's vote
-        if (!upvote){
-            let user_rep = await getReputation(poster);
-            if (user_rep + rep_diff < 1){
-                rep_diff = 1 - user_rep;    // later, user_rep + rep_diff = user_rep + (1 - user_rep) = 1
-                waive_vote = true;
-            }
-        }
+    // add the vote
+    let waive_vote = false;
+    rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
+    score_diff = (upvote) ? score_diff + 1 : score_diff - 1;
 
-        let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
-        if (addVoteRes.status !== constants.DB_RES_SUCCESS){
-            console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+    // check if we need to waive this user's vote
+    if (!upvote){
+        let user_rep = await getReputation(poster);
+        if (user_rep + rep_diff < 1){
+            rep_diff = 1 - user_rep;    // later, user_rep + rep_diff = user_rep + (1 - user_rep) = 1
+            waive_vote = true;
         }
+    }
+
+    let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
+    if (addVoteRes.status !== constants.DB_RES_SUCCESS){
+        console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
     // update the score of the question or answer
