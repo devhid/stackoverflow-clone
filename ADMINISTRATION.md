@@ -6,6 +6,7 @@
 | :----------------: | :-------------: | :--------------------: |
 |   authentication   |  64.190.90.243  |         ubuntu         |
 | email-verification |  207.148.20.88  | root, Ws?69o5WNBQM#6R5 |
+|       media        |  130.245.171.75 |         ubuntu         |
 |         qa         |  140.82.9.197   | root, Ub+7Bjkf*JDB+3jT |
 |    registration    | 130.245.171.197 |         ubuntu         |
 |       search       |  64.190.91.125  |         ubuntu         |
