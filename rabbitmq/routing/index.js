@@ -26,29 +26,6 @@ app.use(function(req, res, next) {
   next();
 });
 
-try {
-    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
-        if (error0) {
-            throw error0;
-        }
-        connection.createChannel(function(error1, channel) {
-            if (error1) {
-                throw error1;
-            }
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
-                if (err){
-                    throw err;
-                }
-                console.log(`ok ${ok}`);
-                connection.close();
-            });
-        });
-    });
-}
-catch (err) {
-    console.log(`[Rabbit] Error creating exchange ${err}`);
-}
-
 /* auth service */
 app.post('/login', async(req,res) => {
 

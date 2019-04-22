@@ -39,15 +39,18 @@ amqp.connect(constants.AMQP_HOST, function(error0, connection) {
             }
             channel.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.KEYS.QA);
             channel.prefetch(1);
-            channel.consume(q.queue, function reply(msg){
-                console.log(`Received ${msg.content.toString()}`);
-                channel.sendToQueue(msg.properties.replyTo,
-                    Buffer.from(JSON.stringify(addQuestion(msg))), {
-                        correlationId: msg.properties.correlationId
-                    }
-                );
-                channel.ack(msg);
-            });
+            while (true){
+                channel.consume(q.queue, function reply(msg){
+                    console.log(`Received ${msg.content.toString()}`);
+                    channel.sendToQueue(msg.properties.replyTo,
+                        Buffer.from(JSON.stringify(addQuestion(msg))), {
+                            correlationId: msg.properties.correlationId
+                        }
+                    );
+                    channel.ack(msg);
+                    connection.close();
+                });
+            }
         });
     });
 });
