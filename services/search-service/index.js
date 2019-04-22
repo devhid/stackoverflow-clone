@@ -45,13 +45,19 @@ try {
                     throw err;
                 }
                 console.log(`ok ${JSON.stringify(ok)}`);
-                setTimeout(listen, 1000);
+                setTimeout(listenWrapper, 1000);
             });
         });
     });
 }
 catch (err){
     console.log(`[Rabbit] Failed to connect ${err}`);
+}
+
+function listenWrapper(){
+    listen().catch(err =>{
+        console.log(`Listen failed ${err}`);
+    });
 }
 
 async function listen(){
