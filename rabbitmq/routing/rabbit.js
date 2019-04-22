@@ -50,7 +50,7 @@ async function publishMessage(bind_key, request){
                     dbResult.data = error1;
                     reject(dbResult);
                 }
-                channel.assertQueue('', constants.QUEUE.PROPERTIES, function(error2, q) {
+                channel.assertQueue(bind_key, constants.QUEUE.PROPERTIES, function(error2, q) {
                     if (error2) {
                         dbResult.status = constants.DB_RES_ERROR;
                         dbResult.data = error2;
@@ -83,4 +83,9 @@ async function publishMessage(bind_key, request){
             });
         }); 
     });
+}
+
+module.exports = {
+    createExchange: createExchange,
+    publishMessage: publishMessage
 }
