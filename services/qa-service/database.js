@@ -36,6 +36,11 @@ const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes
 
 /* media */
 
+function shutdown(){
+    client.close();
+    cassandra_client.shutdown();
+}
+
 /**
  * Transforms a JavaScript array of strings into a Cassandra parenthesized list of strings.
  * @param {string[]} arr JS array of strings
@@ -71,7 +76,7 @@ async function associateFreeMedia(qa_id, ids){
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
-        client.execute(query, [], { prepare: true }, (error, result) => {
+        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
                 dbResult.status = constants.DB_ES_ERROR;
                 dbResult.data = error;
@@ -105,7 +110,7 @@ async function checkFreeMedia(ids){
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
-        client.execute(query, [], { prepare: true }, (error, result) => {
+        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
                 dbResult.status = constants.DB_ES_ERROR;
                 dbResult.data = error;
@@ -142,7 +147,7 @@ async function deleteArrOfMedia(ids){
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
-        client.execute(query, [], { prepare: true }, (error, result) => {
+        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
                 dbResult.status = constants.DB_ES_ERROR;
                 dbResult.data = error;
@@ -179,7 +184,7 @@ async function deleteMediaByQAID(qa_id){
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
-        client.execute(query, [], { prepare: true }, (error, result) => {
+        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
                 dbResult.status = constants.DB_ES_ERROR;
                 dbResult.data = error;
@@ -1509,6 +1514,7 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
+    shutdown: shutdown,
     // getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,

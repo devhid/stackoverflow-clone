@@ -109,6 +109,7 @@ async function processRequest(msg){
 function main(){
     try {
         setupConnection();
+        console.log(`[Rabbit] Successfully setup the connection and attached the callback.`);
     } catch (err){
         console.log(`[Rabbit] Failed to connect ${err}`);
     }
@@ -484,5 +485,6 @@ process.on('SIGTERM', shutdown);
 function shutdown(){
     if (ch) ch.close();
     if (conn) conn.close();
+    database.shutdown();
     server.close();
 }
