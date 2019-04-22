@@ -1,28 +1,28 @@
 {
-    "name": "rabbit-consumer",
-    "version": "1.0.0",
-    "description": "Service that will consume requests",
-    "main": "index.js",
-    "scripts": {
-      "test": "echo \"Error: no test specified\" && exit 1",
-      "start": "node_modules/.bin/nodemon index.js"
-    },
-    "repository": {
-      "type": "git",
-      "url": "github.com/devhid/stackoverflow-clone.git"
-    },
-    "keywords": [
-      "rabbitmq",
-      "server"
-    ],
-    "author": "Johnny So",
-    "license": "ISC",
-    "dependencies": {
-      "express": "^4.16.4",
-      "express-async-errors": "^3.1.1"
-    },
-    "devDependencies": {
-      "nodemon": "^1.18.10"
-    }
+  "name": "rabbit-consumer",
+  "version": "1.0.0",
+  "description": "Service that will consume requests",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node_modules/.bin/nodemon index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "github.com/devhid/stackoverflow-clone.git"
+  },
+  "keywords": [
+    "rabbitmq",
+    "server"
+  ],
+  "author": "Johnny So",
+  "license": "ISC",
+  "dependencies": {
+    "amqplib": "^0.5.3",
+    "express": "^4.16.4",
+    "express-async-errors": "^3.1.1"
+  },
+  "devDependencies": {
+    "nodemon": "^1.18.10"
   }
-  
+}
