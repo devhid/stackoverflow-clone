@@ -25,7 +25,6 @@ app.use(function(req, res, next) {
     next();
 });
 
-
 /* amqplib connection */
 var conn = null;
 var ch = null;
