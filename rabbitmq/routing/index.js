@@ -26,7 +26,18 @@ app.use(function(req, res, next) {
 });
 
 try {
-    await rabbit.createExchange();
+    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
+        if (error0) {
+            throw error0;
+        }
+        connection.createChannel(function(error1, channel) {
+            if (error1) {
+                throw error1;
+            }
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES);
+        });
+        connection.close();
+    });
 }
 catch (err) {
     console.log(`[Rabbit] Error creating exchange ${err}`);
