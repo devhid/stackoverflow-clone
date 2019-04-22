@@ -70,6 +70,12 @@ async function publishMessage(routing_key, data){
     });
 }
 
+function shutdown(){
+    if (ch) ch.close();
+    if (conn) conn.close();
+}
+
 module.exports = {
-    publishMessage: publishMessage
+    publishMessage: publishMessage,
+    shutdown: shutdown
 }

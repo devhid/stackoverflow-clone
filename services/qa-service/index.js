@@ -1,12 +1,10 @@
 /* library imports */
 const express = require('express');
-const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
+const amqp = require('amqplib/callback_api');
 
 /* internal imports */
 const database = require('./database');
 const constants = require('./constants');
-const DBResult = require('./dbresult').DBResult;
 const APIResponse = require('./apiresponse').APIResponse;
 
 /* initialize express application */
@@ -15,27 +13,6 @@ require('express-async-errors');
 
 /* the port the server will listen on */
 const PORT = 8004;
-
-/* options for the redis store */
-const redisOptions = {
-    host: '64.52.162.153',
-    port: 6379,
-    pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
-};
-
-/* options for the session */
-const sessionOptions = {
-    name: 'soc_login',
-    secret: 'EditThisLaterWithARealSecret',
-    unset: 'destroy',
-    resave: false,
-    saveUninitialized: true,
-    logErrors: true,
-    store: new RedisStore(redisOptions)
-};
-
-/* handle user sessions */
-app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
@@ -49,8 +26,87 @@ app.use(function(req, res, next) {
   next();
 });
 
+/* amqplib connection */
+var conn = null;
+var ch = null;
+try {
+    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
+        if (error0) {
+            throw error0;
+        }
+        conn = connection;
+        connection.createChannel(function(error1, channel) {
+            if (error1) {
+                throw error1;
+            }
+            ch = channel;
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
+                if (err){
+                    throw err;
+                }
+                console.log(`ok ${JSON.stringify(ok)}`);
+                setTimeout(listen, 1000);
+            });
+        });
+    });
+}
+catch (err){
+    console.log(`[Rabbit] Failed to connect ${err}`);
+}
+
+function listen(){
+    ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error2, q){
+        if (error2){
+            throw error2;
+        }
+        ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
+        ch.prefetch(1); 
+        ch.consume(q.queue, function reply(msg){
+            let req = JSON.parse(msg.content.toString()); // gives back the data object
+            let endpoint = req.endpoint;
+            let response = {};
+            switch (endpoint) {
+                case constants.ENDPOINTS.QA_ADD_Q:
+                    response = await addQuestion(req);
+                    break;
+                case constants.ENDPOINTS.QA_GET_Q:
+                    response = await getQuestion(req);
+                    break;
+                case constants.ENDPOINTS.QA_ADD_A:
+                    response = await addAnswer(req);
+                    break;
+                case constants.ENDPOINTS.QA_GET_A:
+                    response = await getAnswers(req);
+                    break;
+                case constants.ENDPOINTS.QA_DEL_Q:
+                    response = await deleteQuestion(req);
+                    break;
+                case constants.ENDPOINTS.QA_UPVOTE_Q:
+                    response = await upvoteQuestion(req);
+                    break;
+                case constants.ENDPOINTS.QA_UPVOTE_A:
+                    response = await upvoteAnswer(req);
+                    break;
+                case constants.ENDPOINTS.QA_ACCEPT:
+                    response = await acceptAnswer(req);
+                    break;
+                default:
+                    break;
+            }
+            ch.sendToQueue(msg.properties.replyTo,
+                Buffer.from(JSON.stringify(response)), {
+                    correlationId: msg.properties.correlationId
+                }
+            );
+            ch.ack(msg);
+        });
+    });
+}
+
 /* milestone 1 */
-app.post('/questions/add', async(req, res) => {
+
+async function addQuestion(req){
+    let status = constants.STATUS_200;
     let response = new APIResponse();
     let data = {};
 
@@ -60,18 +116,17 @@ app.post('/questions/add', async(req, res) => {
     let tags = req.body.tags;
     let media = req.body.media;
     let user = req.session.user;
-    let username = (user == undefined) ? user : user._source.username;
 
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
         if (user == undefined){
-            res.status(constants.STATUS_401);
+            status = constants.STATUS_401;
         }
         else {
-            res.status(constants.STATUS_400);
+            status = constants.STATUS_400;
         }   
         response.setERR(constants.ERR_MISSING_PARAMS);
-        return res.json(response.toOBJ());
+        return {status: status, response: response.toOBJ()};
     }
 
     // perform database operations
@@ -79,23 +134,24 @@ app.post('/questions/add', async(req, res) => {
     
     // check response result
     if (addRes.status === constants.DB_RES_ERROR){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
     else if (addRes.status === constants.DB_RES_MEDIA_IN_USE){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_MEDIA_IN_USE);
     }
     else if (addRes.status === constants.DB_RES_SUCCESS){
-        res.status(constants.STATUS_200);
+        status = constants.STATUS_200;
         response.setOK();
         data[constants.ID_KEY] = addRes.data;
     }
     let merged = {...response.toOBJ(), ...data};
-    return res.json(merged);
-});
+    return {status: status, response: merged};
+}
 
-app.get('/questions/:qid', async(req, res) => {
+async function getQuestion(req){
+    let status = constants.STATUS_200;
     let response = new APIResponse();
     let data = {};
 
@@ -110,9 +166,9 @@ app.get('/questions/:qid', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (qid == undefined){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_MISSING_PARAMS);
-        return res.json(response.toOBJ());
+        return {status: status, response: response.toOBJ()};
     }
 
     // perform database operations
@@ -120,11 +176,11 @@ app.get('/questions/:qid', async(req, res) => {
     
     // check response result
     if (getRes.status === constants.DB_RES_Q_NOTFOUND){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (getRes.status === constants.DB_RES_SUCCESS){
-        res.status(constants.STATUS_200);
+        status = constants.STATUS_200;
         response.setOK();
         let question = getRes.data;
         let actual_rep = question._source.user.reputation;
@@ -134,10 +190,11 @@ app.get('/questions/:qid', async(req, res) => {
         data[constants.QUESTION_KEY] = question._source;
     }
     let merged = {...response.toOBJ(), ...data};
-    return res.json(merged);
-});
+    return {status: status, response: merged};
+}
 
-app.post('/questions/:qid/answers/add', async(req, res) => {
+async function addAnswer(req){
+    let status = constants.STATUS_200;
     let response = new APIResponse();
     let data = {};
 
@@ -151,13 +208,13 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     // check if any mandatory parameters are undefined
     if (qid == undefined || body == undefined || user == undefined){
         if (user == undefined){
-            res.status(constants.STATUS_401);
+            status = constants.STATUS_401;
         }
         else {
-            res.status(constants.STATUS_400);
+            status = constants.STATUS_400;
         }
         response.setERR(constants.ERR_MISSING_PARAMS);
-        return res.json(response.toOBJ());
+        return {status: status, response: response.toOBJ()};
     }
 
     // perform database operations
@@ -165,23 +222,24 @@ app.post('/questions/:qid/answers/add', async(req, res) => {
     
     // check response result
     if (addRes.status === constants.DB_RES_Q_NOTFOUND){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (addRes.status === constants.DB_RES_ERROR){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
     else if (addRes.status === constants.DB_RES_SUCCESS){
-        res.status(constants.STATUS_200);
+        status = constants.STATUS_200;
         response.setOK();
         data[constants.ID_KEY] = addRes.data;
     }
     let merged = {...response.toOBJ(), ...data};
-    return res.json(merged);
-});
+    return {status: status, response: merged};
+}
 
-app.get('/questions/:qid/answers', async(req, res) => {
+async function getAnswers(req){
+    let status = constants.STATUS_200;
     let response = new APIResponse();
     let data = {};
 
@@ -190,9 +248,9 @@ app.get('/questions/:qid/answers', async(req, res) => {
 
     // check if any mandatory parameters are undefined
     if (qid == undefined){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_MISSING_PARAMS);
-        return res.json(response.toOBJ());
+        return {status: status, response: response.toOBJ()};
     }
 
     // perform database operations
@@ -200,21 +258,23 @@ app.get('/questions/:qid/answers', async(req, res) => {
     
     // check response result
     if (getRes.status === constants.DB_RES_Q_NOTFOUND){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (getRes.status === constants.DB_RES_SUCCESS){
-        res.status(constants.STATUS_200);
+        status = constants.STATUS_200;
         response.setOK();
         data[constants.ANSWERS_KEY] = getRes.data;
     }
     let merged = {...response.toOBJ(), ...data};
-    return res.json(merged);
-});
+    return {status: status, response: merged};
+}
 
 /* milestone 2 */
-app.delete('/questions/:qid', async(req, res) => {
+
+async function deleteQuestion(req){
     // grab parameters
+    let status = constants.STATUS_200;
     let response = new APIResponse();
 
     // grab parameters
@@ -225,13 +285,13 @@ app.delete('/questions/:qid', async(req, res) => {
     // check if any mandatory parameters are undefined
     if (user == undefined || qid == undefined){
         if (user == undefined){
-            res.status(constants.STATUS_401);
+            status = constants.STATUS_401;
         }
         else {
-            res.status(constants.STATUS_400);
+            status = constants.STATUS_400;
         }
         response.setERR(constants.ERR_MISSING_PARAMS);
-        return res.json(response.toOBJ());
+        return {status: status, response: response.toOBJ()};
     }
 
     // perform database operations
@@ -239,22 +299,24 @@ app.delete('/questions/:qid', async(req, res) => {
     
     // check response result
     if (deleteRes.status === constants.DB_RES_NOT_ALLOWED){
-        res.status(constants.STATUS_403);
+        status = constants.STATUS_403;
         response.setERR(constants.ERR_DEL_NOTOWN_Q);
     }
     else if (deleteRes.status === constants.DB_RES_Q_NOTFOUND){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (deleteRes.status === constants.DB_RES_SUCCESS){
-        res.status(constants.STATUS_200);
+        status = constants.STATUS_200;
         response.setOK();
     }
-    return res.json(response.toOBJ());
-});
+    return {status: status, response: response.toOBJ()};
+}
 
 /* milestone 3 */
-app.post('/questions/:qid/upvote', async(req, res) => {
+
+async function upvoteQuestion(req){
+    let status = constants.STATUS_200;
     let response = new APIResponse();
 
     // grab parameters
@@ -266,13 +328,13 @@ app.post('/questions/:qid/upvote', async(req, res) => {
     // check if any mandatory parameters are unspecified
     if (user == undefined || qid == undefined || upvote == undefined){
         if (user == undefined){
-            res.status(constants.STATUS_401);
+            status = constants.STATUS_401;
         }
         else {
-            res.status(constants.STATUS_400);
+            status = constants.STATUS_400;
         }
         response.setERR(constants.ERR_MISSING_PARAMS);
-        return res.json(response.toOBJ());
+        return {status: status, response: response.toOBJ()};
     }
 
     // perform database operations
@@ -280,23 +342,24 @@ app.post('/questions/:qid/upvote', async(req, res) => {
     
     // check response result
     if (updateRes.status === constants.DB_RES_Q_NOTFOUND){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (updateRes.status === constants.DB_RES_ERROR){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
     else if (updateRes.status === constants.DB_RES_SUCCESS){
-        res.status(constants.STATUS_200);
+        status = constants.STATUS_200;
         response.setOK();
     }
 
     // return HTTP response
-    return res.json(response.toOBJ());
-});
+    return {status: status, response: response.toOBJ()};
+}
 
-app.post('/answers/:aid/upvote', async(req, res) => {
+async function upvoteAnswer(req){
+    let status = constants.STATUS_200;
     let response = new APIResponse();
     
     // grab parameters
@@ -308,13 +371,13 @@ app.post('/answers/:aid/upvote', async(req, res) => {
     // check if any mandatory parameters are unspecified
     if (user == undefined || aid == undefined || upvote == undefined){
         if (user == undefined){
-            res.status(constants.STATUS_401);
+            status = constants.STATUS_401;
         }
         else {
-            res.status(constants.STATUS_400);
+            status = constants.STATUS_400;
         }
         response.setERR(constants.ERR_MISSING_PARAMS);
-        return res.json(response.toOBJ());
+        return {status: status, response: response.toOBJ()};
     }
 
     // perform database operations
@@ -322,23 +385,24 @@ app.post('/answers/:aid/upvote', async(req, res) => {
 
     // check response result
     if (updateRes.status === constants.DB_RES_A_NOTFOUND){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_A_NOTFOUND);
     }
     else if (updateRes.status === constants.DB_RES_ERROR){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
     else {
-        res.status(constants.STATUS_200);
+        status = constants.STATUS_200;
         response.setOK();
     }
 
     // return HTTP response
-    return res.json(response.toOBJ());
-});
+    return {status: status, response: response.toOBJ()};
+}
 
-app.post('/answers/:aid/accept', async(req, res) => {
+async function acceptAnswer(req){
+    let status = constants.STATUS_200;
     let response = new APIResponse();
     
     // grab parameters
@@ -349,13 +413,13 @@ app.post('/answers/:aid/accept', async(req, res) => {
     // check if any mandatory parameters are unspecified
     if (user == undefined || aid == undefined){
         if (user == undefined){
-            res.status(constants.STATUS_401);
+            status = constants.STATUS_401;
         }
         else {
-            res.status(constants.STATUS_400);
+            status = constants.STATUS_400;
         }
         response.setERR(constants.ERR_MISSING_PARAMS);
-        return res.json(response.toOBJ());
+        return {status: status, response: response.toOBJ()};
     }
 
     // perform database operations
@@ -363,39 +427,38 @@ app.post('/answers/:aid/accept', async(req, res) => {
 
     // check response result
     if (acceptRes.status === constants.DB_RES_Q_NOTFOUND){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_Q_NOTFOUND);
     }
     else if (acceptRes.status === constants.DB_RES_A_NOTFOUND){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_A_NOTFOUND);
     }
     else if (acceptRes.status === constants.DB_RES_NOT_ALLOWED){
-        res.status(constants.STATUS_403);
+        status = constants.STATUS_403;
         response.setERR(constants.ERR_NOT_ALLOWED);
     }
     else if (acceptRes.status === constants.DB_RES_ALRDY_ACCEPTED){
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response.setERR(constants.ERR_ALRDY_ACCEPTED);
     }
     else if (acceptRes.status === constants.DB_RES_SUCCESS){
-        res.status(constants.STATUS_200);
+        status = constants.STATUS_200;
         response.setOK();
     }
 
     // return HTTP response
-    return res.json(response.toOBJ());
-});
-
-// app.get('/questions/:username/questions', async(req, res) => {
-//     let username = req.params.username;
-
-//     let result = await database.getQuestionsByUser(username);
-//     console.log(result);
-//     console.log(`${result.length} results`);
-//     let response = {'questions': result};
-//     return res.json(response);
-// });
+    return {status: status, response: response.toOBJ()};
+}
 
 /* Start the server. */
-app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+var server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+function shutdown(){
+    if (ch) ch.close();
+    if (conn) conn.close();
+    server.close();
+}

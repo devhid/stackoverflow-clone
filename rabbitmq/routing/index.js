@@ -17,7 +17,7 @@ const PORT = 8008;
 
 /* options for the redis store */
 const redisOptions = {
-    host: '64.52.162.153',
+    host: '192.168.122.27',
     port: 6379,
     pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
 };
@@ -32,6 +32,7 @@ const sessionOptions = {
     logErrors: true,
     store: new RedisStore(redisOptions)
 };
+
 
 /* image upload destination */
 const upload = multer();
@@ -79,7 +80,7 @@ async function routeRequest(key, data){
 async function wrapRequest(req, res, key, endpoint){
     let data = {
         endpoint: endpoint,
-        user: req.session.user,
+        session: {user: req.session.user},
         params: req.params,
         body: req.body,
         file: req.file
@@ -88,6 +89,10 @@ async function wrapRequest(req, res, key, endpoint){
     console.log(`routeRequest status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
+    // mainly for getMedia
+    if (dbRes.content_type != undefined){
+        res.set('Content-Type', dbRes.content_type);
+    }
     return res.json(dbRes.response);
 }
 
@@ -189,4 +194,12 @@ app.get('/user/:uid/answers', async (req, res) => {
 });
 
 /* Start the server. */
-app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+var server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+function shutdown(){
+    rabbit.shutdown();
+    server.close();
+}

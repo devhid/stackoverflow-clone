@@ -1,5 +1,6 @@
 /* library imports */
 const express = require('express');
+const amqp = require('amqplib/callback_api');
 
 /* internal imports */
 const database = require('./database');
@@ -21,50 +22,114 @@ app.use(function(req, res, next) {
   next();
 });
 
+/* amqplib connection */
+var conn = null;
+var ch = null;
+try {
+    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
+        if (error0) {
+            throw error0;
+        }
+        conn = connection;
+        connection.createChannel(function(error1, channel) {
+            if (error1) {
+                throw error1;
+            }
+            ch = channel;
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
+                if (err){
+                    throw err;
+                }
+                console.log(`ok ${JSON.stringify(ok)}`);
+                setTimeout(listen, 1000);
+            });
+        });
+    });
+}
+catch (err){
+    console.log(`[Rabbit] Failed to connect ${err}`);
+}
+
+function listen(){
+    ch.assertQueue(constants.SERVICES.USER, constants.QUEUE.PROPERTIES, function(error2, q){
+        if (error2){
+            throw error2;
+        }
+        ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.USER);
+        ch.prefetch(1); 
+        ch.consume(q.queue, function reply(msg){
+            let req = JSON.parse(msg.content.toString()); // gives back the data object
+            let endpoint = req.endpoint;
+            let response = {};
+            switch (endpoint) {
+                case constants.ENDPOINTS.USER_GET:
+                    response = await getUser(req);
+                    break;
+                case constants.ENDPOINTS.USER_Q:
+                    response = await getUserQuestions(req);
+                    break;
+                case constants.ENDPOINTS.USER_A:
+                    response = await getUserAnswers(req);
+                    break;
+                default:
+                    break;
+            }
+            ch.sendToQueue(msg.properties.replyTo,
+                Buffer.from(JSON.stringify(response)), {
+                    correlationId: msg.properties.correlationId
+                }
+            );
+            ch.ack(msg);
+        });
+    });
+}
+
 /* the port the server will listen on */
 const PORT = 8006;
 
 /* get information about user */
-app.get('/user/:uid', async (req, res) => {
+async function getUser(req){
+    let status = constants.STATUS_400;
     let response = generateERR();
 
     const username = req.params['uid'];
     if(username === undefined) {
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_MISSING_UID;
-        return res.json(response);
+        return {status: status, response: response};
     }
 
     const user = await database.getUser(username);
     if(user === null) {
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
-        return res.json(response);
+        return {status: status, response: response};
     }
 
     response = generateOK();
     response[constants.USER_KEY] = user;
 
-    res.status(constants.STATUS_200);
-    return res.json(response);
-});
+    status = constants.STATUS_200;
+    return {status: status, response: response};
+}
 
 /* get user's questions */
-app.get('/user/:uid/questions', async (req, res) => {
+async function getUserQuestions(req){
+    let status = constants.STATUS_400;
     let response = generateERR();
 
     const username = req.params['uid'];
     if(username === undefined) {
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_MISSING_UID;
-        return res.json(response);
+        return {status: status, response: response};
     }
 
     const user = await database.getUser(username);
     if(user === null) {
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
-        return res.json(response);
+        return {status: status, response: response};
     }
 
     const qids = await database.getUserQuestions(username);
@@ -72,26 +137,27 @@ app.get('/user/:uid/questions', async (req, res) => {
     response[constants.QUESTIONS_KEY] = qids;
     console.log(response);
 
-    res.status(constants.STATUS_200);
-    return res.json(response);
-});
+    status = constants.STATUS_200;
+    return {status: status, response: response};
+}
 
 /* get user's answers */
-app.get('/user/:uid/answers', async (req, res) => {
+async function getUserAnswers(req){
+    let status = constants.STATUS_400;
     let response = generateERR();
 
     const username = req.params['uid'];
     if(username === undefined) {
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_MISSING_UID;
-        return res.json(response);
+        return {status: status, response: response};
     }
 
     const user = await database.getUser(username);
     if(user === null) {
-        res.status(constants.STATUS_400);
+        status = constants.STATUS_400;
         response[constants.STATUS_ERR] = constants.ERR_UNKNOWN_USER;
-        return res.json(response);
+        return {status: status, response: response};
     }
 
     const aids = await database.getUserAnswers(username);
@@ -99,9 +165,9 @@ app.get('/user/:uid/answers', async (req, res) => {
     response = generateOK();
     response[constants.ANSWERS_KEY] = aids;
 
-    res.status(constants.STATUS_200);
-    return res.json(response);
-});
+    status = constants.STATUS_200;
+    return {status: status, response: response};
+}
 
 /* helper funcs */
 function generateOK(){
@@ -118,4 +184,13 @@ function generateERR(){
 }
 
 /* Start the server. */
-app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+var server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+function shutdown(){
+    if (ch) ch.close();
+    if (conn) conn.close();
+    server.close();
+}

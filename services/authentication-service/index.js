@@ -17,7 +17,7 @@ const PORT = 8002;
 
 /* options for the redis store */
 const redisOptions = {
-    host: '64.52.162.153',
+    host: '192.168.122.27',
     port: 6379,
     pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
 };
@@ -244,7 +244,7 @@ async function login(req) {
     }
 
     req.session.destroy(function done() {
-        res.status(constants.status_200);
+        res.status(constants.STATUS_200);
         response = {"status": "OK"};
         return res.json(response);
     });
@@ -294,7 +294,7 @@ function notEmpty(fields) {
 }
 
 /* Start the server. */
-let server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+let server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
 
 /* Graceful shutdown */
 process.on("SIGINT", shutdown);

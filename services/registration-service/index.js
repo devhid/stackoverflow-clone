@@ -1,5 +1,6 @@
 /* library imports */
 const express = require('express');
+const amqp = require('amqplib/callback_api');
 
 /* internal imports */
 const database = require('./database');
@@ -32,6 +33,63 @@ app.use(function(req, res, next) {
   next();
 });
 
+
+/* amqplib connection */
+var conn = null;
+var ch = null;
+try {
+    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
+        if (error0) {
+            throw error0;
+        }
+        conn = connection;
+        connection.createChannel(function(error1, channel) {
+            if (error1) {
+                throw error1;
+            }
+            ch = channel;
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
+                if (err){
+                    throw err;
+                }
+                console.log(`ok ${JSON.stringify(ok)}`);
+                setTimeout(listen, 1000);
+            });
+        });
+    });
+}
+catch (err){
+    console.log(`[Rabbit] Failed to connect ${err}`);
+}
+
+function listen(){
+    ch.assertQueue(constants.SERVICES.REGISTER, constants.QUEUE.PROPERTIES, function(error2, q){
+        if (error2){
+            throw error2;
+        }
+        ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.REGISTER);
+        ch.prefetch(1); 
+        ch.consume(q.queue, function reply(msg){
+            let req = JSON.parse(msg.content.toString()); // gives back the data object
+            let endpoint = req.endpoint;
+            let response = {};
+            switch (endpoint) {
+                case constants.ENDPOINTS.REGISTER:
+                    response = await addUser(req);
+                    break;
+                default:
+                    break;
+            }
+            ch.sendToQueue(msg.properties.replyTo,
+                Buffer.from(JSON.stringify(response)), {
+                    correlationId: msg.properties.correlationId
+                }
+            );
+            ch.ack(msg);
+        });
+    });
+}
+
 app.get('/emailtest', async(req, res) => {
     console.log(mail_server);
     mail_server.send({
@@ -46,25 +104,25 @@ app.get('/emailtest', async(req, res) => {
 });
 
 /* Register a user if they do not already exist. */
-app.post('/adduser', async (req, res) => {
-    console.log(req.body);
+async function addUser(req){
     const email = req.body["email"];
     const username = req.body["username"];
     const password = req.body["password"];
 
+    let status = constants.STATUS_200;
     let response = {};
 
-    if(!notEmpty([email, username, password])) {
-        res.status(constants.STATUS_400);
+    if (!notEmpty([email, username, password])) {
+        status = constants.STATUS_400;
         response = {"status": "error", "error": "One or more fields are empty."};
-        return res.json(response);
+        return {status: status, response: response};
     }
     let userExists = await database.userExists(email, username);
 
-    if(userExists) {
-        res.status(constants.STATUS_400)
+    if (userExists) {
+        status = constants.STATUS_400;
         response = {"status": "error", "error": "A user with that email or username already exists."};
-        return res.json(response);
+        return {status: status, response: response};
     }
 
     const key = await database.addUser(email, username, password);
@@ -80,10 +138,10 @@ app.post('/adduser', async (req, res) => {
             //console.log(message);
     });
 
-    res.status(constants.STATUS_200);
+    status = constants.STATUS_200;
     response = {"status": "OK"};
-    return res.json(response);
-});
+    return {status: status, response: response};
+}
 
 /* Checks if any of the variables in the fields array are empty. */
 function notEmpty(fields) {
@@ -94,4 +152,13 @@ function notEmpty(fields) {
 }
 
 /* Start the server. */
-app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+var server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+function shutdown(){
+    if (ch) ch.close();
+    if (conn) conn.close();
+    server.close();
+}
