@@ -75,6 +75,7 @@ function setupConnection(){
  * @param {Object} msg the message on the RabbitMQ queue
  */
 async function processRequest(msg){
+    console.log(`Received ${msg.content.toString()}`);
     let req = JSON.parse(msg.content.toString()); // gives back the data object
     let endpoint = req.endpoint;
     let response = {};
