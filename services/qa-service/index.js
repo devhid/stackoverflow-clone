@@ -34,27 +34,35 @@ var ch = null;
  * Asserts the Exchange and Queue exists and sets up the connection variables.
  */
 function setupConnection(){
+    console.log(`[Rabbit] Setting up connection...`);
     amqp.connect(constants.AMQP_HOST, function(error0, connection) {
         if (error0) {
             throw error0;
         }
+        console.log(`[Rabbit] Connected...`);
         conn = connection;
         connection.createChannel(function(error1, channel) {
             if (error1) {
                 throw error1;
             }
+            console.log(`[Rabbit] Channel created...`);
             ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ex) => {
                 if (err){
                     throw err;
                 }
+                console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
                 ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error2, q){
                     if (error2){
                         throw error2;
                     }
-                    ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
+                    console.log(`[Rabbit] Asserted queue... ${q.queue}`);
+                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.QA);
+                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.QA} to ${ex.exchange}...`);
                     ch.prefetch(1); 
+                    console.log(`[Rabbit] Set prefetch 1...`);
                     ch.consume(q.queue, processRequest(msg));
+                    console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
                 });
             });
         });
@@ -109,9 +117,8 @@ async function processRequest(msg){
 function main(){
     try {
         setupConnection();
-        console.log(`[Rabbit] Successfully setup the connection and attached the callback.`);
     } catch (err){
-        console.log(`[Rabbit] Failed to connect ${err}`);
+        console.log(`[Rabbit] Failed to setup connection, ${err}`);
     }
 }
 
