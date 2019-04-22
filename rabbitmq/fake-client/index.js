@@ -73,7 +73,10 @@ function listen(){
 }
 
 function addQuestion(request){
-    return {status: constants.STATUS_200};
+    return {
+        status: constants.STATUS_200,
+        response: {status: "OK"}
+    };
 }
 
 /* Start the server. */
