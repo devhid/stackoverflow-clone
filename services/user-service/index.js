@@ -50,7 +50,7 @@ catch (err){
     console.log(`[Rabbit] Failed to connect ${err}`);
 }
 
-function listen(){
+async function listen(){
     ch.assertQueue(constants.SERVICES.USER, constants.QUEUE.PROPERTIES, function(error2, q){
         if (error2){
             throw error2;

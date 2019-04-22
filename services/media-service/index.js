@@ -82,7 +82,7 @@ catch (err){
 }
 
 /* Listen for responses */
-function listen(){
+async function listen(){
     ch.assertQueue(constants.SERVICES.MEDIA, constants.QUEUE.PROPERTIES, function(error2, q){
         if (error2){
             throw error2;
