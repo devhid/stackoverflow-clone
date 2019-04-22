@@ -1,13 +1,13 @@
 ---
 #
-# Playbook to setup the user service.
+# Playbook to setup the search service.
 #
-- hosts: qa
+- hosts: search
   remote_user: ubuntu
   become: yes
   become_user: root
   vars:
-    SERVICE: qa-service
+    SERVICE: search-service
     GIT_USERNAME: devhid
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
