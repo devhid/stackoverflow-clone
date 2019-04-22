@@ -28,7 +28,7 @@ module.exports = {
         USER: 'user'
     },
 
-    DB_RES_SUCCESS: 'success',
-    DB_RES_ERROR: 'error',
-    DB_RES_ERR_TOO_LONG: 'Took too long to respond'
+    RMQ_SUCCESS: 'success',
+    RMQ_ERROR: 'error',
+    RMQ_ERR_TOO_LONG: 'Took too long to respond'
 };

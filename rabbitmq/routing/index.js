@@ -1,11 +1,12 @@
 /* library imports */
 const express = require('express');
-const amqp = require('amqplib/callback_api');
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
+const multer = require('multer');
 
 /* internal imports */
 const constants = require('./constants');
 const rabbit = require('./rabbit');
-const APIResponse = require('./apiresponse').APIResponse;
 
 /* initialize express application */
 const app = express();
@@ -13,6 +14,30 @@ require('express-async-errors');
 
 /* the port the server will listen on */
 const PORT = 8008;
+
+/* options for the redis store */
+const redisOptions = {
+    host: '64.52.162.153',
+    port: 6379,
+    pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
+};
+
+/* options for the session */
+const sessionOptions = {
+    name: 'soc_login',
+    secret: 'EditThisLaterWithARealSecret',
+    unset: 'destroy',
+    resave: false,
+    saveUninitialized: true,
+    logErrors: true,
+    store: new RedisStore(redisOptions)
+};
+
+/* image upload destination */
+const upload = multer();
+
+/* handle user sessions */
+app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
@@ -26,27 +51,69 @@ app.use(function(req, res, next) {
   next();
 });
 
+/**
+ * Routes an incoming request to a work/rpc queue.
+ * Returns an object {'status': RMQ_STATUS, 'data': RMQ_DATA} where RMQ_DATA is data returned from the backend call.
+ * @param {string} key routing/binding key for the message
+ * @param {Object} data data to send in the message
+ */
+async function routeRequest(key, data){
+    let publishRes = null;
+    try {
+        publishRes = await rabbit.publishMessage(key, data);
+    }
+    catch (err){
+        publishRes = err;
+    }
+    return publishRes;
+}
+
+/**
+ * Wraps a request and routes it to a work/rpc queue.
+ * @param {Response} res Express response object
+ * @param {string} key routing/binding key for the message
+ * @param {Object} data data to send in the message
+ */
+async function wrapRequest(res, key, data){
+    let rabbitRes = await routeRequest(key, data);
+    let dbRes = rabbitRes.data;
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+}
+
+
 /* auth service */
 app.post('/login', async(req,res) => {
-
-});
-
-app.get('/increment', async(req,res) => {
-
+    let data = {
+        user: req.session.user,
+        body: req.body
+    };
+    return await wrapRequest(res, constants.KEYS.AUTH, data);
 });
 
 app.post('/logout', async(req,res) => {
-
+    let data = {
+        user: req.session.user
+    };
+    return await wrapRequest(res, constants.KEYS.AUTH, data);
 });
 
 /* email service */
 app.post('/verify', async(req,res) => {
-
+    let data = {
+        body: req.body
+    };
+    return await wrapRequest(res, constants.KEYS.EMAIL, data);
 });
 
 /* media service */
-app.post('/addmedia', async(req,res) => {
 
+app.post('/addmedia', upload.single('content'), async (req,res) => {
+    let data = {
+        user: req.session.user,
+        file: req.file
+    };
+    return await wrapRequest(res, constants.KEYS.MEDIA, data);
 });
 
 app.get('/media/:id', async(req,res) => {
@@ -56,24 +123,14 @@ app.get('/media/:id', async(req,res) => {
 /* qa service */
 
 app.post('/questions/add', async(req, res) => {
-    let response = new APIResponse();
-
-    let publishRes = null;
-    try {
-        publishRes = await rabbit.publishMessage(constants.KEYS.QA, req.body);
-    }
-    catch (err){
-        publishRes = err;
-    }
-
-    if (publishRes.status === constants.DB_RES_SUCCESS){
-        console.log(`Success`);
-    }
-    else { 
-        console.log(`Failure, ${publishRes.status}`);
-    }
-    console.log(`Data ${publishRes.data}`);
-    return res.json(response.toOBJ());
+    let data = {
+        user: req.session.user,
+        body: req.body
+    };
+    let rabbitRes = await routeRequest(constants.KEYS.QA, data);
+    let dbRes = rabbitRes.data;
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
 });
 
 app.get('/questions/:qid', async(req, res) => {

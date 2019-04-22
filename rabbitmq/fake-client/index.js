@@ -61,6 +61,7 @@ function listen(){
         ch.prefetch(1); 
         ch.consume(q.queue, function reply(msg){
             console.log(`Received ${msg.content.toString()}`);
+            // JSON.parse(msg.content.toString()); // gives back the data object
             ch.sendToQueue(msg.properties.replyTo,
                 Buffer.from(JSON.stringify(addQuestion(msg))), {
                     correlationId: msg.properties.correlationId
