@@ -29,8 +29,8 @@ try {
                     throw err;
                 }
                 console.log(`ok ${JSON.stringify(ok)}`);
+                setTimeout(listen, 1000);
             });
-            setTimeout(listen, 1000);
         });
     });
 }
@@ -44,7 +44,7 @@ function listen(){
         if (error2){
             throw error2;
         }
-        let resp = ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.KEYS.EMAIL);
+        ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.KEYS.EMAIL);
         ch.prefetch(1); 
         ch.consume(q.queue, function reply(msg){
             console.log(`Received ${msg.content.toString()}`);
@@ -185,4 +185,14 @@ function notEmpty(fields) {
 }
 
 /* Start the server. */
-app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+let server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+
+/* Graceful shutdown */
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+function shutdown(){
+    if (conn) conn.close();
+    if (ch) ch.close();
+    server.close();
+}
