@@ -2,18 +2,18 @@
 #
 # Playbook to setup the email verification service.
 #
-- hosts: email_verification
+- hosts: registration
   remote_user: ubuntu
   become: yes
   become_user: root
   vars:
-    SERVICE: email-verification-service
+    SERVICE: registration-service
     GIT_USERNAME: devhid
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
   - { role: ssh }
   - { role: nodejs }
-  - { role: rabbitmq }
+  - { role: postfix }
 
   tasks:
     - name: Clone stackoverflow-clone repository from Git

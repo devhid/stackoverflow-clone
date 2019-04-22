@@ -38,6 +38,12 @@ ProxyCommand ssh jump -W %h:%p
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
+Host registration-service
+HostName 192.168.122.32
+ProxyCommand ssh jump -W %h:%p
+User ubuntu
+IdentityFile ~/.ssh/id_rsa
+
 Host search-service
 HostName 192.168.122.29
 ProxyCommand ssh jump -W %h:%p
