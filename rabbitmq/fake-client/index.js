@@ -29,7 +29,7 @@ try {
                 }
                 console.log(`ok ${JSON.stringify(ok)}`);
             });
-            setTimeout(listen(), 1000);
+            setTimeout(listen, 1000);
         });
     });
 }
@@ -58,7 +58,6 @@ function listen(){
             throw error2;
         }
         let resp = ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.KEYS.QA);
-        console.log(JSON.stringify(resp));
         ch.prefetch(1);
         while (true){
             ch.consume(q.queue, function reply(msg){
