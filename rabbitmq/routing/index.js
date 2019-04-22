@@ -80,7 +80,7 @@ async function routeRequest(key, data){
 async function wrapRequest(req, res, key, endpoint){
     let data = {
         endpoint: endpoint,
-        session: {user: req.session.user},
+        session: {user: ((req.session == undefined) ? undefined : req.session.user)},
         params: req.params,
         body: req.body,
         file: req.file

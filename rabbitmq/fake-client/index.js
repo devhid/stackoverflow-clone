@@ -52,7 +52,7 @@ function setupConnection(){
                     }
                     ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
                     ch.prefetch(1); 
-                    ch.consume(q.queue, processRequest(msg));
+                    ch.consume(q.queue, processRequest);
                 });
             });
         });
