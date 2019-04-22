@@ -270,6 +270,8 @@ async function getAnswers(req){
 
     // perform database operations
     let getRes = await database.getAnswers(qid);
+    let answers = getRes.data;
+    let transformedAnswers = [];
     
     // check response result
     if (getRes.status === constants.DB_RES_Q_NOTFOUND){
@@ -279,7 +281,16 @@ async function getAnswers(req){
     else if (getRes.status === constants.DB_RES_SUCCESS){
         status = constants.STATUS_200;
         response.setOK();
-        data[constants.ANSWERS_KEY] = getRes.data;
+
+        // transform them to fit the external model
+        for (var ans of answers){
+            ans._source[constants.ID_KEY] = ans._id;
+            ans = ans._source;
+            ans.media = (ans.media.length == 0) ? null : ans.media;
+            delete ans.qid;
+            transformedAnswers.push(ans);
+        }
+        data[constants.ANSWERS_KEY] = transformedAnswers;
     }
     let merged = {...response.toOBJ(), ...data};
     return {status: status, response: merged};
@@ -407,7 +418,7 @@ async function upvoteAnswer(req){
         status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
-    else {
+    else if (updateRes.status === constants.DB_RES_SUCCESS){
         status = constants.STATUS_200;
         response.setOK();
     }

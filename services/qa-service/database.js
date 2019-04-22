@@ -349,7 +349,8 @@ async function addQuestion(user, title, body, tags, media){
         body: {
             "qid": response._id,
             "upvotes": [],
-            "downvotes": []
+            "downvotes": [],
+            "waived_downvotes": []
         }
     });
     if (upvoteResponse.result !== "created"){
@@ -644,7 +645,8 @@ async function addAnswer(qid, username, body, media){
             "qid": qid,
             "aid": response._id,
             "upvotes": [],
-            "downvotes": []
+            "downvotes": [],
+            "waived_downvotes": []
         }
     });
     if (upvoteResponse.result !== "created"){
@@ -726,19 +728,8 @@ async function getAnswers(qid){
         }
     })).hits.hits;
 
-    // transform them to fit the external model
-    var transformedAnswers = [];
-    for (var i in answers){
-        let ans = answers[i];
-        ans._source[constants.ID_KEY] = ans._id;
-        ans = ans._source;
-        ans.media = (ans.media.length == 0) ? null : ans.media;
-        delete ans.qid;
-        transformedAnswers.push(ans);
-    }
-
     dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = transformedAnswers;
+    dbResult.data = answers;
     return dbResult;
 }
 
@@ -886,13 +877,17 @@ async function deleteQuestion(qid, username){
  * @param {string} aid the _id of the answer (if used for undoing the vote to an answer)
  * @param {string} username the user who wishes to undo his vote for the question/answer
  * @param {boolean} upvote whether the user's vote is in upvotes or downvotes
+ * @param {boolean} waived whether or not the user's downvote was waived (only valid if !upvote)
  */
-async function undoVote(qid, aid, username, upvote){
+async function undoVote(qid, aid, username, upvote, waived){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
+    if (!upvote && waived){
+        arr = "waived_" + arr;
+    }
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.${param_user}))`
     const undoVoteResponse = await client.updateByQuery({
@@ -929,13 +924,17 @@ async function undoVote(qid, aid, username, upvote){
  * @param {string} aid the _id of the answer (if used for adding the vote to an answer)
  * @param {string} username the user who wishes to add his vote for the question/answer
  * @param {boolean} upvote whether the user's vote is to upvote or downvote
+ * @param {boolean} waived whether the user's downvote should be waived
  */
-async function addVote(qid, aid, username, upvote){
+async function addVote(qid, aid, username, upvote, waived){
     let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
     let arr = (upvote) ? "upvotes" : "downvotes";
+    if (!upvote && waived){
+        arr = "waived_" + arr;
+    }
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.add(params.${param_user})`
     const addVoteResponse = await client.updateByQuery({
@@ -1113,20 +1112,24 @@ async function upvoteQA(qid, aid, username, upvote){
     //      ElasticSearch treats them as missing fields if they are empty
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
+    let waived_downvotes = (qa_vote._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
     console.log(`upvotes = ${upvotes}`);
     console.log(`downvotes = ${downvotes}`);
+    console.log(`waived_downvotes = ${waived_downvotes}`);
 
     // check if the user downvoted or upvoted the question
     let score_diff = 0;     // the difference in the "score" of a question
-    let rep_diff = 0;       // the difference in the "reputation" of a user, >= 1
+    let rep_diff = 0;       // the difference in the "reputation" of a user which must be >= 1
     let upvoted = upvotes.includes(username);
     let downvoted  = downvotes.includes(username);
+    let waived = waived_downvotes.includes(username);
     let poster = await getUserByPost(qid,aid);
     let poster_rep = await getReputation(poster);
     console.log(`poster = ${poster}`);
     console.log(`poster_rep = ${poster_rep}`);
     console.log(`upvoted = ${upvoted}`);
     console.log(`downvoted = ${downvoted}`);
+    console.log(`waived = ${waived}`);
 
     // if the user asks to perform the same operation, we don't need to do anything
     if ((upvote && upvoted) || (downvote && downvoted)){
@@ -1136,26 +1139,36 @@ async function upvoteQA(qid, aid, username, upvote){
     }
 
     // if the user already voted, undo the vote
-    if (upvoted || downvoted){
+    if (upvoted || downvoted || waived){
         let in_upvotes = (upvoted) ? true : false;
-        //  if it was upvoted, then subtract 1
-        //      else if it was downvoted, add 1
-        rep_diff = (upvoted) ? -1 : 1;
-        score_diff = (upvoted) ? -1 : 1;
+
+        // Remember, downvotes are waived for USER REPUTATION, not POST SCORE
+        // if the vote was waived, then rep_diff = 0, score_diff = 1
+        //      else if it was upvoted, then rep_diff = score_diff = -1
+        //      else if it was downvoted, then rep_diff = score_diff = 1
+        rep_diff = (waived) ? 0 : ((upvoted) ? -1 : 1);
+        score_diff = (waived) ? 1 : ((upvoted) ? -1 : 1);
         console.log(`undoing vote by ${poster}`);
-        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes);
+        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
         if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
     }
 
     // add the vote
-    let waive_vote = false; 
     rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
     score_diff = (upvote) ? score_diff + 1 : score_diff - 1;
 
+    // determine if we have to waive the vote
+    let waive_vote = false;
+    if (poster_rep + rep_diff < 1){
+        waive_vote = true;
+        // later we do poster_rep + (rep_diff) = poster_rep + (1 - poster_rep) = 1
+        rep_diff = 1 - poster_rep;
+    }
+
     console.log(`adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
-    let addVoteRes = await addVote(qid, aid, username, upvote);
+    let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
     if (addVoteRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
