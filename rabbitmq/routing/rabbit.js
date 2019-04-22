@@ -15,7 +15,7 @@ function generateUuid() {
 /**
  * Creates a RabbitMQ exchange as specified by options in constants.
  */
-function createExchange(){
+async function createExchange(){
     amqp.connect(constants.AMQP_HOST, function(error0, connection) {
         if (error0) {
             throw error0;

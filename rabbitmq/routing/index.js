@@ -26,7 +26,7 @@ app.use(function(req, res, next) {
 });
 
 try {
-    rabbit.createExchange();
+    await rabbit.createExchange();
 }
 catch (err) {
     console.log(`[Rabbit] Error creating exchange ${err}`);
