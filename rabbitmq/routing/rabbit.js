@@ -47,7 +47,7 @@ function generateUuid() {
 async function publishMessage(bind_key, request){
     let dbResult = new DBResult();
     return new Promise( (resolve,reject) => {
-        ch.assertQueue(bind_key, constants.QUEUE.PROPERTIES, function(error2, q) {
+        ch.assertQueue('', constants.QUEUE.PROPERTIES, function(error2, q) {
             if (error2) {
                 dbResult.status = constants.DB_RES_ERROR;
                 dbResult.data = error2;
@@ -57,12 +57,10 @@ async function publishMessage(bind_key, request){
 
             console.log(` [x] Requesting ${JSON.stringify(request)}`);
 
-            ch.publish(constants.EXCHANGE.NAME, bind_key, 
-                Buffer.from(JSON.stringify(request), {
-                    correlationId: correlationId,
-                    replyTo: q.queue,
-                    persistent: true
-                })
+            ch.publish(constants.EXCHANGE.NAME, 
+                bind_key, 
+                Buffer.from(JSON.stringify(request)), 
+                { correlationId: correlationId, replyTo: q.queue, persistent: true }
             );
 
             ch.consume(q.queue, function(msg) {

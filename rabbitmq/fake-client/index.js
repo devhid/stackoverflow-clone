@@ -58,19 +58,16 @@ function listen(){
             throw error2;
         }
         let resp = ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.KEYS.QA);
-        ch.prefetch(1);
-        while (true){
-            ch.consume(q.queue, function reply(msg){
-                console.log(`Received ${msg.content.toString()}`);
-                ch.sendToQueue(msg.properties.replyTo,
-                    Buffer.from(JSON.stringify(addQuestion(msg))), {
-                        correlationId: msg.properties.correlationId
-                    }
-                );
-                ch.ack(msg);
-                connection.close();
-            });
-        }
+        ch.prefetch(1); 
+        ch.consume(q.queue, function reply(msg){
+            console.log(`Received ${msg.content.toString()}`);
+            ch.sendToQueue(msg.properties.replyTo,
+                Buffer.from(JSON.stringify(addQuestion(msg))), {
+                    correlationId: msg.properties.correlationId
+                }
+            );
+            ch.ack(msg);
+        });
     });
 }
 
