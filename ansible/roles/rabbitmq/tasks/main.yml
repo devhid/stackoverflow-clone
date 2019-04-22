@@ -1,0 +1,40 @@
+---
+#
+# Install RabbitMQ
+#
+
+  - name: Install rabbitmq signing key in APT
+    apt_key:
+      url: https://github.com/rabbitmq/signing-keys/releases/download/2.0/rabbitmq-release-signing-key.asc
+      state: present
+
+  - name: Install apt-transport-https using APT
+    apt:
+      name: apt-transport-https
+      update_cache: yes
+      
+  - name: Install erlang repository in APT
+    apt_repository:
+      repo: deb http://dl.bintray.com/rabbitmq-erlang/debian bionic erlang
+      state: present
+      filename: bintray.erlang
+
+  - name: Install erlang using APT
+    apt:
+      name: erlang
+      update_cache: yes
+
+  - name: Install rabbitmq repository in APT
+    apt_repository:
+      repo: deb https://dl.bintray.com/rabbitmq/debian bionic main
+      filename: bintray.rabbitmq
+
+  - name: Install rabbitmq-server using APT
+    apt:
+      name: rabbitmq-server
+      update_cache: yes
+
+  - name: Start the rabbitmq-server
+    service:
+      name: rabbitmq-server
+      state: started
