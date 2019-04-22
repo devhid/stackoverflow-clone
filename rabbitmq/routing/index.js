@@ -54,6 +54,7 @@ app.use(function(req, res, next) {
 /**
  * Routes an incoming request to a work/rpc queue.
  * Returns an object {'status': RMQ_STATUS, 'data': RMQ_DATA} where RMQ_DATA is data returned from the backend call.
+ * If RMQ_STATUS ==
  * @param {string} key routing/binding key for the message
  * @param {Object} data data to send in the message
  */
@@ -70,118 +71,121 @@ async function routeRequest(key, data){
 
 /**
  * Wraps a request and routes it to a work/rpc queue.
+ * @param {Request} req Express Request object
  * @param {Response} res Express response object
- * @param {string} key routing/binding key for the message
- * @param {Object} data data to send in the message
+ * @param {string} key routing/binding key for the message (determines which service)
+ * @param {string} endpoint which endpoint for the service
  */
-async function wrapRequest(res, key, data){
+async function wrapRequest(req, res, key, endpoint){
+    let data = {
+        endpoint: endpoint,
+        user: req.session.user,
+        params: req.params,
+        body: req.body,
+        file: req.file
+    };
     let rabbitRes = await routeRequest(key, data);
+    console.log(`routeRequest status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
     return res.json(dbRes.response);
 }
 
-
 /* auth service */
 app.post('/login', async(req,res) => {
-    let data = {
-        user: req.session.user,
-        body: req.body
-    };
-    return await wrapRequest(res, constants.KEYS.AUTH, data);
+    let endpoint = constants.ENDPOINTS.AUTH_LOGIN;
+    return await wrapRequest(req, res, constants.SERVICES.AUTH, endpoint);
 });
 
 app.post('/logout', async(req,res) => {
-    let data = {
-        user: req.session.user
-    };
-    return await wrapRequest(res, constants.KEYS.AUTH, data);
+    let endpoint = constants.ENDPOINTS.AUTH_LOGOUT;
+    return await wrapRequest(req, res, constants.SERVICES.AUTH, endpoint);
 });
 
 /* email service */
 app.post('/verify', async(req,res) => {
-    let data = {
-        body: req.body
-    };
-    return await wrapRequest(res, constants.KEYS.EMAIL, data);
+    let endpoint = constants.ENDPOINTS.EMAIL_VERIFY;
+    return await wrapRequest(req, res, constants.SERVICES.EMAIL, endpoint);
 });
 
 /* media service */
-
 app.post('/addmedia', upload.single('content'), async (req,res) => {
-    let data = {
-        user: req.session.user,
-        file: req.file
-    };
-    return await wrapRequest(res, constants.KEYS.MEDIA, data);
+    let endpoint = constants.ENDPOINTS.MEDIA_ADD;
+    return await wrapRequest(req, res, constants.SERVICES.MEDIA, endpoint);
 });
 
 app.get('/media/:id', async(req,res) => {
-
+    let endpoint = constants.ENDPOINTS.MEDIA_GET;
+    return await wrapRequest(req, res, constants.SERVICES.MEDIA, endpoint);
 });
 
 /* qa service */
-
 app.post('/questions/add', async(req, res) => {
-    let data = {
-        user: req.session.user,
-        body: req.body
-    };
-    let rabbitRes = await routeRequest(constants.KEYS.QA, data);
-    let dbRes = rabbitRes.data;
-    res.status(dbRes.status);
-    return res.json(dbRes.response);
+    let endpoint = constants.ENDPOINTS.QA_ADD_Q;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.get('/questions/:qid', async(req, res) => {
-
+    let endpoint = constants.ENDPOINTS.QA_GET_Q;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.post('/questions/:qid/answers/add', async(req, res) => {
-
+    let endpoint = constants.ENDPOINTS.QA_ADD_A;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.get('/questions/:qid/answers', async(req, res) => {
-
+    let endpoint = constants.ENDPOINTS.QA_GET_A;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.delete('/questions/:qid', async(req, res) => {
-
+    let endpoint = constants.ENDPOINTS.QA_DEL_Q;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.post('/questions/:qid/upvote', async(req, res) => {
-
+    let endpoint = constants.ENDPOINTS.QA_UPVOTE_Q;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.post('/answers/:aid/upvote', async(req, res) => {
-
+    let endpoint = constants.ENDPOINTS.QA_UPVOTE_A;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.post('/answers/:aid/accept', async(req, res) => {
-
+    let endpoint = constants.ENDPOINTS.QA_ACCEPT;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 /* registration service */
 app.post('/adduser', async (req, res) => {
-
+    let endpoint = constants.ENDPOINTS.REGISTER;
+    return await wrapRequest(req, res, constants.SERVICES.REGISTER, endpoint);
 });
 
 /* search service */
 app.post('/search', async (req, res) => {
-
+    let endpoint = constants.ENDPOINTS.SEARCH;
+    return await wrapRequest(req, res, constants.SERVICES.SEARCH, endpoint);
 });
 
 /* user service */
 app.get('/user/:uid', async (req, res) => {
-
+    let endpoint = constants.ENDPOINTS.USER_GET;
+    return await wrapRequest(req, res, constants.SERVICES.USER, endpoint);
 });
 
 app.get('/user/:uid/questions', async (req, res) => {
-
+    let endpoint = constants.ENDPOINTS.USER_Q;
+    return await wrapRequest(req, res, constants.SERVICES.USER, endpoint);
 });
 
 app.get('/user/:uid/answers', async (req, res) => {
-
+    let endpoint = constants.ENDPOINTS.USER_A;
+    return await wrapRequest(req, res, constants.SERVICES.USER, endpoint);
 });
 
 /* Start the server. */
