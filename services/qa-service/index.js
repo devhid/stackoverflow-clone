@@ -37,24 +37,24 @@ function setupConnection(){
     console.log(`[Rabbit] Setting up connection...`);
     amqp.connect(constants.AMQP_HOST, function(error0, connection) {
         if (error0) {
-            reject(error0);
+            throw error0;
         }
         console.log(`[Rabbit] Connected...`);
         conn = connection;
         connection.createChannel(function(error1, channel) {
             if (error1) {
-                reject(error1);
+                throw error1;
             }
             console.log(`[Rabbit] Channel created...`);
             ch = channel;
             channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
                 if (error2){
-                    reject(error2);
+                    throw error2;
                 }
                 console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
                 ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error3, q){
                     if (error3){
-                        reject(error3);
+                        throw error3;
                     }
                     console.log(`[Rabbit] Asserted queue... ${q.queue}`);
                     ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.QA);
@@ -63,7 +63,6 @@ function setupConnection(){
                     console.log(`[Rabbit] Set prefetch 1...`);
                     ch.consume(q.queue, processRequest);
                     console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
-                    resolve('Success');
                 });
             });
         });
