@@ -6,6 +6,8 @@ const uuidv4 = require('uuid/v4');
 const constants = require('./constants');
 const DBResult = require('./dbresult').DBResult;
 
+let correlationId = null;
+
 /* amqplib connection */
 var conn = null;
 var ch = null;
@@ -47,7 +49,8 @@ async function publishMessage(routing_key, data){
                 dbResult.data = error2;
                 reject(dbResult);
             }
-            const correlationId = uuidv4();
+
+            correlationId = uuidv4();
 
             console.log(` [x] Requesting ${JSON.stringify(data)}`);
 
@@ -59,12 +62,13 @@ async function publishMessage(routing_key, data){
 
             ch.consume(q.queue, function(msg) {
                 if (msg.properties.correlationId === correlationId) {
-                    console.log(` [.] Got ${msg.content.toString()}`);
+                    console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
                     ch.ack(msg);
                     dbResult.status = constants.RMQ_SUCCESS;
                     dbResult.data = JSON.parse(msg.content.toString());
                     resolve(dbResult);
                 }
+                console.log(` [.] Received corrId=${msg.properties.correlationId}`);
             }, { noAck: false });
         });
     });
