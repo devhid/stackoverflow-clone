@@ -62,7 +62,7 @@ async function setupConnection(){
                         console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.QA} to ${ex.exchange}...`);
                         ch.prefetch(1); 
                         console.log(`[Rabbit] Set prefetch 1...`);
-                        ch.consume(q.queue, processRequest(msg));
+                        ch.consume(q.queue, processRequest);
                         console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
                         resolve('Success');
                     });
