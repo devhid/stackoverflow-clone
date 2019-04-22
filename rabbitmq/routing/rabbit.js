@@ -66,22 +66,12 @@ async function publishMessage(routing_key, data){
                     dbResult.status = constants.RMQ_SUCCESS;
                     dbResult.data = JSON.parse(msg.content.toString());
                     resolve(dbResult);
+                    return;
                 }
                 console.log(` [.] Received corrId=${msg.properties.correlationId}, expected=${correlationId}`);
             }, { noAck: false });
         });
     });
-}
-
-function receiveMessage(msg, corrId){
-    if (msg.properties.correlationId === corrId){
-        console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
-        ch.ack(msg);
-        dbResult.status = constants.RMQ_SUCCESS;
-        dbResult.data = JSON.parse(msg.content.toString());
-        resolve(dbResult);
-    }
-    console.log(` [.] Received corrId=${msg.properties.correlationId}`);
 }
 
 function shutdown(){

@@ -63,6 +63,7 @@ async function routeRequest(key, data){
     let publishRes = null;
     try {
         publishRes = await rabbit.publishMessage(key, data);
+        console.log('hi');
     }
     catch (err){
         publishRes = err;
