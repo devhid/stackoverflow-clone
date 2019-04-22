@@ -54,7 +54,7 @@ app.use(function(req, res, next) {
 /**
  * Routes an incoming request to a work/rpc queue.
  * Returns an object {'status': RMQ_STATUS, 'data': RMQ_DATA} where RMQ_DATA is data returned from the backend call.
- * If RMQ_STATUS ==
+ * If RMQ_STATUS == RMQ_SUCCESS, then 'data' will have the status code to set and the response object to return.
  * @param {string} key routing/binding key for the message
  * @param {Object} data data to send in the message
  */
