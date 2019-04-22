@@ -1,0 +1,38 @@
+---
+#
+# Playbook to setup Redis.
+#
+- hosts: redis
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  vars:
+    REDIS_PASSWORD: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/redis') }}"
+
+  roles:
+    - { role: ssh }
+    - { role: redis }
+
+  tasks:
+    - name: Update configuration to set supervised with systemd
+      lineinfile:
+        destfile: /etc/redis/redis.conf
+        regex: "^supervised no$"
+        line: "supervised systemd"
+
+    - name: Bind redis server to run on 0.0.0.0
+      lineinfile:
+        destfile: /etc/redis/redis.conf
+        regex: "bind 127.0.0.1"
+        line: "bind 0.0.0.0"
+
+    - name: Set requirepass in redis configuration
+      lineinfile:
+        destfile: /etc/redis/redis.conf
+        regex: "requirepass"
+        line: "requirepass {{ REDIS_PASSWORD }}"
+
+    - name: Restart Redis
+      systemd:
+        name: redis
+        state: restarted
