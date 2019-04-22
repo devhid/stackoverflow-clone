@@ -52,13 +52,13 @@ function transformArrToCassandraList(arr){
 
 /**
  * Associates the free media in Cassandra with a Question.
- * @param {string} qid the _id of a Question
+ * @param {string} qa_id the _id of a Question
  * @param {id[]} ids array of media IDs in Cassandra
  */
-async function associateFreeMedia(qid, ids){
+async function associateFreeMedia(qa_id, ids){
     var dbResult = new DBResult();
 
-    // if no media, no need to do anything
+    // if no media, no need to do anything  
     if (ids == null || ids.length == 0){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
@@ -66,7 +66,7 @@ async function associateFreeMedia(qid, ids){
     }
 
     var list_ids = transformArrToCassandraList(ids);
-    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qid=${qid} WHERE id in ${list_ids}`;
+    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id=${qa_id} WHERE id in ${list_ids}`;
     console.log(`[Cassandra]: associateFreeMedia query=${query}`);
 
     // execute the query in a Promise
@@ -100,7 +100,7 @@ async function checkFreeMedia(ids){
     }
 
     var list_ids = transformArrToCassandraList(ids);
-    const query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids} AND qid=NULL`;
+    const query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids} AND qa_id=NULL`;
     console.log(`[Cassandra]: checkFreeMedia query=${query}`);
 
     // execute the query in a Promise
@@ -139,6 +139,43 @@ async function deleteArrOfMedia(ids){
     // prepare the query
     const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
     console.log(`[Cassandra]: deleteArrOfMedia query=${query}`);
+
+    // execute the query in a Promise
+    return new Promise( (resolve, reject) => {
+        client.execute(query, [], { prepare: true }, (error, result) => {
+            if (error) {
+                dbResult.status = constants.DB_ES_ERROR;
+                dbResult.data = error;
+                reject(dbResult);
+            } else {
+                dbResult.status = constants.DB_RES_SUCCESS;
+                dbResult.data = null;
+                resolve(dbResult);
+            }
+        });
+    });
+}
+
+/**
+ * Deletes all media associated with a specified document from QA.
+ * @param {string} qa_id the _id of the Question/Answer document
+ */
+async function deleteMediaByQAID(qa_id){
+    var dbResult = new DBResult();
+
+    // if no media, no need to do anything
+    if (ids == null || ids.length == 0){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = null;
+        return dbResult;
+    }
+
+    // transform the array of media IDs to the expected format Cassandra wants them in ('id', 'id')
+    var list_ids = transformArrToCassandraList(ids);
+
+    // prepare the query
+    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE qa_id=${qa_id}`;
+    console.log(`[Cassandra]: deleteMediaByQAID query=${query}`);
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
@@ -242,7 +279,7 @@ async function addQuestion(user, title, body, tags, media){
     media = (media == undefined) ? [] : media;
     let cassandraResp = null;
 
-    // first, check that the media IDs specified are not already associated with another Question
+    // first, check that the media IDs specified are not already associated with another Question or Answer document
     try {
         cassandraResp = await checkFreeMedia(media);
         console.log(`checkFreeMedia, media=${media}, count=${cassandraResp.data}`);
@@ -323,7 +360,7 @@ async function addQuestion(user, title, body, tags, media){
     // associate the free media IDs with the new Question
     let associateMediaResponse = await associateFreeMedia(response._id,media);
     if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
-        console.log(`associateFreeMedia failed with qid=${response._id}, media=${media}`);
+        console.log(`associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
         console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
     }
 
@@ -540,6 +577,23 @@ async function addAnswer(qid, username, body, media){
     let dbResult = new DBResult();
     media = (media == undefined) ? [] : media;
 
+    // first, check that the media IDs specified are not already associated with another Question or Answer document
+    try {
+        cassandraResp = await checkFreeMedia(media);
+        console.log(`checkFreeMedia, media=${media}, count=${cassandraResp.data}`);
+    }
+    catch(err) {
+        cassandraResp = err;
+        console.log(`checkFreeMedia failed on media=${media}, err=${err.data}`);
+    }
+    if (cassandraResp.status === constants.DB_RES_SUCCESS){
+        if (cassandraResp.data != media.length){
+            dbResult.status = constants.DB_RES_MEDIA_IN_USE;
+            dbResult.data = null;
+            return dbResult;
+        }
+    }
+
     // grab the Question document
     let question = (await client.search({
         index: INDEX_QUESTIONS,
@@ -618,6 +672,14 @@ async function addAnswer(qid, username, body, media){
     if (updateQuestionResponse.updated != 1){
         console.log(`Failed to update Question ${qid}'s answer_count`);
         console.log(updateQuestionResponse);
+    }
+
+    // associate the free media IDs with the Question this Answer is associated to
+    //      as we cannot delete an individual Answer document, this will make deleting easier
+    let associateMediaResponse = await associateFreeMedia(qid,media);
+    if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
+        console.log(`associateFreeMedia failed with qa_id=${qid}, media=${media}`);
+        console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
     }
 
     dbResult.status = constants.DB_RES_SUCCESS;
@@ -796,9 +858,11 @@ async function deleteQuestion(qid, username){
             console.log(response);
         }
 
-        // TODO: 6) DELETE any associated media documents
+        // 6) DELETE any associated media documents
+        //      it suffices to delete all media associated with QID as all media associated to its Answers
+        //      have their associated ID field set to QID instead of AID to optimize deletion
         try {
-            response = await deleteArrOfMedia(media_ids);
+            response = await deleteMediaByQAID(qid);
         }
         catch(err){
             console.log(`Failed to delete media items ${media_ids}, error ${err.data}`);
