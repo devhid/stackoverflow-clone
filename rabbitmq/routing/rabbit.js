@@ -67,7 +67,7 @@ async function publishMessage(routing_key, data){
                     dbResult.data = JSON.parse(msg.content.toString());
                     resolve(dbResult);
                 }
-                console.log(` [.] Received corrId=${msg.properties.correlationId}`);
+                console.log(` [.] Received corrId=${msg.properties.correlationId}, expected=${correlationId}`);
             }, { noAck: false });
         });
     });
