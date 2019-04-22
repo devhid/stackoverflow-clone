@@ -115,7 +115,7 @@ app.post('/logout', function destroySession(req, res) {
     }
 
     req.session.destroy(function done() {
-        res.status(constants.status_200);
+        res.status(constants.STATUS_200);
         response = {"status": "OK"};
         return res.json(response);
     });
