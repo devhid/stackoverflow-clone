@@ -9,4 +9,4 @@
     authorized_key:
       user: ubuntu
       state: present
-      key: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/authorized_keys') }}"
+      key: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/authorized_keys') }}"

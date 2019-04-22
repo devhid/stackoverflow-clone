@@ -42,7 +42,7 @@ amqp.connect(constants.AMQP_HOST, function(error0, connection) {
             channel.consume(q.queue, function reply(msg){
                 console.log(`Received ${msg.content.toString()}`);
                 channel.sendToQueue(msg.properties.replyTo,
-                    Buffer.from(JSON.stringify(addQuestion)), {
+                    Buffer.from(JSON.stringify(addQuestion(msg))), {
                         correlationId: msg.properties.correlationId
                     }
                 );
