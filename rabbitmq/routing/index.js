@@ -1,5 +1,6 @@
 /* library imports */
 const express = require('express');
+const amqp = require('amqplib/callback_api');
 
 /* internal imports */
 const constants = require('./constants');
