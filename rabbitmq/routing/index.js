@@ -36,8 +36,8 @@ try {
                 throw error1;
             }
             channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES);
+            connection.close();
         });
-        connection.close();
     });
 }
 catch (err) {
