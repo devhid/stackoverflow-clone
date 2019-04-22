@@ -45,7 +45,7 @@ try {
                     throw err;
                 }
                 console.log(`ok ${JSON.stringify(ok)}`);
-                setTimeout(listenWrapper, 1000);
+                setTimeout(listen, 1000);
             });
         });
     });
@@ -54,20 +54,14 @@ catch (err){
     console.log(`[Rabbit] Failed to connect ${err}`);
 }
 
-function listenWrapper(){
-    listen().catch(err =>{
-        console.log(`Listen failed ${err}`);
-    });
-}
-
-async function listen(){
+function listen(){
     ch.assertQueue(constants.SERVICES.SEARCH, constants.QUEUE.PROPERTIES, function(error2, q){
         if (error2){
             throw error2;
         }
         ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.SEARCH);
         ch.prefetch(1); 
-        ch.consume(q.queue, function reply(msg){
+        ch.consume(q.queue, async(msg) => {
             let req = JSON.parse(msg.content.toString()); // gives back the data object
             let endpoint = req.endpoint;
             let response = {};
