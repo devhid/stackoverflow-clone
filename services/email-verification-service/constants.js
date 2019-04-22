@@ -25,7 +25,28 @@ module.exports = {
         }
     },
 
+    SERVICES: {
+        EMAIL: 'email',
+    },
+
     ENDPOINTS: {
-        EMAIL_VERIFY: 2
-    }
+        AUTH_LOGIN: 0,
+        AUTH_LOGOUT: 1,
+        EMAIL_VERIFY: 2,
+        MEDIA_ADD: 3,
+        MEDIA_GET: 4,
+        QA_ADD_Q: 5,
+        QA_GET_Q: 6,
+        QA_ADD_A: 7,
+        QA_GET_A: 8,
+        QA_DEL_Q: 9,
+        QA_UPVOTE_Q: 10,
+        QA_UPVOTE_A: 11,
+        QA_ACCEPT: 12,
+        REGISTER: 13,
+        SEARCH: 14,
+        USER_GET: 15,
+        USER_Q: 16,
+        USER_A: 17
+    },
 }

@@ -58,9 +58,9 @@ function listen(){
                 default:
                     break;
             }
-            
+
             ch.sendToQueue(msg.properties.replyTo,
-                Buffer.from(JSON.stringify(addQuestion(msg))), {
+                Buffer.from(JSON.stringify(response)), {
                     correlationId: msg.properties.correlationId
                 }
             );
@@ -123,7 +123,7 @@ async function verify(req) {
     if(!notEmpty([email, key])) {
         response = { 
             "status": constants.STATUS_400,
-            "data": {
+            "response": {
                 "status": "error", 
                 "error": "One or more fields are empty."
             }
@@ -135,7 +135,7 @@ async function verify(req) {
     if(!emailExists) {
         response = { 
             "status": constants.STATUS_400,
-            "data": {
+            "response": {
                 "status": "error", 
                 "error": "No account under that email was registered."
             }
@@ -147,7 +147,7 @@ async function verify(req) {
     if(verified) {
         response = { 
             "status": constants.STATUS_400,
-            "data": {
+            "response": {
                 "status": constants.STATUS_ERR, 
                 "error": "Email is already verified."
             }
@@ -159,7 +159,7 @@ async function verify(req) {
     if(!success) {
         response = { 
             "status": constants.STATUS_400,
-            "data": {
+            "response": {
                 "status": constants.STATUS_ERR, 
                 "error": "Could not verify email. Incorrect key."
             }
@@ -169,7 +169,7 @@ async function verify(req) {
 
     response = { 
         "status": constants.STATUS_200,
-        "data": {
+        "response": {
             "status": constants.STATUS_OK,
         }
     };
