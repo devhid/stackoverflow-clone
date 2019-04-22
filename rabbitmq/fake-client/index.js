@@ -3,7 +3,6 @@ const express = require('express');
 
 /* internal imports */
 const constants = require('./constants');
-const rabbit = require('./rabbit');
 
 /* initialize express application */
 const app = express();
