@@ -2,7 +2,7 @@ module.exports = {
     STATUS_OK: 'OK',
     STATUS_ERR: 'error',
 
-    AMQP_HOST: 'amqp://localhost',
+    AMQP_HOST: 'amqp://130.245.168.36',
 
     EXCHANGE: {
         TYPE: 'direct',

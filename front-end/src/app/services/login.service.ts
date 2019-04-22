@@ -10,7 +10,6 @@ const httpHeaders = {
   }),
   withCredentials: true,
   observe: 'response' as 'response'
-  //observe: "response"
 };
 
 const authenticationUrl = "http://8.9.11.218"

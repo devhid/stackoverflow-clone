@@ -8,4 +8,24 @@ module.exports = {
     STATUS_403: 403,    // forbidden
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
+
+    AMQP_HOST: 'amqp://localhost',
+
+    EXCHANGE: {
+        TYPE: 'direct',
+        NAME: 'stackoverflow',
+        PROPERTIES: {
+            durable: true
+        }
+    },
+
+    QUEUE: {
+        PROPERTIES: {
+            durable: true
+        }
+    },
+
+    ENDPOINTS: {
+        EMAIL_VERIFY: 2
+    }
 }

@@ -98,6 +98,10 @@ export class QuestionComponent implements OnInit {
     this.qaService.deleteQuestion(id)
     .subscribe(response =>{
       console.log(response);
+      let status = response.status;
+      if(status == 'OK') {
+        setTimeout(() => { this.router.navigate(['/']) }, 1000);
+      }
     });
   }
 
@@ -105,10 +109,11 @@ export class QuestionComponent implements OnInit {
     let id = this.retrieveId();
     this.qaService.upvoteQuestion(id, true)
     .subscribe(response => {
-      console.log(response);
-      let status = response.body.status;
+      let status = response.status;
       if(status == 'OK') {
-        this.question.score++;
+        let questionId = this.retrieveId();
+        this.router.navigateByUrl('/', {skipLocationChange: true}).then(()=>
+        this.router.navigate(['/question/' + questionId])); 
       }
     });
   }
@@ -118,9 +123,11 @@ export class QuestionComponent implements OnInit {
     this.qaService.upvoteQuestion(id, false)
     .subscribe(response => {
       console.log(response);
-      let status = response.body.status;
+      let status = response.status;
       if(status == 'OK') {
-        this.question.score--;
+        let questionId = this.retrieveId();
+        this.router.navigateByUrl('/', {skipLocationChange: true}).then(()=>
+        this.router.navigate(['/question/' + questionId])); 
       }
     });
   }
@@ -128,13 +135,14 @@ export class QuestionComponent implements OnInit {
   upvoteAnswer(id: string): void {
     this.qaService.upvoteAnswer(id, true)
     .subscribe(response => {
-      console.log(response);
-      let status = response.body.status;
+      let status = response.status;
       if(status === 'OK') {
         for(let i in this.answers){
           let answer = this.answers[i];
           if(answer.id === id){
-            answer.score++;
+            let questionId = this.retrieveId();
+            this.router.navigateByUrl('/', {skipLocationChange: true}).then(()=>
+            this.router.navigate(['/question/' + questionId])); 
           }
         }
       }
@@ -144,13 +152,14 @@ export class QuestionComponent implements OnInit {
   downvoteAnswer(id: string): void {
     this.qaService.upvoteAnswer(id, false)
     .subscribe(response => {
-      console.log(response);
-      let status = response.body.status;
+      let status = response.status;
       if(status === 'OK') {
         for(let i in this.answers){
           let answer = this.answers[i];
           if(answer.id === id){
-            answer.score--;
+            let questionId = this.retrieveId();
+            this.router.navigateByUrl('/', {skipLocationChange: true}).then(()=>
+            this.router.navigate(['/question/' + questionId])); 
           }
         }
       }

@@ -14,6 +14,7 @@ import { ProfileComponent } from './profile/profile.component';
 import { AskQuestionComponent } from './askquestion/askquestion.component';
 import { SearchComponent } from './search/search.component';
 import { SearchResultsComponent } from './search-results/search-results.component';
+import { FileSelectDirective } from 'ng2-file-upload';
 
 @NgModule({
   declarations: [
@@ -25,7 +26,8 @@ import { SearchResultsComponent } from './search-results/search-results.componen
     ProfileComponent,
     AskQuestionComponent,
     SearchComponent,
-    SearchResultsComponent
+    SearchResultsComponent,
+    FileSelectDirective
   ],
   imports: [
     BrowserModule,

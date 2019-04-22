@@ -13,6 +13,13 @@ const httpHeaders = {
   withCredentials: true
 };
 
+const httpFileHeaders = {
+  headers: new HttpHeaders({ 
+    'Content-Type': 'multipart/form-data'
+  }),
+  withCredentials: true
+};
+
 const url = "http://8.9.11.218";
 //const url = "http://kellogs.cse356.compas.cs.stonybrook.edu";
 
@@ -35,7 +42,7 @@ export class QAService {
   }
 
   deleteQuestion(questionId: string): Observable<any> {
-    return this.http.delete(url + "/questions/" + questionId, {})
+    return this.http.delete(url + "/questions/" + questionId, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )
@@ -43,7 +50,7 @@ export class QAService {
 
   upvoteQuestion(questionId: string, upvote: boolean): Observable<any> {
     let postBody = { upvote: upvote };
-    return this.http.post(url + "/questions/" + questionId + "/upvote", postBody)
+    return this.http.post(url + "/questions/" + questionId + "/upvote", postBody, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )
@@ -60,7 +67,7 @@ export class QAService {
 
   upvoteAnswer(answerId: string, upvote: boolean): Observable<any> {
     let postBody = { upvote: upvote };
-    return this.http.post(url + "/questions/" + answerId + "/upvote", postBody)
+    return this.http.post(url + "/answers/" + answerId + "/upvote", postBody, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )
