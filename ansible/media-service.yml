@@ -47,7 +47,7 @@
       delay: 3
 
     - name: Create table 'imgs' in Cassandra
-      shell: cqlsh -e "create table media_service.imgs (id uuid PRIMARY KEY, content blob, filename text, mimetype text);" {{ inventory_host }} 9042
+      shell: cqlsh -e "create table media_service.imgs (id uuid PRIMARY KEY, content blob, filename text, mimetype text, qa_id text);" {{ inventory_host }} 9042
 
     - name: Clone stackoverflow-clone repository from Git
       remote_user: ubuntu
