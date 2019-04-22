@@ -33,39 +33,37 @@ var ch = null;
 /**
  * Asserts the Exchange and Queue exists and sets up the connection variables.
  */
-async function setupConnection(){
+function setupConnection(){
     console.log(`[Rabbit] Setting up connection...`);
-    return new Promise((resolve,reject) => {
-        amqp.connect(constants.AMQP_HOST, function(error0, connection) {
-            if (error0) {
-                reject(error0);
+    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
+        if (error0) {
+            reject(error0);
+        }
+        console.log(`[Rabbit] Connected...`);
+        conn = connection;
+        connection.createChannel(function(error1, channel) {
+            if (error1) {
+                reject(error1);
             }
-            console.log(`[Rabbit] Connected...`);
-            conn = connection;
-            connection.createChannel(function(error1, channel) {
-                if (error1) {
-                    reject(error1);
+            console.log(`[Rabbit] Channel created...`);
+            ch = channel;
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
+                if (error2){
+                    reject(error2);
                 }
-                console.log(`[Rabbit] Channel created...`);
-                ch = channel;
-                channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
-                    if (error2){
-                        reject(error2);
+                console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
+                ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error3, q){
+                    if (error3){
+                        reject(error3);
                     }
-                    console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
-                    ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error3, q){
-                        if (error3){
-                            reject(error3);
-                        }
-                        console.log(`[Rabbit] Asserted queue... ${q.queue}`);
-                        ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.QA);
-                        console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.QA} to ${ex.exchange}...`);
-                        ch.prefetch(1); 
-                        console.log(`[Rabbit] Set prefetch 1...`);
-                        ch.consume(q.queue, processRequest);
-                        console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
-                        resolve('Success');
-                    });
+                    console.log(`[Rabbit] Asserted queue... ${q.queue}`);
+                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.QA);
+                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.QA} to ${ex.exchange}...`);
+                    ch.prefetch(1); 
+                    console.log(`[Rabbit] Set prefetch 1...`);
+                    ch.consume(q.queue, processRequest);
+                    console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
+                    resolve('Success');
                 });
             });
         });
@@ -117,15 +115,16 @@ async function processRequest(msg){
     ch.ack(msg);
 }
 
-(async () => {
+function main(){
     try {
-        await setupConnection();
-        console.log(`[Rabbit] Fully setup.`);
+        setupConnection();
     }
     catch (err) {
         console.log(`[Rabbit] Failed to setup connection, ${err}`);
     }
-})();
+}
+
+main();
 
 /* ------------------ ENDPOINTS ------------------ */
 
