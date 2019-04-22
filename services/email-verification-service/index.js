@@ -10,10 +10,20 @@ const constants = require('./constants');
 const app = express();
 require('express-async-errors');
 
+/* the port the server will listen on */
+const PORT = 8003;
+
+/* parse incoming requests data as json */
+app.use(express.json());
+
 /* amqplib connection */
 var conn = null;
 var ch = null;
-try {
+
+/**
+ * Asserts the Exchange and Queue exists and sets up the connection variables.
+ */
+function setupConnection(){
     amqp.connect(constants.AMQP_HOST, function(error0, connection) {
         if (error0) {
             throw error0;
@@ -28,52 +38,54 @@ try {
                 if (err){
                     throw err;
                 }
-                console.log(`ok ${JSON.stringify(ok)}`);
-                setTimeout(listen, 1000);
+                ch.assertQueue(constants.SERVICES.EMAIL, constants.QUEUE.PROPERTIES, function(error2, q){
+                    if (error2){
+                        throw error2;
+                    }
+                    ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.EMAIL);
+                    ch.prefetch(1); 
+                    ch.consume(q.queue, processRequest(msg));
+                });
             });
         });
     });
 }
-catch (err){
-    console.log(`[Rabbit] Failed to connect ${err}`);
-}
 
-/* Listen for responses */
-async function listen(){
-    ch.assertQueue('', constants.QUEUE.PROPERTIES, function(error2, q){
-        if (error2){
-            throw error2;
+/**
+ * Processes the request contained in the message and replies to the specified queue.
+ * @param {Object} msg the message on the RabbitMQ queue
+ */
+async function processRequest(msg){
+    let data = JSON.parse(msg.content.toString()); // gives back the data object
+    let endpoint = data.endpoint;
+    let response = {};
+    switch (endpoint) {
+        case constants.ENDPOINTS.EMAIL_VERIFY:
+            response = await verify(data);
+            break;
+        default:
+            break;
+    }
+
+    ch.sendToQueue(msg.properties.replyTo,
+        Buffer.from(JSON.stringify(response)), {
+            correlationId: msg.properties.correlationId
         }
-        ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.KEYS.EMAIL);
-        ch.prefetch(1); 
-        ch.consume(q.queue, function reply(msg){
-            console.log(`Received ${msg.content.toString()}`);
-            let data = JSON.parse(msg.content.toString()); // gives back the data object
-            let endpoint = data.endpoint;
-            let response = {};
-            switch (endpoint) {
-                case constants.ENDPOINTS.EMAIL_VERIFY:
-                    response = await verify(data);
-                    break;
-                default:
-                    break;
-            }
-
-            ch.sendToQueue(msg.properties.replyTo,
-                Buffer.from(JSON.stringify(response)), {
-                    correlationId: msg.properties.correlationId
-                }
-            );
-            ch.ack(msg);
-        });
-    });
+    );
+    ch.ack(msg);
 }
 
-/* the port the server will listen on */
-const PORT = 8003;
+function main(){
+    try {
+        setupConnection();
+    } catch (err){
+        console.log(`[Rabbit] Failed to connect ${err}`);
+    }
+}
 
-/* parse incoming requests data as json */
-app.use(express.json());
+main();
+
+/* ------------------ ENDPOINTS ------------------ */
 
 /* Verifies a user's email and confirms the account registration. */
 /*app.post('/verify', async (req, res) => {

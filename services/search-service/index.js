@@ -28,7 +28,11 @@ app.use(function(req, res, next) {
 /* amqplib connection */
 var conn = null;
 var ch = null;
-try {
+
+/**
+ * Asserts the Exchange and Queue exists and sets up the connection variables.
+ */
+function setupConnection(){
     amqp.connect(constants.AMQP_HOST, function(error0, connection) {
         if (error0) {
             throw error0;
@@ -43,43 +47,53 @@ try {
                 if (err){
                     throw err;
                 }
-                console.log(`ok ${JSON.stringify(ok)}`);
-                setTimeout(listen, 1000);
+                ch.assertQueue(constants.SERVICES.SEARCH, constants.QUEUE.PROPERTIES, function(error2, q){
+                    if (error2){
+                        throw error2;
+                    }
+                    ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.SEARCH);
+                    ch.prefetch(1); 
+                    ch.consume(q.queue, processRequest(msg));
+                });
             });
         });
     });
 }
-catch (err){
-    console.log(`[Rabbit] Failed to connect ${err}`);
+
+/**
+ * Processes the request contained in the message and replies to the specified queue.
+ * @param {Object} msg the message on the RabbitMQ queue
+ */
+async function processRequest(msg){
+    let req = JSON.parse(msg.content.toString()); // gives back the data object
+    let endpoint = req.endpoint;
+    let response = {};
+    switch (endpoint) {
+        case constants.ENDPOINTS.SEARCH:
+            response = await search(req);
+            break;
+        default:
+            break;
+    }
+    ch.sendToQueue(msg.properties.replyTo,
+        Buffer.from(JSON.stringify(response)), {
+            correlationId: msg.properties.correlationId
+        }
+    );
+    ch.ack(msg);
 }
 
-function listen(){
-    ch.assertQueue(constants.SERVICES.SEARCH, constants.QUEUE.PROPERTIES, function(error2, q){
-        if (error2){
-            throw error2;
-        }
-        ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.SEARCH);
-        ch.prefetch(1); 
-        ch.consume(q.queue, async(msg) => {
-            let req = JSON.parse(msg.content.toString()); // gives back the data object
-            let endpoint = req.endpoint;
-            let response = {};
-            switch (endpoint) {
-                case constants.ENDPOINTS.SEARCH:
-                    response = await search(req);
-                    break;
-                default:
-                    break;
-            }
-            ch.sendToQueue(msg.properties.replyTo,
-                Buffer.from(JSON.stringify(response)), {
-                    correlationId: msg.properties.correlationId
-                }
-            );
-            ch.ack(msg);
-        });
-    });
+function main(){
+    try {
+        setupConnection();
+    } catch (err){
+        console.log(`[Rabbit] Failed to connect ${err}`);
+    }
 }
+
+main();
+
+/* ------------------ ENDPOINTS ------------------ */
 
 /* handle searching */
 async function search(req){
