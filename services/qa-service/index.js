@@ -18,7 +18,7 @@ const PORT = 8004;
 
 /* options for the redis store */
 const redisOptions = {
-    host: '64.52.162.153',
+    host: '192.168.122.27',
     port: 6379,
     pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
 };
