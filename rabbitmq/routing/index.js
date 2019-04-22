@@ -83,7 +83,7 @@ app.post('/questions/add', async(req, res) => {
 
     let publishRes = null;
     try {
-        publishRes = await rabbit.publishMessage(constants.KEYS.QA, req);
+        publishRes = await rabbit.publishMessage(constants.KEYS.QA, req.body);
     }
     catch (err){
         publishRes = err;
