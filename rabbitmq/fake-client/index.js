@@ -9,34 +9,6 @@ const constants = require('./constants');
 const app = express();
 require('express-async-errors');
 
-/* amqplib connection */
-var conn = null;
-var ch = null;
-try {
-    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
-        if (error0) {
-            throw error0;
-        }
-        conn = connection;
-        connection.createChannel(function(error1, channel) {
-            if (error1) {
-                throw error1;
-            }
-            ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
-                if (err){
-                    throw err;
-                }
-                console.log(`ok ${JSON.stringify(ok)}`);
-                setTimeout(listen, 1000);
-            });
-        });
-    });
-}
-catch (err){
-    console.log(`[Rabbit] Failed to connect ${err}`);
-}
-
 /* the port the server will listen on */
 const PORT = 8009;
 
@@ -52,25 +24,65 @@ app.use(function(req, res, next) {
   next();
 });
 
-function listen(){
-    ch.assertQueue('', constants.QUEUE.PROPERTIES, function(error2, q){
-        if (error2){
-            throw error2;
+/* amqplib connection */
+var conn = null;
+var ch = null;
+
+/**
+ * Asserts the Exchange and Queue exists and sets up the connection variables.
+ */
+function setupConnection(){
+    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
+        if (error0) {
+            throw error0;
         }
-        ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
-        ch.prefetch(1); 
-        ch.consume(q.queue, function reply(msg){
-            console.log(`Received ${msg.content.toString()}`);
-            // JSON.parse(msg.content.toString()); // gives back the data object
-            ch.sendToQueue(msg.properties.replyTo,
-                Buffer.from(JSON.stringify(addQuestion(msg))), {
-                    correlationId: msg.properties.correlationId
+        conn = connection;
+        connection.createChannel(function(error1, channel) {
+            if (error1) {
+                throw error1;
+            }
+            ch = channel;
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
+                if (err){
+                    throw err;
                 }
-            );
-            ch.ack(msg);
+                ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error2, q){
+                    if (error2){
+                        throw error2;
+                    }
+                    ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
+                    ch.prefetch(1); 
+                    ch.consume(q.queue, processRequest(msg));
+                });
+            });
         });
     });
 }
+
+/**
+ * Processes the request contained in the message and replies to the specified queue.
+ * @param {Object} msg the message on the RabbitMQ queue
+ */
+async function processRequest(msg){
+    console.log(`Received ${msg.content.toString()}`);
+    // JSON.parse(msg.content.toString()); // gives back the data object
+    ch.sendToQueue(msg.properties.replyTo,
+        Buffer.from(JSON.stringify(addQuestion(msg))), {
+            correlationId: msg.properties.correlationId
+        }
+    );
+    ch.ack(msg);
+}
+
+function main(){
+    try {
+        setupConnection();
+    } catch (err){
+        console.log(`[Rabbit] Failed to connect ${err}`);
+    }
+}
+
+main();
 
 function addQuestion(request){
     return {
