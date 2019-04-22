@@ -57,7 +57,7 @@ function listen(){
         if (error2){
             throw error2;
         }
-        let resp = ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.KEYS.QA);
+        let resp = ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
         ch.prefetch(1); 
         ch.consume(q.queue, function reply(msg){
             console.log(`Received ${msg.content.toString()}`);
