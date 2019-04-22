@@ -34,27 +34,35 @@ var ch = null;
  * Asserts the Exchange and Queue exists and sets up the connection variables.
  */
 function setupConnection(){
+    console.log(`[Rabbit] Setting up connection...`);
     amqp.connect(constants.AMQP_HOST, function(error0, connection) {
         if (error0) {
             throw error0;
         }
+        console.log(`[Rabbit] Connected...`);
         conn = connection;
         connection.createChannel(function(error1, channel) {
             if (error1) {
                 throw error1;
             }
+            console.log(`[Rabbit] Channel created...`);
             ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
-                if (err){
-                    throw err;
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
+                if (error2){
+                    throw error2;
                 }
-                ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error2, q){
-                    if (error2){
-                        throw error2;
+                console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
+                ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error3, q){
+                    if (error3){
+                        throw error3;
                     }
-                    ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
+                    console.log(`[Rabbit] Asserted queue... ${q.queue}`);
+                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.QA);
+                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.QA} to ${ex.exchange}...`);
                     ch.prefetch(1); 
-                    ch.consume(q.queue, processRequest(msg));
+                    console.log(`[Rabbit] Set prefetch 1...`);
+                    ch.consume(q.queue, processRequest);
+                    console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
                 });
             });
         });
@@ -67,6 +75,7 @@ function setupConnection(){
  * @param {Object} msg the message on the RabbitMQ queue
  */
 async function processRequest(msg){
+    console.log(`Received ${msg.content.toString()}`);
     let req = JSON.parse(msg.content.toString()); // gives back the data object
     let endpoint = req.endpoint;
     let response = {};
@@ -109,8 +118,9 @@ async function processRequest(msg){
 function main(){
     try {
         setupConnection();
-    } catch (err){
-        console.log(`[Rabbit] Failed to connect ${err}`);
+    }
+    catch (err) {
+        console.log(`[Rabbit] Failed to setup connection, ${err}`);
     }
 }
 
@@ -198,8 +208,6 @@ async function getQuestion(req){
         status = constants.STATUS_200;
         response.setOK();
         let question = getRes.data;
-        let actual_rep = question._source.user.reputation;
-        question._source.user.reputation = (actual_rep < 1) ? 1 : actual_rep;
         question._source['id'] = question._id;
         question._source['media'] = (question._source['media'].length == 0) ? null : question._source['media'];
         data[constants.QUESTION_KEY] = question._source;
@@ -486,5 +494,6 @@ process.on('SIGTERM', shutdown);
 function shutdown(){
     if (ch) ch.close();
     if (conn) conn.close();
+    database.shutdown();
     server.close();
 }

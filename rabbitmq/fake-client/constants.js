@@ -6,7 +6,7 @@ module.exports = {
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
 
-    AMQP_HOST: 'amqp://130.245.168.36',
+    AMQP_HOST: 'amqp://localhost',
 
     EXCHANGE: {
         TYPE: 'direct',

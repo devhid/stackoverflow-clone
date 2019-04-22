@@ -36,6 +36,11 @@ const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes
 
 /* media */
 
+function shutdown(){
+    client.close();
+    cassandra_client.shutdown();
+}
+
 /**
  * Transforms a JavaScript array of strings into a Cassandra parenthesized list of strings.
  * @param {string[]} arr JS array of strings
@@ -71,7 +76,7 @@ async function associateFreeMedia(qa_id, ids){
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
-        client.execute(query, [], { prepare: true }, (error, result) => {
+        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
                 dbResult.status = constants.DB_ES_ERROR;
                 dbResult.data = error;
@@ -105,7 +110,7 @@ async function checkFreeMedia(ids){
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
-        client.execute(query, [], { prepare: true }, (error, result) => {
+        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
                 dbResult.status = constants.DB_ES_ERROR;
                 dbResult.data = error;
@@ -142,7 +147,7 @@ async function deleteArrOfMedia(ids){
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
-        client.execute(query, [], { prepare: true }, (error, result) => {
+        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
                 dbResult.status = constants.DB_ES_ERROR;
                 dbResult.data = error;
@@ -179,7 +184,7 @@ async function deleteMediaByQAID(qa_id){
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
-        client.execute(query, [], { prepare: true }, (error, result) => {
+        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
                 dbResult.status = constants.DB_ES_ERROR;
                 dbResult.data = error;
@@ -214,6 +219,21 @@ async function deleteMediaByQAID(qa_id){
 // }
 
 /* helpers */
+
+async function getUserIDByName(username){
+    let user = (await client.search({
+        index: INDEX_USERS,
+        body: {
+            query: {
+                match: {
+                    username: username
+                }
+            }
+        }
+    })).hits.hits[0];
+    let id = (user == undefined) ? user: user._id;
+    return id;
+}
 
 /**
  * Gets the username of a User by a post.
@@ -637,6 +657,7 @@ async function addAnswer(qid, username, body, media){
     }
 
     // create the Answer Upvote metadata document
+    let user_id = await getUserIDByName(username);
     let upvoteResponse = await client.index({
         index: INDEX_A_UPVOTES,
         type: "_doc",
@@ -644,6 +665,7 @@ async function addAnswer(qid, username, body, media){
         body: {
             "qid": qid,
             "aid": response._id,
+            "user_id": user_id,   // needed to make DELETE easier
             "upvotes": [],
             "downvotes": [],
             "waived_downvotes": []
@@ -763,6 +785,7 @@ async function deleteQuestion(qid, username){
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
         console.log(`Deleting ${qid} by ${username}`);
+
         // 1) DELETE from INDEX_QUESTIONS the Question document
         response = await client.deleteByQuery({
             index: INDEX_QUESTIONS,
@@ -798,6 +821,12 @@ async function deleteQuestion(qid, username){
         }
 
         // 3) DELETE from INDEX_Q_UPVOTES the Question Upvotes metadata document
+        //      but first, undo the effect of all votes on reputation of the asker
+        let undoQuestionVotesResp = await undoAllQuestionVotes(qid);
+        if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS){
+            console.log(`Failed to undo all question votes`);
+        }
+        console.log(undoQuestionVotesResp.data);
         response = await client.deleteByQuery({
             index: INDEX_Q_UPVOTES,
             type: "_doc",
@@ -830,8 +859,13 @@ async function deleteQuestion(qid, username){
         console.log(`Deleted ${num_deleted_answers} Answers for Question ${qid}`);
         // console.log(response);
 
-
         // 5) DELETE from INDEX_A_UPVOTES the Answer Upvotes metadata document
+        //      but first, undo the effect of all votes on reputation of the answerers
+        let undoAnswerVotesResp = await undoAllAnswerVotes(qid);
+        if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS){
+            console.log(`Failed to undo all answer votes`);
+        }
+        console.log(undoAnswerVotesResp.data);
         response = await client.deleteByQuery({
             index: INDEX_A_UPVOTES,
             type: "_doc",
@@ -870,6 +904,130 @@ async function deleteQuestion(qid, username){
 }
 
 /* milestone 3 */
+
+/**
+ * Undoes the effect of ALL Answers' votes associated with a specified Question on the poster's reputation.
+ * @param {string} qid the _id of the associated Question
+ */
+async function undoAllAnswerVotes(qid){
+    let dbResult = new DBResult();
+
+    // grab the associated Upvotes document
+    let qa_upvotes = (await client.search({
+        index: INDEX_A_UPVOTES,
+        body: {
+            query: {
+                term: {
+                    "qid.keyword": qid
+                }
+            }
+        }
+    })).hits.hits;
+
+    if (qa_upvotes.length == 0){
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
+        return dbResult;
+    }
+
+    // aggregate the updates that need to be made to every user who answered the question
+    let undo_votes = {};
+    let poster = undefined;
+    let rep_diff = 0;
+    let upvotes = undefined;
+    let downvotes = undefined;
+    for (var ans of qa_upvotes){
+        poster = ans._source.user_id;
+        upvotes = (ans._source.upvotes == undefined) ? [] : ans._source.upvotes;
+        downvotes = (ans._source.downvotes == undefined) ? [] : ans._source.downvotes;
+        rep_diff = -(upvotes.length - downvotes.length);
+        if (poster in undo_votes){
+            undo_votes.poster += rep_diff;
+        }
+        else {
+            undo_votes.poster = rep_diff;
+        }
+    }
+
+    // build the bulk query that will update every User document
+    let bulk_query = {};
+    let bulk_query_body = [];
+    let action_doc = undefined;
+    let update_doc = undefined;
+    let param_rep_diff = "rep_diff";
+    let inline_script = `ctx._source.reputation += params.${param_rep_diff}`;
+    for (var user_id in undo_votes){
+        rep_diff = undo_votes[user_id];
+        action_doc = {
+            update: {
+                index: INDEX_USERS,
+                _id: user_id
+            }
+        };
+        update_doc = {
+            script: {
+                lang: "painless",
+                inline: inline_script,
+                params: {
+                    [param_rep_diff]: rep_diff
+                }
+            }
+        };
+        bulk_query_body.push(action_doc);
+        bulk_query_body.push(update_doc);
+    }
+    bulk_query.body = bulk_query_body;
+    const bulkResponse = await client.bulk(bulk_query);
+    console.log(`Bulk performed... ${JSON.stringify(bulk_query_body)}`);
+    console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+
+    dbResult.status = constants.DB_RES_SUCCESS;
+    dbResult.data = bulkResponse;
+    return dbResult;
+}
+
+/** helper for DELETE /questions/:qid
+ * Undoes the effect of ALL votes associated with a specified Question on the asker's reputation.
+ * @param {string} qid the _id of the Question
+ */
+async function undoAllQuestionVotes(qid){
+    let dbResult = new DBResult();
+
+    // grab the associated Upvotes document
+    let qa_upvotes = (await client.search({
+        index: INDEX_Q_UPVOTES,
+        body: {
+            query: {
+                term: {
+                    "qid.keyword": qid
+                }
+            }
+        }
+    })).hits.hits[0];
+
+    if (qa_upvotes == undefined){
+        dbResult.status = constants.DB_RES_Q_NOTFOUND;
+        dbResult.data = null;
+        return dbResult;
+    }
+
+    let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
+    let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
+    let rep_diff = -(upvotes.length - downvotes.length);
+    
+    let poster = await getUserByPost(qid, undefined);
+    let updateRepRes = await updateReputation(poster, rep_diff);
+    if (updateRepRes.status !== constants.DB_RES_SUCCESS){
+        console.log(`Failed updateReputation in undoAllQuestionVotes(${qid})`);
+        dbResult.status = constants.DB_RES_ERROR;
+        dbResult.data = updateRepRes;
+    }
+    else if (updateRepRes.status === constants.DB_RES_SUCCESS){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = updateRepRes;
+    }
+    return dbResult;
+}
 
 /** helper for POST /questions/:qid/upvote and POST /answers/:aid/upvote
  * Undoes a user's vote for a specified Question or Answer.
@@ -1012,7 +1170,7 @@ async function updateScore(qid, aid, amount){
  * @param {string} username username of the user
  * @param {int} amount amount by which to update the reputation
  */
-async function updateReputation(username, original_rep, amount){
+async function updateReputation(username, amount){
     let dbResult = new DBResult();
     let param_amount = "amount";
     let inline_script = `ctx._source.reputation += params.${param_amount}`;
@@ -1182,7 +1340,7 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // update the reputation of the poster
     console.log(`updating rep ${poster}, ${rep_diff}`);
-    let updateRepRes = await updateReputation(poster, poster_rep, rep_diff);
+    let updateRepRes = await updateReputation(poster, rep_diff);
     if (updateRepRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
@@ -1356,6 +1514,7 @@ async function acceptAnswer(aid, username){
 }
 
 module.exports = {
+    shutdown: shutdown,
     // getQuestionsByUser: getQuestionsByUser,
     addQuestion: addQuestion,
     getQuestion: getQuestion,

@@ -52,7 +52,7 @@ function setupConnection(){
                     }
                     ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
                     ch.prefetch(1); 
-                    ch.consume(q.queue, processRequest(msg));
+                    ch.consume(q.queue, processRequest);
                 });
             });
         });
@@ -92,4 +92,13 @@ function addQuestion(request){
 }
 
 /* Start the server. */
-app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+var server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+function shutdown(){
+    if (ch) ch.close();
+    if (conn) conn.close();
+    server.close();
+}
