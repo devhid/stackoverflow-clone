@@ -35,7 +35,7 @@ var ch = null;
  */
 function setupConnection(){
     console.log(`[Rabbit] Setting up connection...`);
-    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
+    amqp.connect(constants.AMQP, function(error0, connection) {
         if (error0) {
             throw error0;
         }
