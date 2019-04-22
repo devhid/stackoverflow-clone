@@ -7,31 +7,23 @@
   become: yes
   become_user: root
   vars:
-    SERVICE: media-service
+    SERVICE: qa-service
     GIT_USERNAME: devhid
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
   - { role: ssh }
   - { role: nginx }
   - { role: nodejs }
-  - { role: cassandra }
 
   tasks:
-    - name: Create key_space '{{ SERVICE }}' in Cassandra
-      shell: cqlsh -e "create keyspace media_service with replication = {'class':'SimpleStrategy', 'replication_factor':'1'};"
-      retries: 1
-      delay: 3
-
-    - name: Create table 'imgs' in Cassandra
-      shell: cqlsh -e "create table media_service.imgs (id uuid PRIMARY KEY, content blob, filename text, mimetype text);"
-
     - name: Clone stackoverflow-clone repository from Git
       git:
         repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN}}@github.com/devhid/stackoverflow-clone.git
-        dest: /home/ubuntu
+        dest: /home/ubuntu/stackoverflow-clone
     
     - name: Install dependencies for {{ SERVICE }}
-      command: cd stackoverflow-clone/services/{{ SERVICE }} && npm install
+      shell: cd stackoverflow-clone/services/{{ SERVICE }} && npm install
     
     - name: Start {{ SERVICE }} with pm2
-      command: pm2 start index.js --name {{ SERVICE }}
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/{{ SERVICE }} && pm2 start index.js --name {{ SERVICE }} 
