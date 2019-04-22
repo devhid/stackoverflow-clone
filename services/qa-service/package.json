@@ -18,6 +18,7 @@
   "author": "Johnny So",
   "license": "ISC",
   "dependencies": {
+    "cassandra-driver": "^4.0.0",
     "connect-redis": "^3.4.1",
     "elasticsearch": "^15.4.1",
     "express": "^4.16.4",
