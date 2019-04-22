@@ -69,3 +69,6 @@ venv
 secrets.sh
 
 *.retry
+
+*/keys/redis
+*/keys/git_ansible
