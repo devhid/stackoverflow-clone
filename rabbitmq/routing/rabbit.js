@@ -51,8 +51,7 @@ async function publishMessage(routing_key, data){
             }
 
             correlationId = uuidv4();
-
-            console.log(` [x] Requesting ${JSON.stringify(data)}`);
+            console.log(` [x] Requesting ${JSON.stringify(data)}, corrId=${correlationId}`);
 
             ch.publish(constants.EXCHANGE.NAME, 
                 routing_key, 
@@ -60,8 +59,8 @@ async function publishMessage(routing_key, data){
                 { correlationId: correlationId, replyTo: q.queue, persistent: true }
             );
 
-            ch.consume(q.queue, function(msg) {
-                if (msg.properties.correlationId === correlationId) {
+            ch.consume(q.queue, (msg) => {
+                if (msg.properties.correlationId === correlationId){
                     console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
                     ch.ack(msg);
                     dbResult.status = constants.RMQ_SUCCESS;
@@ -72,6 +71,17 @@ async function publishMessage(routing_key, data){
             }, { noAck: false });
         });
     });
+}
+
+function receiveMessage(msg, corrId){
+    if (msg.properties.correlationId === corrId){
+        console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
+        ch.ack(msg);
+        dbResult.status = constants.RMQ_SUCCESS;
+        dbResult.data = JSON.parse(msg.content.toString());
+        resolve(dbResult);
+    }
+    console.log(` [.] Received corrId=${msg.properties.correlationId}`);
 }
 
 function shutdown(){
