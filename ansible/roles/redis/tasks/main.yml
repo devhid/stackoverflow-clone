@@ -1,0 +1,11 @@
+---
+#
+# Install Redis
+#
+
+# Install redis-server using APT
+
+  - name: Install redis-server using APT
+    apt:
+      name: redis-server
+      update_cache: yes

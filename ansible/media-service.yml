@@ -2,7 +2,7 @@
 #
 # Playbook to setup the media service.
 #
-- hosts: test
+- hosts: media
   remote_user: ubuntu
   become: yes
   become_user: root
@@ -17,21 +17,48 @@
   - { role: cassandra }
 
   tasks:
+    - name: Edit seeds in Cassandra configuration
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "seeds:"
+        line: '          - seeds: "127.0.0.1, {{ inventory_host }}"'
+    
+    - name: Set start_rpc to true
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "start_rpc:"
+        line: "start_rpc: true"
+    
+    - name: Set rpc_address to 0.0.0.0
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "rpc_address:"
+        line: "rpc_address: 0.0.0.0"
+    
+    - name: Set broadcast_rpc_address to {{ inventory_host }}
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "broadcast_rpc_address:"
+        line: "broadcast_rpc_address: {{ inventory_host }}"
+
     - name: Create key_space '{{ SERVICE }}' in Cassandra
-      shell: cqlsh -e "create keyspace media_service with replication = {'class':'SimpleStrategy', 'replication_factor':'1'};"
+      shell: cqlsh -e "create keyspace media_service with replication = {'class':'SimpleStrategy', 'replication_factor':'1'};" {{ inventory_host }} 9042
       retries: 1
       delay: 3
 
     - name: Create table 'imgs' in Cassandra
-      shell: cqlsh -e "create table media_service.imgs (id uuid PRIMARY KEY, content blob, filename text, mimetype text);"
+      shell: cqlsh -e "create table media_service.imgs (id uuid PRIMARY KEY, content blob, filename text, mimetype text);" {{ inventory_host }} 9042
 
     - name: Clone stackoverflow-clone repository from Git
+      remote_user: ubuntu
       git:
         repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN}}@github.com/devhid/stackoverflow-clone.git
         dest: /home/ubuntu
     
     - name: Install dependencies for {{ SERVICE }}
+       remote_user: ubuntu
       command: cd stackoverflow-clone/services/{{ SERVICE }} && npm install
     
     - name: Start {{ SERVICE }} with pm2
+      remote_user: ubuntu
       command: pm2 start index.js --name {{ SERVICE }}
