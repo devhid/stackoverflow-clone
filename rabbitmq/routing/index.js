@@ -79,7 +79,7 @@ async function routeRequest(key, data){
 async function wrapRequest(req, res, key, endpoint){
     let data = {
         endpoint: endpoint,
-        user: req.session.user,
+        session: {user: req.session.user},
         params: req.params,
         body: req.body,
         file: req.file
@@ -88,6 +88,10 @@ async function wrapRequest(req, res, key, endpoint){
     console.log(`routeRequest status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
+    // mainly for getMedia
+    if (dbRes.content_type != undefined){
+        res.set('Content-Type', dbRes.content_type);
+    }
     return res.json(dbRes.response);
 }
 
@@ -189,4 +193,12 @@ app.get('/user/:uid/answers', async (req, res) => {
 });
 
 /* Start the server. */
-app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+var server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+function shutdown(){
+    rabbit.shutdown();
+    server.close();
+}

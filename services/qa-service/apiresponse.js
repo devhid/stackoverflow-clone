@@ -19,16 +19,9 @@ class APIResponse {
     }
 
     toOBJ(){
-        if (this.error === undefined){
-            return {
-                status: this.status
-            };
-        }
-        else {
-            return {
-                status: this.status,
-                error: this.error
-            };
+        return {
+            status: this.status,
+            error: this.error
         }
     }
 }
