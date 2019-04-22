@@ -80,6 +80,5 @@ async function publishMessage(bind_key, request){
 }
 
 module.exports = {
-    createExchange: createExchange,
     publishMessage: publishMessage
 }
