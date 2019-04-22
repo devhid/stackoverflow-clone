@@ -7,7 +7,7 @@
   become: yes
   become_user: root
   vars:
-    SERVICE: email-service
+    SERVICE: email-verification-service
     GIT_USERNAME: devhid
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
