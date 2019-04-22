@@ -1,0 +1,31 @@
+---
+#
+# Playbook to setup the search service.
+#
+- hosts: search
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  vars:
+    SERVICE: search-service
+    GIT_USERNAME: devhid
+    GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
+  roles:
+  - { role: ssh }
+  - { role: nginx }
+  - { role: nodejs }
+
+  tasks:
+    - name: Clone stackoverflow-clone repository from Git
+      become_user: ubuntu
+      git:
+        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN}}@github.com/devhid/stackoverflow-clone.git
+        dest: /home/ubuntu/stackoverflow-clone
+    
+    - name: Install dependencies for {{ SERVICE }}
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/{{ SERVICE }} && npm install
+    
+    - name: Start {{ SERVICE }} with pm2
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/{{ SERVICE }} && pm2 start index.js --name {{ SERVICE }} 
