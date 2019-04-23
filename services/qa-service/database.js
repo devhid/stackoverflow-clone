@@ -76,7 +76,7 @@ async function associateFreeMedia(qa_id, ids){
     return new Promise( (resolve, reject) => {
         cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
-                dbResult.status = constants.DB_ES_ERROR;
+                dbResult.status = constants.DB_RES_ERROR;
                 dbResult.data = error;
                 reject(dbResult);
             } else {
@@ -159,7 +159,7 @@ async function deleteArrOfMedia(ids){
     return new Promise( (resolve, reject) => {
         cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
-                dbResult.status = constants.DB_ES_ERROR;
+                dbResult.status = constants.DB_RES_ERROR;
                 dbResult.data = error;
                 reject(dbResult);
             } else {
@@ -193,7 +193,7 @@ async function deleteMediaByQAID(qa_id){
     return new Promise( (resolve, reject) => {
         cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
-                dbResult.status = constants.DB_ES_ERROR;
+                dbResult.status = constants.DB_RES_ERROR;
                 dbResult.data = error;
                 reject(dbResult);
             } else {
@@ -1018,7 +1018,7 @@ async function undoAllQuestionVotes(qid){
     let rep_diff = -(upvotes.length - downvotes.length);
     if (rep_diff == 0){
         dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = updateRepRes;
+        dbResult.data = null;
         return dbResult;
     }
     
