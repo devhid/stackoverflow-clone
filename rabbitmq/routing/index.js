@@ -131,7 +131,7 @@ app.post('/questions/add', async(req, res) => {
         user: undefined,
         body: req.body
     };
-    let rabbitRes = await routeRequest(constants.KEYS.QA, data);
+    let rabbitRes = await routeRequest(constants.SERVICES.QA, data);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
     return res.json(dbRes.response);
