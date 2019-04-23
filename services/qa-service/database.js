@@ -69,7 +69,7 @@ async function associateFreeMedia(qa_id, ids){
     }
 
     var list_ids = transformArrToCassandraList(ids);
-    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id=${qa_id} WHERE id in ${list_ids}`;
+    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id='${qa_id}' WHERE id in ${list_ids}`;
     console.log(`[Cassandra]: associateFreeMedia query=${query}`);
 
     // execute the query in a Promise
@@ -177,7 +177,7 @@ async function deleteMediaByQAID(qa_id){
     var list_ids = transformArrToCassandraList(ids);
 
     // prepare the query
-    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE qa_id=${qa_id}`;
+    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE qa_id='${qa_id}'`;
     console.log(`[Cassandra]: deleteMediaByQAID query=${query}`);
 
     // execute the query in a Promise
@@ -305,6 +305,9 @@ async function addQuestion(user, title, body, tags, media){
     catch(err) {
         cassandraResp = err;
         console.log(`checkFreeMedia failed on media=${media}, err=${err.data}`);
+        dbResult.status = constants.DB_RES_MEDIA_IN_USE;
+        dbResult.data = null;
+        return dbResult;
     }
     if (cassandraResp.status === constants.DB_RES_SUCCESS){
         if (cassandraResp.data != media.length){
