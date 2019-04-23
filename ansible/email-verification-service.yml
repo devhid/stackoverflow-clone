@@ -13,7 +13,6 @@
   roles:
   - { role: ssh }
   - { role: nodejs }
-  - { role: rabbitmq }
 
   tasks:
     - name: Clone stackoverflow-clone repository from Git
