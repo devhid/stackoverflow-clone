@@ -915,7 +915,7 @@ async function undoAllAnswerVotes(qid){
     let dbResult = new DBResult();
 
     // grab the associated Upvotes document
-    let qa_upvotes = (await client.search({
+    let qa_votes = (await client.search({
         index: INDEX_A_UPVOTES,
         body: {
             query: {
@@ -926,7 +926,7 @@ async function undoAllAnswerVotes(qid){
         }
     })).hits.hits;
 
-    if (qa_upvotes.length == 0){
+    if (qa_votes.length == 0){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
         return dbResult;
@@ -938,7 +938,7 @@ async function undoAllAnswerVotes(qid){
     let rep_diff = 0;
     let upvotes = undefined;
     let downvotes = undefined;
-    for (var ans of qa_upvotes){
+    for (var ans of qa_votes){
         poster = ans._source.user_id;
         upvotes = (ans._source.upvotes == undefined) ? [] : ans._source.upvotes;
         downvotes = (ans._source.downvotes == undefined) ? [] : ans._source.downvotes;
@@ -996,7 +996,7 @@ async function undoAllQuestionVotes(qid){
     let dbResult = new DBResult();
 
     // grab the associated Upvotes document
-    let qa_upvotes = (await client.search({
+    let qa_votes = (await client.search({
         index: INDEX_Q_UPVOTES,
         body: {
             query: {
@@ -1007,7 +1007,7 @@ async function undoAllQuestionVotes(qid){
         }
     })).hits.hits[0];
 
-    if (qa_upvotes == undefined){
+    if (qa_votes == undefined){
         dbResult.status = constants.DB_RES_Q_NOTFOUND;
         dbResult.data = null;
         return dbResult;
@@ -1016,6 +1016,11 @@ async function undoAllQuestionVotes(qid){
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
     let rep_diff = -(upvotes.length - downvotes.length);
+    if (rep_diff == 0){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = updateRepRes;
+        return dbResult;
+    }
     
     let poster = await getUserByPost(qid, undefined);
     let updateRepRes = await updateReputation(poster, rep_diff);
@@ -1174,6 +1179,11 @@ async function updateScore(qid, aid, amount){
  */
 async function updateReputation(username, amount){
     let dbResult = new DBResult();
+    if (amount == 0){
+        dbResult.status = success;
+        dbResult.data = null;
+        return dbResult;
+    }
     let param_amount = "amount";
     let inline_script = `ctx._source.reputation += params.${param_amount}`;
     const updateUserResponse = await client.updateByQuery({
