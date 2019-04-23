@@ -26,6 +26,19 @@ app.use(function(req, res, next) {
   next();
 });
 
+/* Start the server. */
+var server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+
+process.on('SIGINT', shutdown);
+process.on('SIGTERM', shutdown);
+
+function shutdown(){
+    if (ch) ch.close();
+    if (conn) conn.close();
+    database.shutdown();
+    server.close();
+}
+
 /* amqplib connection */
 var conn = null;
 var ch = null;
@@ -68,8 +81,6 @@ function setupConnection(){
         });
     });
 }
-
-
 /**
  * Processes the request contained in the message and replies to the specified queue.
  * @param {Object} msg the message on the RabbitMQ queue
@@ -483,17 +494,4 @@ async function acceptAnswer(req){
 
     // return HTTP response
     return {status: status, response: response.toOBJ()};
-}
-
-/* Start the server. */
-var server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-
-function shutdown(){
-    if (ch) ch.close();
-    if (conn) conn.close();
-    database.shutdown();
-    server.close();
 }
