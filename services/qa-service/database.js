@@ -42,11 +42,12 @@ function shutdown(){
 /**
  * Transforms a JavaScript array of strings into a Cassandra parenthesized list of strings.
  * @param {string[]} arr JS array of strings
+ * @param {boolean} quotes whether or not we want quotes around each element
  */
-function transformArrToCassandraList(arr){
+function transformArrToCassandraList(arr, quotes){
     var list = `(`;
     for (var elem of arr){
-        list += `'${elem}',`;
+        list += (quotes) ? `'${elem}',` : `${elem},`;
     }
     list = list.substring(0,list.length-1);
     list += `)`;
@@ -68,7 +69,7 @@ async function associateFreeMedia(qa_id, ids){
         return dbResult;
     }
 
-    var list_ids = transformArrToCassandraList(ids);
+    var list_ids = transformArrToCassandraList(ids, false);
     const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id='${qa_id}' WHERE id in ${list_ids}`;
     console.log(`[Cassandra]: associateFreeMedia query=${query}`);
 
@@ -102,7 +103,7 @@ async function checkFreeMedia(ids){
         return dbResult;
     }
 
-    var list_ids = transformArrToCassandraList(ids);
+    var list_ids = transformArrToCassandraList(ids, false);
     const query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids} AND qa_id=NULL`;
     console.log(`[Cassandra]: checkFreeMedia query=${query}`);
 
@@ -137,7 +138,7 @@ async function deleteArrOfMedia(ids){
     }
 
     // transform the array of media IDs to the expected format Cassandra wants them in ('id', 'id')
-    var list_ids = transformArrToCassandraList(ids);
+    var list_ids = transformArrToCassandraList(ids, false);
 
     // prepare the query
     const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
@@ -172,9 +173,6 @@ async function deleteMediaByQAID(qa_id){
         dbResult.data = null;
         return dbResult;
     }
-
-    // transform the array of media IDs to the expected format Cassandra wants them in ('id', 'id')
-    var list_ids = transformArrToCassandraList(ids);
 
     // prepare the query
     const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE qa_id='${qa_id}'`;
@@ -305,13 +303,13 @@ async function addQuestion(user, title, body, tags, media){
     catch(err) {
         cassandraResp = err;
         console.log(`checkFreeMedia failed on media=${media}, err=${err.data}`);
-        dbResult.status = constants.DB_RES_MEDIA_IN_USE;
+        dbResult.status = constants.DB_RES_MEDIA_INVALID;
         dbResult.data = null;
         return dbResult;
     }
     if (cassandraResp.status === constants.DB_RES_SUCCESS){
         if (cassandraResp.data != media.length){
-            dbResult.status = constants.DB_RES_MEDIA_IN_USE;
+            dbResult.status = constants.DB_RES_MEDIA_INVALID;
             dbResult.data = null;
             return dbResult;
         }
@@ -610,7 +608,7 @@ async function addAnswer(qid, username, body, media){
     }
     if (cassandraResp.status === constants.DB_RES_SUCCESS){
         if (cassandraResp.data != media.length){
-            dbResult.status = constants.DB_RES_MEDIA_IN_USE;
+            dbResult.status = constants.DB_RES_MEDIA_INVALID;
             dbResult.data = null;
             return dbResult;
         }

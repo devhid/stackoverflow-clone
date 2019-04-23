@@ -173,9 +173,9 @@ async function addQuestion(req){
         status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
-    else if (addRes.status === constants.DB_RES_MEDIA_IN_USE){
+    else if (addRes.status === constants.DB_RES_MEDIA_INVALID){
         status = constants.STATUS_400;
-        response.setERR(constants.ERR_MEDIA_IN_USE);
+        response.setERR(constants.ERR_MEDIA_INVALID);
     }
     else if (addRes.status === constants.DB_RES_SUCCESS){
         status = constants.STATUS_200;
