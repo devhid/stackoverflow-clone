@@ -13,7 +13,6 @@
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
   - { role: ssh }
-  - { role: nginx }
   - { role: nodejs }
   - { role: cassandra }
 

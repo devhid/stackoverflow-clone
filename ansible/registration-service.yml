@@ -13,7 +13,6 @@
   roles:
   - { role: ssh }
   - { role: nodejs }
-  - { role: postfix }
 
   tasks:
     - name: Clone stackoverflow-clone repository from Git
