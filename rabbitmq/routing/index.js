@@ -91,8 +91,8 @@ async function wrapRequest(req, res, key, endpoint){
     // MEDIA
     if (dbRes.content_type != undefined){
         res.set('Content-Type', dbRes.content_type);
-        if (endpoint == constants.ENDPOINTS.MEDIA_GET && dbRes.media != undefined){
-            return res.send(dbRes.media);
+        if (endpoint == constants.ENDPOINTS.MEDIA_GET && dbRes.media != undefined && dbRes.media.type === "Buffer"){
+            return res.send(Buffer.from(dbRes.media.data));
         }
     }
 
