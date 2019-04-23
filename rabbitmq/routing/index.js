@@ -16,29 +16,29 @@ require('express-async-errors');
 const PORT = 8008;
 
 /* options for the redis store */
-// const redisOptions = {
-//     host: '192.168.122.27',
-//     port: 6379,
-//     pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
-// };
+const redisOptions = {
+    host: '192.168.122.27',
+    port: 6379,
+    pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
+};
 
 /* options for the session */
-// const sessionOptions = {
-//     name: 'soc_login',
-//     secret: 'EditThisLaterWithARealSecret',
-//     unset: 'destroy',
-//     resave: false,
-//     saveUninitialized: true,
-//     logErrors: true,
-//     store: new RedisStore(redisOptions)
-// };
+const sessionOptions = {
+    name: 'soc_login',
+    secret: 'EditThisLaterWithARealSecret',
+    unset: 'destroy',
+    resave: false,
+    saveUninitialized: true,
+    logErrors: true,
+    store: new RedisStore(redisOptions)
+};
 
 
 /* image upload destination */
 const upload = multer();
 
 /* handle user sessions */
-// app.use(session(sessionOptions));
+app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
@@ -63,7 +63,6 @@ async function routeRequest(key, data){
     let publishRes = null;
     try {
         publishRes = await rabbit.publishMessage(key, data);
-        console.log('hi');
     }
     catch (err){
         publishRes = err;
@@ -87,7 +86,7 @@ async function wrapRequest(req, res, key, endpoint){
         file: req.file
     };
     let rabbitRes = await routeRequest(key, data);
-    console.log(`routeRequest status=${rabbitRes.status}`);
+    // console.log(`endpoint=${endpoint}, resp status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
     // mainly for getMedia
