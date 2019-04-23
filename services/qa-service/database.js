@@ -104,17 +104,29 @@ async function checkFreeMedia(ids){
     }
 
     var list_ids = transformArrToCassandraList(ids, false);
-    const query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids} AND qa_id=NULL`;
+    const query = `SELECT qa_id FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
     console.log(`[Cassandra]: checkFreeMedia query=${query}`);
 
     // execute the query in a Promise
     return new Promise( (resolve, reject) => {
         cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
             if (error) {
-                dbResult.status = constants.DB_ES_ERROR;
+                dbResult.status = constants.DB_RES_ERROR;
                 dbResult.data = error;
                 reject(dbResult);
             } else {
+                if (result.rowLength !== ids.length){
+                    dbResult.status = constants.DB_RES_ERROR;
+                    dbResult.data = error;
+                    return reject(dbResult);
+                }
+                for (var row of result.rows){
+                    if (row.qa_id == null){
+                        dbResult.status = constants.DB_RES_ERROR;
+                        dbResult.data = error;
+                        return reject(dbResult);
+                    }
+                }
                 dbResult.status = constants.DB_RES_SUCCESS;
                 dbResult.data = result;
                 resolve(dbResult);
