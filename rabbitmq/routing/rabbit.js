@@ -66,6 +66,7 @@ async function publishMessage(routing_key, data){
                     dbResult.status = constants.RMQ_SUCCESS;
                     dbResult.data = JSON.parse(msg.content.toString());
                     resolve(dbResult);
+                    return;
                 }
                 console.log(` [.] Received corrId=${msg.properties.correlationId}, expected=${correlationId}`);
             }, { noAck: false });
