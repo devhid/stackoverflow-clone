@@ -7,9 +7,7 @@ const constants = require('./constants');
 const DBResult = require('./dbresult').DBResult;
 
 /* client to communicate with elasticsearch */
-const client = new elasticsearch.Client({
-    host: "http://admin:ferdman123@107.191.43.73:92"
-});
+const client = new elasticsearch.Client(constants.ELASTICSEARCH_OPTIONS);
 
 /* client to communicate with cassandra */
 const cassandraOptions = constants.CASSANDRA_OPTIONS;

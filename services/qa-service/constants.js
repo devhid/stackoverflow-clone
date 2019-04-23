@@ -17,6 +17,15 @@ module.exports = {
         password: 'so123',
         locale: 'en_US',
         heartbeat: 5,
+    }, 
+    CASSANDRA_OPTIONS: {
+        contactPoints: ["192.168.122.22"], 
+        localDataCenter: 'datacenter1', 
+        keyspace: "media_service",
+        table: "imgs"
+    },
+    ELASTICSEARCH_OPTIONS: {
+        host: "http://admin:ferdman123@130.245.169.86"
     },
 
     EXCHANGE: {
@@ -87,12 +96,5 @@ module.exports = {
     ERR_ALRDY_ACCEPTED: 'An answer has already been accepted.',
 
     ERR_MEDIA_IN_USE: 'One or more media IDs are already in use.',
-    ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.',
-
-    CASSANDRA_OPTIONS: {
-        contactPoints: ["192.168.122.22"], 
-        localDataCenter: 'datacenter1', 
-        keyspace: "media_service",
-        table: "imgs"
-    }
+    ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.'
 };
