@@ -17,6 +17,15 @@ module.exports = {
         password: 'so123',
         locale: 'en_US',
         heartbeat: 5,
+    }, 
+    CASSANDRA_OPTIONS: {
+        contactPoints: ["192.168.122.22"], 
+        localDataCenter: 'datacenter1', 
+        keyspace: "media_service",
+        table: "imgs"
+    },
+    ELASTICSEARCH_OPTIONS: {
+        host: "http://admin:ferdman123@130.245.169.86:92"
     },
 
     EXCHANGE: {
@@ -76,7 +85,7 @@ module.exports = {
     DB_RES_A_NOTFOUND: 'a notfound',
     DB_RES_NOT_ALLOWED: 'operation not allowed',
     DB_RES_ALRDY_ACCEPTED: 'a alrdy accepted',
-    DB_RES_MEDIA_IN_USE: 'media in use',
+    DB_RES_MEDIA_INVALID: 'media invalid or in use',
 
     ERR_MISSING_PARAMS: 'Required parameters are missing from the request.',
     ERR_DEL_NOTOWN_Q: 'You cannot delete a question that someone else asked.',
@@ -86,13 +95,6 @@ module.exports = {
     ERR_NOT_ALLOWED: 'The specified operation is not allowed for the current user.',
     ERR_ALRDY_ACCEPTED: 'An answer has already been accepted.',
 
-    ERR_MEDIA_IN_USE: 'One or more media IDs are already in use.',
-    ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.',
-
-    CASSANDRA_OPTIONS: {
-        contactPoints: ["192.168.122.22"], 
-        localDataCenter: 'datacenter1', 
-        keyspace: "media_service",
-        table: "imgs"
-    }
+    ERR_MEDIA_INVALID: 'One or more media IDs are invalid or are already in use.',
+    ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.'
 };

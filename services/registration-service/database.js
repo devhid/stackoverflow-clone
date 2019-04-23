@@ -2,11 +2,10 @@
 const elasticsearch = require('elasticsearch');
 const bcrypt = require('bcrypt');
 const crypto = require('crypto');
+const constants = require('./constants');
 
 /* client to communicate with elasticsearch */
-const client = new elasticsearch.Client({
-    host: "http://admin:ferdman123@107.191.43.73:92"
-});
+const client = new elasticsearch.Client(constants.ELASTICSEARCH_OPTIONS);
 
 /* index where user account information will be stored */
 const INDEX = "users";

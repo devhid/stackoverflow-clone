@@ -6,8 +6,6 @@ const uuidv4 = require('uuid/v4');
 const constants = require('./constants');
 const DBResult = require('./dbresult').DBResult;
 
-let correlationId = null;
-
 /* amqplib connection */
 var conn = null;
 var ch = null;
@@ -35,51 +33,69 @@ catch (err){
     console.log(`[Rabbit] Failed to connect ${err}`);
 }
 
+// async function publishMessage(routing_key, data){
+//     let dbResult = new DBResult();
+//     try {
+//         await ch.assertQueue(constants.CALLBACK_QUEUE, constants.QUEUE.PROPERTIES);
+//         correlationId = uuid4v();
+//         ch.publish(constants.EXCHANGE.NAME, 
+//             routing_key, 
+//             Buffer.from(JSON.stringify(data)), 
+//             { correlationId: correlationId, replyTo: q.queue, persistent: true }
+//         );
+//         let msg = await ch.consume(q.queue, { noAck: false });
+//         if (msg.properties.correlationId === correlationId) {
+//             console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
+//             ch.ack(msg);
+//             dbResult.status = constants.RMQ_SUCCESS;
+//             dbResult.data = JSON.parse(msg.content.toString());
+//             return;
+//         }
+//         console.log(` [.] Received corrId=${msg.properties.correlationId}, expected=${correlationId}`);
+//     }
+//     catch (err) {
+//         dbResult.status = constants.RMQ_ERROR;
+//         dbResult.data = error2;
+//         console.log(err);
+//     }
+// }
+
 /**
  * Publishes a message with the specified routing key.
- * @param {string} routing_key the routing key of the Queue (used as the routing key)
- * @param {Object} data data to encapsulate in a message
+ * @param {string} bind_key the binding key of the Queue (used as the routing key)
+ * @param {Request} request Express Request object
  */
-async function publishMessage(routing_key, data){
+async function publishMessage(bind_key, request){
     let dbResult = new DBResult();
-    
-    ch.assertQueue(constants.CALLBACK_QUEUE, constants.QUEUE.PROPERTIES, function(error2, q) {
-        if (error2) {
-            dbResult.status = constants.RMQ_ERROR;
-            dbResult.data = error2;
-        }
-
-        correlationId = uuidv4();
-        console.log(` [x] Requesting ${JSON.stringify(data)}, corrId=${correlationId}`);
-
-        ch.publish(constants.EXCHANGE.NAME, 
-            routing_key, 
-            Buffer.from(JSON.stringify(data)), 
-            { correlationId: correlationId, replyTo: q.queue, persistent: true }
-        );
-
-        ch.consume(q.queue, (msg) => {
-            if (msg.properties.correlationId === correlationId){
-                console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
-                ch.ack(msg);
-                dbResult.status = constants.RMQ_SUCCESS;
-                dbResult.data = JSON.parse(msg.content.toString());
-                return;
+    return new Promise( (resolve,reject) => {
+        ch.assertQueue('', constants.QUEUE.PROPERTIES, function(error2, q) {
+            if (error2) {
+                dbResult.status = constants.DB_RES_ERROR;
+                dbResult.data = error2;
+                reject(dbResult);
             }
-            console.log(` [.] Received corrId=${msg.properties.correlationId}, expected=${correlationId}`);
-        }, { noAck: false });
-    });
-}
+            var correlationId = uuidv4();
 
-function receiveMessage(msg, corrId){
-    if (msg.properties.correlationId === corrId){
-        console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
-        ch.ack(msg);
-        dbResult.status = constants.RMQ_SUCCESS;
-        dbResult.data = JSON.parse(msg.content.toString());
-        resolve(dbResult);
-    }
-    console.log(` [.] Received corrId=${msg.properties.correlationId}`);
+            // console.log(` [x] Requesting ${JSON.stringify(request)}`);
+
+            ch.publish(constants.EXCHANGE.NAME, 
+                bind_key, 
+                Buffer.from(JSON.stringify(request)), 
+                { correlationId: correlationId, replyTo: q.queue, persistent: true }
+            );
+
+            ch.consume(q.queue, function(msg) {
+                // console.log(`Received ${msg.content.toString()}`);
+                if (msg.properties.correlationId === correlationId) {
+                    // console.log(` [.] Got ${msg}`);
+                    ch.ack(msg);
+                    dbResult.status = constants.DB_RES_SUCCESS;
+                    dbResult.data = JSON.parse(msg.content.toString());
+                    resolve(dbResult);
+                }
+            }, { noAck: false });
+        });
+    });
 }
 
 function shutdown(){
@@ -88,6 +104,6 @@ function shutdown(){
 }
 
 module.exports = {
-    publishMessage: publishMessage,
-    shutdown: shutdown
+    shutdown: shutdown,
+    publishMessage: publishMessage
 }

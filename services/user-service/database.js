@@ -1,10 +1,9 @@
 /* library imports */
 const elasticsearch = require('elasticsearch');
+const constants = require('./constants');
 
 /* client to communicate with elasticsearch */
-const client = new elasticsearch.Client({
-    host: "http://admin:ferdman123@107.191.43.73:92"
-});
+const client = new elasticsearch.Client(constants.ELASTICSEARCH_OPTIONS);
 
 /* indices for users, questions and answers in db */
 const INDEX_QUESTIONS = "questions";  // INDEX_QUESTIONS is where questions are stored

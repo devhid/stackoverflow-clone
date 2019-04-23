@@ -9,7 +9,23 @@ module.exports = {
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
 
-    AMQP_HOST: 'amqp://130.245.170.211?heartbeat=5',
+    AMQP: {
+        protocol: 'amqp',
+        hostname: '192.168.122.33',
+        port: 5672,
+        username: 'so',
+        password: 'so123',
+        locale: 'en_US',
+        heartbeat: 5,
+    },
+    ELASTICSEARCH_OPTIONS: {
+        host: "http://admin:ferdman123@130.245.169.86:92"
+    },
+    REDIS_OPTIONS: {
+        host: '192.168.122.27',
+        port: 6379,
+        pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
+    },
 
     EXCHANGE: {
         TYPE: 'direct',

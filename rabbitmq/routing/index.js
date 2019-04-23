@@ -15,14 +15,7 @@ require('express-async-errors');
 /* the port the server will listen on */
 const PORT = 8008;
 
-/* options for the redis store */
-const redisOptions = {
-    host: '192.168.122.27',
-    port: 6379,
-    pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
-};
-
-/* options for the session */
+/* redis */
 const sessionOptions = {
     name: 'soc_login',
     secret: 'EditThisLaterWithARealSecret',
@@ -30,15 +23,12 @@ const sessionOptions = {
     resave: false,
     saveUninitialized: true,
     logErrors: true,
-    store: new RedisStore(redisOptions)
+    store: new RedisStore(constants.REDIS_OPTIONS)
 };
-
+app.use(session(sessionOptions));
 
 /* image upload destination */
 const upload = multer();
-
-/* handle user sessions */
-app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
@@ -86,13 +76,26 @@ async function wrapRequest(req, res, key, endpoint){
         file: req.file
     };
     let rabbitRes = await routeRequest(key, data);
-    console.log(`routeRequest status=${rabbitRes.status}`);
+    // console.log(`endpoint=${endpoint}, resp status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
-    // mainly for getMedia
+
+    // AUTH
+    if (dbRes.user != undefined){
+        req.session.user = dbRes.user;
+    }
+    if (endpoint == constants.ENDPOINTS.AUTH_LOGOUT && dbRes.status === constants.STATUS_200){
+        req.session.destroy();
+    }
+
+    // MEDIA
     if (dbRes.content_type != undefined){
         res.set('Content-Type', dbRes.content_type);
+        if (endpoint == constants.ENDPOINTS.MEDIA_GET && dbRes.media != undefined && dbRes.media.type === "Buffer"){
+            return res.send(Buffer.from(dbRes.media.data));
+        }
     }
+
     return res.json(dbRes.response);
 }
 
