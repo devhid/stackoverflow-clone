@@ -2,17 +2,16 @@
 #
 # Playbook to setup the search service.
 #
-- hosts: auth
+- hosts: authentication
   remote_user: ubuntu
   become: yes
   become_user: root
   vars:
-    SERVICE: auth-service
+    SERVICE: authentication-service
     GIT_USERNAME: devhid
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
   - { role: ssh }
-  - { role: nginx }
   - { role: nodejs }
 
   tasks:
