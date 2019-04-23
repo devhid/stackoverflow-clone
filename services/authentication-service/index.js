@@ -260,15 +260,13 @@ async function logout(req) {
         return response;
     }
 
-    req.session.destroy(function done() {
-        response = { 
-            "status": constants.STATUS_200,
-            "response": {
-                "status": constants.STATUS_OK, 
-            }
-        };
-        return response;
-    });
+    response = {
+        "status": constants.STATUS_200,
+        "response": {
+            "status": constants.STATUS_OK
+        }
+    };
+    return response;
 }
 
 /* a counter for sessions */

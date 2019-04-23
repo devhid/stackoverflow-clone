@@ -79,13 +79,20 @@ async function wrapRequest(req, res, key, endpoint){
     // console.log(`endpoint=${endpoint}, resp status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
-    // mainly for getMedia
-    if (dbRes.content_type != undefined){
-        res.set('Content-Type', dbRes.content_type);
-    }
+
+    // AUTH
     if (dbRes.user != undefined){
         req.session.user = dbRes.user;
     }
+    if (endpoint === constants.ENDPOINTS.AUTH_LOGOUT && dbRes.status === constants.STATUS_200){
+        req.session.destroy();
+    }
+
+    // MEDIA
+    if (dbRes.content_type != undefined){
+        res.set('Content-Type', dbRes.content_type);
+    }
+    
     return res.json(dbRes.response);
 }
 
