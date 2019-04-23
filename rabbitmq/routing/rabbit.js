@@ -42,35 +42,32 @@ catch (err){
  */
 async function publishMessage(routing_key, data){
     let dbResult = new DBResult();
-    return new Promise( (resolve,reject) => {
-        ch.assertQueue(constants.CALLBACK_QUEUE, constants.QUEUE.PROPERTIES, function(error2, q) {
-            if (error2) {
-                dbResult.status = constants.RMQ_ERROR;
-                dbResult.data = error2;
-                reject(dbResult);
+    
+    ch.assertQueue(constants.CALLBACK_QUEUE, constants.QUEUE.PROPERTIES, function(error2, q) {
+        if (error2) {
+            dbResult.status = constants.RMQ_ERROR;
+            dbResult.data = error2;
+        }
+
+        correlationId = uuidv4();
+        console.log(` [x] Requesting ${JSON.stringify(data)}, corrId=${correlationId}`);
+
+        ch.publish(constants.EXCHANGE.NAME, 
+            routing_key, 
+            Buffer.from(JSON.stringify(data)), 
+            { correlationId: correlationId, replyTo: q.queue, persistent: true }
+        );
+
+        ch.consume(q.queue, (msg) => {
+            if (msg.properties.correlationId === correlationId){
+                console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
+                ch.ack(msg);
+                dbResult.status = constants.RMQ_SUCCESS;
+                dbResult.data = JSON.parse(msg.content.toString());
+                return;
             }
-
-            correlationId = uuidv4();
-            console.log(` [x] Requesting ${JSON.stringify(data)}, corrId=${correlationId}`);
-
-            ch.publish(constants.EXCHANGE.NAME, 
-                routing_key, 
-                Buffer.from(JSON.stringify(data)), 
-                { correlationId: correlationId, replyTo: q.queue, persistent: true }
-            );
-
-            ch.consume(q.queue, (msg) => {
-                if (msg.properties.correlationId === correlationId){
-                    console.log(` [.] Got ${msg.content.toString()}, corrId=${correlationId}`);
-                    ch.ack(msg);
-                    dbResult.status = constants.RMQ_SUCCESS;
-                    dbResult.data = JSON.parse(msg.content.toString());
-                    resolve(dbResult);
-                    return;
-                }
-                console.log(` [.] Received corrId=${msg.properties.correlationId}, expected=${correlationId}`);
-            }, { noAck: false });
-        });
+            console.log(` [.] Received corrId=${msg.properties.correlationId}, expected=${correlationId}`);
+        }, { noAck: false });
     });
 }
 
