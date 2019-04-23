@@ -20,15 +20,14 @@ cassandra_client.connect()
         console.log(`[Cassandra] Error ${error}`)
     });
 
+// NOTE: for all indices, if "qid" or "aid" or "user_id" (any _id fields) are present in _source,
+//      and we need to do an action by querying those fields, query the name + ".keyword"
 const INDEX_QUESTIONS = "questions";  // INDEX_QUESTIONS is where questions are stored
 const INDEX_VIEWS = "views";          // INDEX_VIEWS is where views for a question are stored
 
-// NOTE: for INDEX_ANSWERS, searching by 'qid' requires "term" 'qid.keyword'
 const INDEX_ANSWERS = "answers";      // INDEX_ANSWERS is where answers are stored
 const INDEX_USERS = "users";          // INDEX_USERS is where users are stored
 
-// NOTE: for INDEX_Q_UPVOTES and INDEX_A_UPVOTES, searching by term for 'qid' or 'aid' requires
-//          specifying it as "term" 'qid.keyword' and 'aid.keyword' due to mapping.
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
@@ -121,9 +120,9 @@ async function checkFreeMedia(ids){
                     return reject(dbResult);
                 }
                 for (var row of result.rows){
-                    if (row.qa_id == null){
+                    if (row.qa_id != null){
                         dbResult.status = constants.DB_RES_ERROR;
-                        dbResult.data = error;
+                        dbResult.data = constants.DB_RES_MEDIA_INVALID;
                         return reject(dbResult);
                     }
                 }
@@ -310,7 +309,6 @@ async function addQuestion(user, title, body, tags, media){
     // first, check that the media IDs specified are not already associated with another Question or Answer document
     try {
         cassandraResp = await checkFreeMedia(media);
-        console.log(`checkFreeMedia, media=${media}, count=${cassandraResp.data}`);
     }
     catch(err) {
         cassandraResp = err;
@@ -318,13 +316,6 @@ async function addQuestion(user, title, body, tags, media){
         dbResult.status = constants.DB_RES_MEDIA_INVALID;
         dbResult.data = null;
         return dbResult;
-    }
-    if (cassandraResp.status === constants.DB_RES_SUCCESS){
-        if (cassandraResp.data != media.length){
-            dbResult.status = constants.DB_RES_MEDIA_INVALID;
-            dbResult.data = null;
-            return dbResult;
-        }
     }
 
     // create the Question document in INDEX_QUESTIONS
@@ -422,7 +413,7 @@ async function updateViewCount(qid, username, ip){
         body: {
             query: {
                 term: {
-                    "qid": qid
+                    "qid.keyword": qid
                 }
             }
         }
@@ -452,7 +443,7 @@ async function updateViewCount(qid, username, ip){
                 body: { 
                     query: { 
                         term: { 
-                            "qid": qid
+                            "qid.keyword": qid
                         } 
                     }, 
                     script: {
@@ -484,7 +475,7 @@ async function updateViewCount(qid, username, ip){
                 body: { 
                     query: { 
                         term: { 
-                            "qid": qid
+                            "qid.keyword": qid
                         } 
                     }, 
                     script: {
@@ -821,7 +812,7 @@ async function deleteQuestion(qid, username){
             body: { 
                 query: { 
                     term: { 
-                        qid: qid
+                        "qid.keyword": qid
                     } 
                 }, 
             }
