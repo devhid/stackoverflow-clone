@@ -1,7 +1,7 @@
 /* library imports */
 const express = require('express');
-const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
+// const session = require('express-session');
+// const RedisStore = require('connect-redis')(session);
 const multer = require('multer');
 
 /* internal imports */
@@ -16,29 +16,29 @@ require('express-async-errors');
 const PORT = 8008;
 
 /* options for the redis store */
-const redisOptions = {
-    host: '192.168.122.27',
-    port: 6379,
-    pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
-};
+// const redisOptions = {
+//     host: '192.168.122.27',
+//     port: 6379,
+//     pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
+// };
 
 /* options for the session */
-const sessionOptions = {
-    name: 'soc_login',
-    secret: 'EditThisLaterWithARealSecret',
-    unset: 'destroy',
-    resave: false,
-    saveUninitialized: true,
-    logErrors: true,
-    store: new RedisStore(redisOptions)
-};
+// const sessionOptions = {
+//     name: 'soc_login',
+//     secret: 'EditThisLaterWithARealSecret',
+//     unset: 'destroy',
+//     resave: false,
+//     saveUninitialized: true,
+//     logErrors: true,
+//     store: new RedisStore(redisOptions)
+// };
 
 
 /* image upload destination */
 const upload = multer();
 
 /* handle user sessions */
-app.use(session(sessionOptions));
+// app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
@@ -127,8 +127,16 @@ app.get('/media/:id', async(req,res) => {
 
 /* qa service */
 app.post('/questions/add', async(req, res) => {
-    let endpoint = constants.ENDPOINTS.QA_ADD_Q;
-    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
+    let data = {
+        user: undefined,
+        body: req.body
+    };
+    let rabbitRes = await routeRequest(constants.KEYS.QA, data);
+    let dbRes = rabbitRes.data;
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+    // let endpoint = constants.ENDPOINTS.QA_ADD_Q;
+    // return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.get('/questions/:qid', async(req, res) => {
