@@ -181,13 +181,7 @@ async function login(req) {
         return response;
     }
 
-    let userExists = false;
-    try {
-        userExists = await database.userExists(username);
-    }
-    catch (err){
-        console.log(`userExists err ${err}`);
-    }
+    const userExists = await database.userExists(username);
     if(!userExists) {
         response = { 
             "status": constants.STATUS_400,
@@ -198,13 +192,8 @@ async function login(req) {
         };
         return response;
     }
-    let canLogin = false;
-    try {
-        canLogin = await database.canLogin(username);
-    }
-    catch (err){
-        console.log(`canLogin err ${err}`);
-    }
+
+    const canLogin = await database.canLogin(username);
     if(!canLogin) {
         response = { 
             "status": constants.STATUS_401,
@@ -216,13 +205,7 @@ async function login(req) {
         return response;
     }
 
-    let success = false;
-    try {
-        success = await database.authenticate(username, password);
-    }
-    catch (err){
-        console.log(`authenticate err ${err}`);
-    }
+    const success = await database.authenticate(username, password);
     if(!success) {
         response = { 
             "status": constants.STATUS_401,
@@ -234,13 +217,7 @@ async function login(req) {
         return response;
     }
 
-    req.session.user = undefined;
-    try {
-        req.session.user = await database.getUser(username);
-    }
-    catch (err){
-        console.log(`getUser err ${err}`);
-    }
+    req.session.user = await database.getUser(username);
 
     response = { 
         "status": constants.STATUS_200,

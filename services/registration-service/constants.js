@@ -19,7 +19,7 @@ module.exports = {
         heartbeat: 5,
     },
     ELASTICSEARCH_OPTIONS: {
-        host: "http://admin:ferdman123@130.245.169.86"
+        host: "http://admin:ferdman123@130.245.169.86:92"
     },
 
     EXCHANGE: {
