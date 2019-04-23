@@ -156,7 +156,7 @@ async function addMedia(req) {
     }
 
     const filename = req.file.originalname;
-    const content = req.file.buffer;
+    const content = Buffer.from(req.file.buffer.data);
     const mimetype = req.file.mimetype;
 
     // get generated id from uploading media
@@ -169,7 +169,7 @@ async function addMedia(req) {
     }
 
     response = generateOK();
-    response[constants.ID_KEY] = mediaId;
+    response.response[constants.ID_KEY] = mediaId;
     return response;
 }
 
