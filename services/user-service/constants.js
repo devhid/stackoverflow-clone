@@ -10,14 +10,15 @@ module.exports = {
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
 
-    STATUS_200: 200,    // OK
-    STATUS_400: 400,    // bad request
-    STATUS_401: 401,    // unauthorized
-    STATUS_403: 403,    // forbidden
-    STATUS_404: 404,    // not found
-    STATUS_409: 409,    // conflict
-
-    AMQP_HOST: 'amqp://130.245.170.211?heartbeat=5',
+    AMQP: {
+        protocol: 'amqp',
+        hostname: '192.168.122.33',
+        port: 5672,
+        username: 'so',
+        password: 'so123',
+        locale: 'en_US',
+        heartbeat: 5,
+    },
 
     EXCHANGE: {
         TYPE: 'direct',

@@ -42,15 +42,15 @@ function setupConnection(){
                 throw error1;
             }
             ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
-                if (err){
-                    throw err;
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
+                if (error2){
+                    throw error2;
                 }
-                ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error2, q){
-                    if (error2){
-                        throw error2;
+                ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error3, q){
+                    if (error3){
+                        throw error3;
                     }
-                    ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.QA);
+                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.QA);
                     ch.prefetch(1); 
                     ch.consume(q.queue, processRequest);
                 });

@@ -18,6 +18,7 @@ module.exports = {
 
     QUEUE: {
         PROPERTIES: {
+            autoDelete: true,
             durable: true
         }
     },

@@ -126,27 +126,9 @@ app.get('/media/:id', async(req,res) => {
 });
 
 /* qa service */
-// app.post('/questions/add', async(req, res) => {
-//     let data = {
-//         user: undefined,
-//         body: req.body
-//     };
-//     let rabbitRes = await routeRequest(constants.SERVICES.QA, data);
-//     let dbRes = rabbitRes.data;
-//     res.status(dbRes.status);
-//     return res.json(dbRes.response);
-//     // let endpoint = constants.ENDPOINTS.QA_ADD_Q;
-//     // return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
-// });
 app.post('/questions/add', async(req, res) => {
-    let data = {
-        user: undefined,
-        body: req.body
-    };
-    let rabbitRes = await routeRequest(constants.SERVICES.QA, data);
-    let dbRes = rabbitRes.data;
-    res.status(dbRes.status);
-    return res.json(dbRes.response);
+    let endpoint = constants.ENDPOINTS.QA_ADD_Q;
+    return await wrapRequest(req, res, constants.SERVICES.QA, endpoint);
 });
 
 app.get('/questions/:qid', async(req, res) => {

@@ -33,27 +33,35 @@ var ch = null;
  * Asserts the Exchange and Queue exists and sets up the connection variables.
  */
 function setupConnection(){
-    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
+    console.log(`[Rabbit] Setting up connection...`);
+    amqp.connect(constants.AMQP, function(error0, connection) {
         if (error0) {
             throw error0;
         }
+        console.log(`[Rabbit] Connected...`);
         conn = connection;
         connection.createChannel(function(error1, channel) {
             if (error1) {
                 throw error1;
             }
+            console.log(`[Rabbit] Channel created...`);
             ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (err, ok) => {
-                if (err){
-                    throw err;
+            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
+                if (error2){
+                    throw error2;
                 }
-                ch.assertQueue(constants.SERVICES.AUTH, constants.QUEUE.PROPERTIES, function(error2, q){
-                    if (error2){
-                        throw error2;
+                console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
+                ch.assertQueue(constants.SERVICES.AUTH, constants.QUEUE.PROPERTIES, function(error3, q){
+                    if (error3){
+                        throw error3;
                     }
-                    ch.bindQueue(q.queue, constants.EXCHANGE.NAME, constants.SERVICES.AUTH);
+                    console.log(`[Rabbit] Asserted queue... ${q.queue}`);
+                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.AUTH);
+                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.AUTH} to ${ex.exchange}...`);
                     ch.prefetch(1); 
-                    ch.consume(q.queue, processRequest(msg));
+                    console.log(`[Rabbit] Set prefetch 1...`);
+                    ch.consume(q.queue, processRequest);
+                    console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
                 });
             });
         });
@@ -75,11 +83,9 @@ async function processRequest(msg){
         case constants.ENDPOINtS.AUTH_LOGOUT:
             response = await logout(data);
             break;
-        
         default:
             break;
     }
-
     ch.sendToQueue(msg.properties.replyTo,
         Buffer.from(JSON.stringify(response)), {
             correlationId: msg.properties.correlationId
