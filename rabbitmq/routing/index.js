@@ -84,15 +84,18 @@ async function wrapRequest(req, res, key, endpoint){
     if (dbRes.user != undefined){
         req.session.user = dbRes.user;
     }
-    if (endpoint === constants.ENDPOINTS.AUTH_LOGOUT && dbRes.status === constants.STATUS_200){
+    if (endpoint == constants.ENDPOINTS.AUTH_LOGOUT && dbRes.status === constants.STATUS_200){
         req.session.destroy();
     }
 
     // MEDIA
     if (dbRes.content_type != undefined){
         res.set('Content-Type', dbRes.content_type);
+        if (endpoint == constants.ENDPOINTS.MEDIA_GET && dbRes.media != undefined){
+            return res.send(dbRes.media);
+        }
     }
-    
+
     return res.json(dbRes.response);
 }
 
