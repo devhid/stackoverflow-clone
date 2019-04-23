@@ -1,0 +1,20 @@
+---
+#
+# Playbook to setup mail-server 
+#
+- hosts: mail_server
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  vars: 
+    REGISTRATION_HOST: 192.168.122.32 
+  roles:
+  # - { role: ssh }
+  # - { role: postfix }
+
+  tasks:
+    - name: Add host private ip to 'mynetworks' in postfix configuration
+      lineinfile:
+        destfile: /etc/postfix/main.cf
+        regex: "mynetworks ="
+        line: "mynetworks = {{ REGISTRATION_HOST }}, 127.0.0.0/8 [::ffff:127.0.0.0]/104 [::1]/128"
