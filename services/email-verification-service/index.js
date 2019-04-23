@@ -183,7 +183,7 @@ async function verify(req) {
                 "error": "Could not verify email. Incorrect key."
             }
         };
-        return res.json(response);
+        return response;
     }
 
     response = { 
@@ -192,7 +192,7 @@ async function verify(req) {
             "status": constants.STATUS_OK,
         }
     };
-    return res.json(response);
+    return response;
 }
 
 /* Checks if any of the variables in the fields array are empty. */
