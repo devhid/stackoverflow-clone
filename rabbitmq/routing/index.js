@@ -83,6 +83,9 @@ async function wrapRequest(req, res, key, endpoint){
     if (dbRes.content_type != undefined){
         res.set('Content-Type', dbRes.content_type);
     }
+    if (dbRes.user != undefined){
+        req.session.user = dbRes.user;
+    }
     return res.json(dbRes.response);
 }
 
