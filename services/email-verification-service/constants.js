@@ -18,6 +18,9 @@ module.exports = {
         locale: 'en_US',
         heartbeat: 5,
     },
+    ELASTICSEARCH_OPTIONS: {
+        host: "http://admin:ferdman123@130.245.169.86"
+    },
 
     EXCHANGE: {
         TYPE: 'direct',
