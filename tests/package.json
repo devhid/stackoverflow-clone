@@ -1,0 +1,18 @@
+{
+  "name": "tests",
+  "version": "1.0.0",
+  "description": "Tests for stackoverflow API endpoints.",
+  "main": "test.js",
+  "scripts": {
+    "test": "mocha"
+  },
+  "author": "Mankirat Gulati",
+  "license": "ISC",
+  "dependencies": {
+    "request": "^2.88.0"
+  },
+  "devDependencies": {
+    "chakram": "^1.5.0",
+    "mocha": "^6.1.4"
+  }
+}
