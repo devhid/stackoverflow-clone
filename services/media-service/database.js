@@ -18,10 +18,10 @@ client.connect()
 
 async function uploadMedia(filename, content, mimetype) {
     const uuid = Uuid.random();
-    const query = `INSERT INTO ${cassandraOptions.keyspace}.imgs (id, filename, content, mimetype) VALUES (?, ?, ?, ?)`;
+    const query = `INSERT INTO ${cassandraOptions.keyspace}.imgs (id, content, filename, mimetype, qa_id) VALUES (?, ?, ?, ?, ?)`;
     
     return new Promise( (resolve, reject) => {
-        client.execute(query, [uuid, filename, content, mimetype], { prepare: true }, (error, result) => {
+        client.execute(query, [uuid, content, filename, mimetype, ''], { prepare: true }, (error, result) => {
             if(error) {
                 reject(constants.ERR_MEDIA_TOO_LARGE);
             } else {

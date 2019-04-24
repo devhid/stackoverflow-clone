@@ -103,7 +103,7 @@ async function checkFreeMedia(ids){
     }
 
     var list_ids = transformArrToCassandraList(ids, false);
-    const query = `SELECT qa_id FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
+    const query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids} AND qa_id=''`;
     console.log(`[Cassandra]: checkFreeMedia query=${query}`);
 
     // execute the query in a Promise
@@ -112,24 +112,17 @@ async function checkFreeMedia(ids){
             if (error) {
                 dbResult.status = constants.DB_RES_ERROR;
                 dbResult.data = error;
-                reject(dbResult);
-            } else {
-                if (result.rowLength !== ids.length){
-                    dbResult.status = constants.DB_RES_ERROR;
-                    dbResult.data = error;
-                    return reject(dbResult);
-                }
-                for (var row of result.rows){
-                    if (row.qa_id != null){
-                        dbResult.status = constants.DB_RES_ERROR;
-                        dbResult.data = constants.DB_RES_MEDIA_INVALID;
-                        return reject(dbResult);
-                    }
-                }
-                dbResult.status = constants.DB_RES_SUCCESS;
-                dbResult.data = result;
-                resolve(dbResult);
+                return reject(dbResult);
             }
+            let row = result.rows[0];
+            if (row.count != ids.length){
+                dbResult.status = constants.DB_RES_ERROR;
+                dbResult.data = constants.DB_RES_MEDIA_INVALID;
+                return reject(dbResult);
+            }
+            dbResult.status = constants.DB_RES_SUCCESS;
+            dbResult.data = result;
+            return resolve(dbResult);
         });
     });
 }
