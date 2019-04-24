@@ -211,7 +211,7 @@ async function addMedia(req) {
     }
 
     const filename = req.file.originalname;
-    const content = Buffer.from(req.file.buffer.data);
+    const content = req.file.buffer;
     const mimetype = req.file.mimetype;
 
     // get generated id from uploading media
