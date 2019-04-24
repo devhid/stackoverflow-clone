@@ -797,15 +797,14 @@ async function deleteQuestion(qid, username){
             console.log(`Failed to delete question views ${qid} from ${INDEX_VIEWS}`);
             console.log(response);
         }
-        console.log('deleteed question views');
 
         // 3) DELETE from INDEX_Q_UPVOTES the Question Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the asker
         let undoQuestionVotesResp = await undoAllQuestionVotes(qid);
-        if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS){
+        if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS ||
+            undoQuestionVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
             console.log(`Failed to undo all question votes`);
         }
-        console.log(`undid votes ${JSON.stringify(undoQuestionVotesResp.data)}`);
         response = await client.deleteByQuery({
             index: INDEX_Q_UPVOTES,
             type: "_doc",
@@ -821,7 +820,6 @@ async function deleteQuestion(qid, username){
             console.log(`Failed to delete question upvotes ${qid} from ${INDEX_Q_UPVOTES}`);
             console.log(response);
         }
-        console.log('deleteed question upvotes');
 
         // 4) DELETE from INDEX_ANSWERS any associated Answer documents
         response = await client.deleteByQuery({
@@ -842,10 +840,10 @@ async function deleteQuestion(qid, username){
         // 5) DELETE from INDEX_A_UPVOTES the Answer Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the answerers
         let undoAnswerVotesResp = await undoAllAnswerVotes(qid);
-        if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS){
+        if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS || 
+            undoAnswerVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
             console.log(`Failed to undo all answer votes`);
         }
-        console.log(`undid answer votes ${JSON.stringify(undoAnswerVotesResp.data)}`);
         response = await client.deleteByQuery({
             index: INDEX_A_UPVOTES,
             type: "_doc",
@@ -862,14 +860,12 @@ async function deleteQuestion(qid, username){
             console.log(`QID=${qid}`);
             console.log(response);
         }
-        console.log(`deleted ${response.deleted} answer upvote docs`);
 
         // 6) DELETE any associated media documents
         //      it suffices to delete all media associated with QID as all media associated to its Answers
         //      have their associated ID field set to QID instead of AID to optimize deletion
         try {
             response = await deleteMediaByQAID(qid);
-            console.log(`deleted media`);
         }
         catch(err){
             console.log(`Failed to delete media items ${media_ids}, error ${err.data}`);
@@ -942,10 +938,10 @@ async function undoAllAnswerVotes(qid){
         downvotes = (ans._source.downvotes == undefined) ? [] : ans._source.downvotes;
         rep_diff = -(upvotes.length - downvotes.length);
         if (poster in undo_votes){
-            undo_votes.poster += rep_diff;
+            undo_votes[poster] += rep_diff;
         }
         else {
-            undo_votes.poster = rep_diff;
+            undo_votes[poster] = rep_diff;
         }
     }
 
@@ -958,6 +954,9 @@ async function undoAllAnswerVotes(qid){
     let inline_script = `ctx._source.reputation += params.${param_rep_diff}`;
     for (var user_id in undo_votes){
         rep_diff = undo_votes[user_id];
+        if (rep_diff == 0){
+            continue;
+        }
         action_doc = {
             update: {
                 index: INDEX_USERS,
@@ -976,10 +975,12 @@ async function undoAllAnswerVotes(qid){
         bulk_query_body.push(action_doc);
         bulk_query_body.push(update_doc);
     }
-    bulk_query.body = bulk_query_body;
-    const bulkResponse = await client.bulk(bulk_query);
-    console.log(`Bulk performed... ${JSON.stringify(bulk_query_body)}`);
-    console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+    if (bulk_query_body.length > 0){
+        bulk_query.body = bulk_query_body;
+        const bulkResponse = await client.bulk(bulk_query);
+        console.log(`Bulk performed... ${JSON.stringify(bulk_query_body)}`);
+        console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+    }
 
     dbResult.status = constants.DB_RES_SUCCESS;
     dbResult.data = bulkResponse;
