@@ -781,23 +781,6 @@ async function deleteQuestion(qid, username){
     if (username == question._source.user.username){
         console.log(`Deleting ${qid} by ${username}`);
 
-        // 1) DELETE from INDEX_QUESTIONS the Question document
-        response = await client.deleteByQuery({
-            index: INDEX_QUESTIONS,
-            type: "_doc",
-            body: {
-                query: {
-                    term: {
-                        _id: qid
-                    }
-                }
-            }
-        });
-        if (response.deleted != 1){
-            console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
-            console.log(response);
-        }
-
         // 2) DELETE from INDEX_VIEWS the Question Views metadata document
         response = await client.deleteByQuery({
             index: INDEX_VIEWS,
@@ -814,6 +797,7 @@ async function deleteQuestion(qid, username){
             console.log(`Failed to delete question views ${qid} from ${INDEX_VIEWS}`);
             console.log(response);
         }
+        console.log('deleteed question views');
 
         // 3) DELETE from INDEX_Q_UPVOTES the Question Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the asker
@@ -821,7 +805,7 @@ async function deleteQuestion(qid, username){
         if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed to undo all question votes`);
         }
-        console.log(undoQuestionVotesResp.data);
+        console.log(`undid votes ${JSON.stringify(undoQuestionVotesResp.data)}`);
         response = await client.deleteByQuery({
             index: INDEX_Q_UPVOTES,
             type: "_doc",
@@ -837,6 +821,7 @@ async function deleteQuestion(qid, username){
             console.log(`Failed to delete question upvotes ${qid} from ${INDEX_Q_UPVOTES}`);
             console.log(response);
         }
+        console.log('deleteed question upvotes');
 
         // 4) DELETE from INDEX_ANSWERS any associated Answer documents
         response = await client.deleteByQuery({
@@ -860,7 +845,7 @@ async function deleteQuestion(qid, username){
         if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS){
             console.log(`Failed to undo all answer votes`);
         }
-        console.log(undoAnswerVotesResp.data);
+        console.log(`undid answer votes ${JSON.stringify(undoAnswerVotesResp.data)}`);
         response = await client.deleteByQuery({
             index: INDEX_A_UPVOTES,
             type: "_doc",
@@ -877,16 +862,36 @@ async function deleteQuestion(qid, username){
             console.log(`QID=${qid}`);
             console.log(response);
         }
+        console.log(`deleted ${response.deleted} answer upvote docs`);
 
         // 6) DELETE any associated media documents
         //      it suffices to delete all media associated with QID as all media associated to its Answers
         //      have their associated ID field set to QID instead of AID to optimize deletion
         try {
             response = await deleteMediaByQAID(qid);
+            console.log(`deleted media`);
         }
         catch(err){
             console.log(`Failed to delete media items ${media_ids}, error ${err.data}`);
         }
+
+        // 1) DELETE from INDEX_QUESTIONS the Question document
+        response = await client.deleteByQuery({
+            index: INDEX_QUESTIONS,
+            type: "_doc",
+            body: {
+                query: {
+                    term: {
+                        _id: qid
+                    }
+                }
+            }
+        });
+        if (response.deleted != 1){
+            console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
+            console.log(response);
+        }
+        console.log(`deleted question ${qid}`);
 
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
@@ -1173,7 +1178,7 @@ async function updateScore(qid, aid, amount){
 async function updateReputation(username, amount){
     let dbResult = new DBResult();
     if (amount == 0){
-        dbResult.status = success;
+        dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
         return dbResult;
     }
@@ -1275,7 +1280,7 @@ async function upvoteQA(qid, aid, username, upvote){
     //      ElasticSearch treats them as missing fields if they are empty
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
-    let waived_downvotes = (qa_vote._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
+    let waived_downvotes = (qa_votes._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
     console.log(`upvotes = ${upvotes}`);
     console.log(`downvotes = ${downvotes}`);
     console.log(`waived_downvotes = ${waived_downvotes}`);
@@ -1295,7 +1300,7 @@ async function upvoteQA(qid, aid, username, upvote){
     console.log(`waived = ${waived}`);
 
     // if the user asks to perform the same operation, we don't need to do anything
-    if ((upvote && upvoted) || (downvote && downvoted)){
+    if ((upvote && upvoted) || (!upvote && downvoted)){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
         return dbResult;
