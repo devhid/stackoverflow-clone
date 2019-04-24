@@ -11,9 +11,9 @@
     GIT_USERNAME: devhid
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
-  # - { role: ssh }
-  # - { role: nodejs }
-  # - { role: cassandra }
+  - { role: ssh }
+  - { role: nodejs }
+  - { role: cassandra }
 
   tasks:
     - name: Edit seeds in Cassandra configuration
