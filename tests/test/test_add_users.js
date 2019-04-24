@@ -1,9 +1,6 @@
 /* library imports */
 const chakram = require('chakram');
 
-/* internal imports */
-const cleardb = require('../clear_db');
-
 /* expect assertion */
 var expect = chakram.expect;
 
