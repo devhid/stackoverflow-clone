@@ -946,8 +946,7 @@ async function undoAllAnswerVotes(qid){
     }
 
     // build the bulk query that will update every User document
-    let bulk_query = {};
-    let bulk_query_body = [];
+    let bulk_query = { body : []};
     let action_doc = undefined;
     let update_doc = undefined;
     let param_rep_diff = "rep_diff";
@@ -972,13 +971,13 @@ async function undoAllAnswerVotes(qid){
                 }
             }
         };
-        bulk_query_body.push(action_doc);
-        bulk_query_body.push(update_doc);
+        bulk_query.body.push(action_doc);
+        bulk_query.body.push(update_doc);
     }
-    if (bulk_query_body.length > 0){
-        bulk_query.body = bulk_query_body;
-        const bulkResponse = await client.bulk(bulk_query);
-        console.log(`Bulk performed... ${JSON.stringify(bulk_query_body)}`);
+    let bulkResponse = null;
+    if (bulk_query.body.length > 0){
+        bulkResponse = await client.bulk(bulk_query);
+        console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
         console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
