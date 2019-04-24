@@ -2,7 +2,7 @@
 #
 # Playbook to setup the media service.
 #
-- hosts: media
+- hosts: media_service
   gather_facts: no
   remote_user: ubuntu
   become: yes
@@ -59,7 +59,7 @@
     - name: Clone stackoverflow-clone repository from Git
       remote_user: ubuntu
       git:
-        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN}}@github.com/devhid/stackoverflow-clone.git
+        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN }}@github.com/devhid/stackoverflow-clone.git
         dest: /home/ubuntu/stackoverflow-clone
     
     - name: Install dependencies for {{ SERVICE }}

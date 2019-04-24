@@ -19,7 +19,7 @@
     - name: Clone stackoverflow-clone repository from Git
       become_user: ubuntu
       git:
-        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN}}@github.com/devhid/stackoverflow-clone.git
+        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN }}@github.com/devhid/stackoverflow-clone.git
         dest: /home/ubuntu/stackoverflow-clone
     
     - name: Install dependencies for router

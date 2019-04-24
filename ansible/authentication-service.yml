@@ -2,7 +2,7 @@
 #
 # Playbook to setup the search service.
 #
-- hosts: authentication
+- hosts: authentication_service
   remote_user: ubuntu
   become: yes
   become_user: root
@@ -18,7 +18,7 @@
     - name: Clone stackoverflow-clone repository from Git
       become_user: ubuntu
       git:
-        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN}}@github.com/devhid/stackoverflow-clone.git
+        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN }}@github.com/devhid/stackoverflow-clone.git
         dest: /home/ubuntu/stackoverflow-clone
     
     - name: Install dependencies for {{ SERVICE }}
