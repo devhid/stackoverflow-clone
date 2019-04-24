@@ -3,7 +3,6 @@
 # Playbook to setup the media service.
 #
 - hosts: media_service
-  gather_facts: no
   remote_user: ubuntu
   become: yes
   become_user: root
@@ -12,9 +11,9 @@
     GIT_USERNAME: devhid
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
-  - { role: ssh }
-  - { role: nodejs }
-  - { role: cassandra }
+  # - { role: ssh }
+  # - { role: nodejs }
+  # - { role: cassandra }
 
   tasks:
     - name: Edit seeds in Cassandra configuration
@@ -40,20 +39,18 @@
         destfile: /etc/cassandra/cassandra.yaml
         regex: "broadcast_rpc_address:"
         line: "broadcast_rpc_address: {{ inventory_hostname }}"
-    
-    - name: Restart Cassandra
-      systemd:
-        name: cassandra
-        state: restarted
+      notify: Restart Cassandra
 
     - name: Create key_space '{{ SERVICE }}' in Cassandra
+      remote_user: ubuntu
       shell: cqlsh -e "create keyspace media_service with replication = {'class':'SimpleStrategy', 'replication_factor':'1'};" {{ inventory_hostname }} 9042
-      retries: 3
-      delay: 5
+      retries: 5
+      delay: 10
       register: result
       until: result.stderr == ""
 
     - name: Create table 'imgs' in Cassandra
+      remote_user: ubuntu
       shell: cqlsh -e "create table media_service.imgs (id uuid PRIMARY KEY, content blob, filename text, mimetype text, qa_id text);" {{ inventory_hostname }} 9042
 
     - name: Clone stackoverflow-clone repository from Git
@@ -69,3 +66,9 @@
     - name: Start {{ SERVICE }} with pm2
       remote_user: ubuntu
       shell: cd stackoverflow-clone/services/{{ SERVICE }} && pm2 start index.js --name {{ SERVICE }}
+  
+  handlers:
+    - name: Restart Cassandra
+      systemd:
+        name: cassandra
+        state: restarted

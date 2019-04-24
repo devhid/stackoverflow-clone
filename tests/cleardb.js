@@ -6,7 +6,9 @@ function clear(indices, callback) {
         chakram.post(`http://${constants.ELASTICSEARCH_IP}/${index}/_delete_by_query`, { "query": { "match_all": {} } });
     }
 
-    callback();
+    setTimeout(function() {
+        callback()
+    }, 1000);
 }
 
 function clearAll(callback) {
