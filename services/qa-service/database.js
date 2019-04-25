@@ -958,7 +958,8 @@ async function undoAllAnswerVotes(qid){
         }
         action_doc = {
             update: {
-                index: INDEX_USERS,
+                _index: INDEX_USERS,
+                _type: "_doc",
                 _id: user_id
             }
         };
