@@ -14,6 +14,10 @@ module.exports = {
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
 
+    FRONT_END: {
+        hostname: '130.245.171.47'
+    },
+
     AMQP: {
         protocol: 'amqp',
         hostname: '192.168.122.33',
