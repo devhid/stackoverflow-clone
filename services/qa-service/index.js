@@ -1,6 +1,5 @@
 /* library imports */
 const express = require('express');
-const amqp = require('amqplib/callback_api');
 
 /* internal imports */
 const database = require('./database');
@@ -33,62 +32,74 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 function shutdown(){
-    if (ch) ch.close();
-    if (conn) conn.close();
     database.shutdown();
     server.close();
 }
 
-/* amqplib connection */
-var conn = null;
-var ch = null;
 
-/**
- * Asserts the Exchange and Queue exists and sets up the connection variables.
- */
-function setupConnection(){
-    console.log(`[Rabbit] Setting up connection...`);
-    amqp.connect(constants.AMQP, function(error0, connection) {
-        if (error0) {
-            throw error0;
-        }
-        console.log(`[Rabbit] Connected...`);
-        conn = connection;
-        connection.createChannel(function(error1, channel) {
-            if (error1) {
-                throw error1;
-            }
-            console.log(`[Rabbit] Channel created...`);
-            ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
-                if (error2){
-                    throw error2;
-                }
-                console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
-                ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error3, q){
-                    if (error3){
-                        throw error3;
-                    }
-                    console.log(`[Rabbit] Asserted queue... ${q.queue}`);
-                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.QA);
-                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.QA} to ${ex.exchange}...`);
-                    ch.prefetch(1); 
-                    console.log(`[Rabbit] Set prefetch 1...`);
-                    ch.consume(q.queue, processRequest);
-                    console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
-                });
-            });
-        });
-    });
-}
+/* qa service */
+app.post('/questions/add', async(req, res) => {
+    let endpoint = constants.ENDPOINTS.QA_ADD_Q;
+    let dbRes = await processRequest(req, endpoint);
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
+
+app.get('/questions/:qid', async(req, res) => {
+    let endpoint = constants.ENDPOINTS.QA_GET_Q;
+    let dbRes = await processRequest(req, endpoint);
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
+
+app.post('/questions/:qid/answers/add', async(req, res) => {
+    let endpoint = constants.ENDPOINTS.QA_ADD_A;
+    let dbRes = await processRequest(req, endpoint);
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
+
+app.get('/questions/:qid/answers', async(req, res) => {
+    let endpoint = constants.ENDPOINTS.QA_GET_A;
+    let dbRes = await processRequest(req, endpoint);
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
+
+app.delete('/questions/:qid', async(req, res) => {
+    let endpoint = constants.ENDPOINTS.QA_DEL_Q;
+    let dbRes = await processRequest(req, endpoint);
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
+
+app.post('/questions/:qid/upvote', async(req, res) => {
+    let endpoint = constants.ENDPOINTS.QA_UPVOTE_Q;
+    let dbRes = await processRequest(req, endpoint);
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
+
+app.post('/answers/:aid/upvote', async(req, res) => {
+    let endpoint = constants.ENDPOINTS.QA_UPVOTE_A;
+    let dbRes = await processRequest(req, endpoint);
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
+
+app.post('/answers/:aid/accept', async(req, res) => {
+    let endpoint = constants.ENDPOINTS.QA_ACCEPT;
+    let dbRes = await processRequest(req, endpoint);
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
+
 /**
  * Processes the request contained in the message and replies to the specified queue.
  * @param {Object} msg the message on the RabbitMQ queue
  */
-async function processRequest(msg){
-    // console.log(`Received ${msg.content.toString()}`);
-    let req = JSON.parse(msg.content.toString()); // gives back the data object
-    let endpoint = req.endpoint;
+async function processRequest(req, endpoint){
+    // console.log(`Received ${req.body}`);
     let response = {};
     switch (endpoint) {
         case constants.ENDPOINTS.QA_ADD_Q:
@@ -118,24 +129,8 @@ async function processRequest(msg){
         default:
             break;
     }
-    ch.sendToQueue(msg.properties.replyTo,
-        Buffer.from(JSON.stringify(response)), {
-            correlationId: msg.properties.correlationId
-        }
-    );
-    ch.ack(msg);
+    return response;
 }
-
-function main(){
-    try {
-        setupConnection();
-    }
-    catch (err) {
-        console.log(`[Rabbit] Failed to setup connection, ${err}`);
-    }
-}
-
-main();
 
 /* ------------------ ENDPOINTS ------------------ */
 
