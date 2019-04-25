@@ -153,7 +153,6 @@ async function addQuestion(req){
     let status = constants.STATUS_200;
     let response = new APIResponse();
     let data = {};
-    console.log(req.body);
 
     // grab parameters
     let title = req.body.title;
