@@ -36,7 +36,6 @@ function shutdown(){
     server.close();
 }
 
-
 /* qa service */
 app.post('/questions/add', async(req, res) => {
     let endpoint = constants.ENDPOINTS.QA_ADD_Q;

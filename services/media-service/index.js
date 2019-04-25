@@ -1,6 +1,5 @@
 /* library imports */
 const express = require('express');
-const amqp = require('amqplib/callback_api');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const multer = require('multer');
