@@ -106,7 +106,7 @@ async function checkFreeMedia(ids){
     let queries = [];
     let query = null;
     for (var id of ids){
-        query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=${id} AND qa_id=''`;
+        query = `SELECT filename FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=${id} AND qa_id=''`;
         queries.push(query);
     }
     console.log(`[Cassandra]: checkFreeMedia queries=${queries}`);
@@ -118,23 +118,7 @@ async function checkFreeMedia(ids){
         promises.push(promise);
     }
 
-    Promise.all(promises).then(function(values){
-        for (var result of values){
-            let row = result.rows[0];
-            if (row == undefined){
-                dbResult.status = constants.DB_RES_ERROR;
-                dbResult.data = null;
-                return dbResult;
-            }
-        }
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
-        return dbResult;
-    }).catch(function(err){
-        dbResult.status = constants.DB_RES_ERROR;
-        dbResult.data = err;
-        return dbResult;
-    });
+    return Promise.all(promises);
 }
 
 /**
@@ -312,16 +296,18 @@ async function addQuestion(user, title, body, tags, media){
     // first, check that the media IDs specified are not already associated with another Question or Answer document
     try {
         cassandraResp = await checkFreeMedia(media);
-    }
-    catch(err) {
-        cassandraResp = err;
-        console.log(`checkFreeMedia failed on media=${media}, err=${err.data}`);
-    }
-
-    if (cassandraResp.status !== constants.DB_RES_SUCCESS){
-        dbResult.status = constants.DB_RES_MEDIA_INVALID;
-        dbResult.data = null;
+    } catch (err){
+        dbResult.status = constants.DB_RES_ERROR;
+        dbResult.data = err;
         return dbResult;
+    }
+    for (var result of cassandraResp){
+        let row = result.rows[0];
+        if (row == undefined){
+            dbResult.status = constants.DB_RES_MEDIA_INVALID;
+            dbResult.data = null;
+            return dbResult;
+        }
     }
 
     // create the Question document in INDEX_QUESTIONS
