@@ -591,18 +591,19 @@ async function getQuestion(qid, username, ip, update){
 async function addAnswer(qid, username, body, media){
     let dbResult = new DBResult();
     media = (media == undefined) ? [] : media;
+    let cassandraResp = null;
 
     // first, check that the media IDs specified are not already associated with another Question or Answer document
     try {
         cassandraResp = await checkFreeMedia(media);
-        console.log(`checkFreeMedia, media=${media}, count=${cassandraResp.data}`);
+    } catch (err){
+        dbResult.status = constants.DB_RES_ERROR;
+        dbResult.data = err;
+        return dbResult;
     }
-    catch(err) {
-        cassandraResp = err;
-        console.log(`checkFreeMedia failed on media=${media}, err=${err.data}`);
-    }
-    if (cassandraResp.status === constants.DB_RES_SUCCESS){
-        if (cassandraResp.data != media.length){
+    for (var result of cassandraResp){
+        let row = result.rows[0];
+        if (row == undefined){
             dbResult.status = constants.DB_RES_MEDIA_INVALID;
             dbResult.data = null;
             return dbResult;
