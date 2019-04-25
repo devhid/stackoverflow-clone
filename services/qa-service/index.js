@@ -161,7 +161,7 @@ async function addQuestion(req){
     let tags = req.body.tags;
     let media = req.body.media;
     let user = req.session.user;
-
+    console.log(`user=${JSON.stringify(user)}`);
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
         if (user == undefined){
@@ -179,14 +179,18 @@ async function addQuestion(req){
     //     response.setERR(constants.ERR_MALFORMED);
     //     return {status: status, response: response.toOBJ()};
     // }
-    console.log(`user=${user._source.username}`);
 
     // perform database operations
-    let addRes = await database.addQuestion(user, title, body, tags, media);
-    console.log(`status=${addRes.status}`);
+    let addRes = null;
+    try {
+        addRes = await database.addQuestion(user, title, body, tags, media);   
+        console.log(`status=${addRes.status}`);
+    } catch(err){
+        console.log(`err occurred=${err}`);
+    }
     
     // check response result
-    if (addRes.status === constants.DB_RES_ERROR){
+    if (addRes == null || addRes.status === constants.DB_RES_ERROR){
         status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
