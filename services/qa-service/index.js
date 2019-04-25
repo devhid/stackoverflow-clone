@@ -173,11 +173,11 @@ async function addQuestion(req){
         response.setERR(constants.ERR_MISSING_PARAMS);
         return {status: status, response: response.toOBJ()};
     }
-    if (req.body.answers != undefined){
-        status = constants.STATUS_422;
-        response.setERR(constants.ERR_MALFORMED);
-        return {status: status, response: response.toOBJ()};
-    }
+    // if (req.body.answers != undefined){
+    //     status = constants.STATUS_422;
+    //     response.setERR(constants.ERR_MALFORMED);
+    //     return {status: status, response: response.toOBJ()};
+    // }
     console.log(user._source.username);
 
     // perform database operations
@@ -198,6 +198,7 @@ async function addQuestion(req){
         data[constants.ID_KEY] = addRes.data;
     }
     let merged = {...response.toOBJ(), ...data};
+    console.log(status);
     return {status: status, response: merged};
 }
 
