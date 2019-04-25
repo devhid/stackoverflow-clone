@@ -76,6 +76,9 @@ async function wrapRequest(req, res, key, endpoint){
         body: req.body,
         file: req.file
     };
+    if (endpoint === constants.ENDPOINTS.QA_ADD_Q && req.body.answers != undefined){
+        data.body = {};
+    }
     let rabbitRes = await routeRequest(key, data);
     // console.log(`endpoint=${endpoint}, resp status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
