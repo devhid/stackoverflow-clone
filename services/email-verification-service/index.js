@@ -31,7 +31,7 @@ app.post('/verify', async(req, res) => {
     return res.json(dbRes.response);
 });
 
-async function processRequest(req){
+async function processRequest(req, endpoint){
     let response = {};
     switch (endpoint) {
         case constants.ENDPOINTS.EMAIL_VERIFY:
@@ -172,7 +172,5 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 function shutdown(){
-    if (conn) conn.close();
-    if (ch) ch.close();
     server.close();
 }
