@@ -797,11 +797,12 @@ async function deleteQuestion(qid, username){
 
         // 3) DELETE from INDEX_Q_UPVOTES the Question Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the asker
-        let undoQuestionVotesResp = await undoAllQuestionVotes(qid);
-        if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS ||
-            undoQuestionVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
-            console.log(`Failed to undo all question votes`);
-        }
+        
+        // let undoQuestionVotesResp = await undoAllQuestionVotes(qid);
+        // if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS ||
+        //     undoQuestionVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
+        //     console.log(`Failed to undo all question votes`);
+        // }
         response = await client.deleteByQuery({
             index: INDEX_Q_UPVOTES,
             type: "_doc",
@@ -836,11 +837,12 @@ async function deleteQuestion(qid, username){
 
         // 5) DELETE from INDEX_A_UPVOTES the Answer Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the answerers
-        let undoAnswerVotesResp = await undoAllAnswerVotes(qid);
-        if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS || 
-            undoAnswerVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
-            console.log(`Failed to undo all answer votes`);
-        }
+        
+        // let undoAnswerVotesResp = await undoAllAnswerVotes(qid);
+        // if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS || 
+        //     undoAnswerVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
+        //     console.log(`Failed to undo all answer votes`);
+        // }
         response = await client.deleteByQuery({
             index: INDEX_A_UPVOTES,
             type: "_doc",
