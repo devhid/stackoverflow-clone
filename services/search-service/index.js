@@ -18,12 +18,12 @@ const PORT = 8005;
 app.use(express.json());
 
 /* enable CORS */
-app.use(function(req, res, next) {
-    res.set('Access-Control-Allow-Origin', '*');
+/*app.use(function(req, res, next) {
+    res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
     res.set('Access-Control-Allow-Headers', 'Content-Type');
     res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     next();
-});
+});*/
 
 /* amqplib connection */
 var conn = null;
@@ -105,10 +105,12 @@ main();
 
 /* handle searching */
 async function search(req){
+    console.log(req);
     const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.currentTime();
     const limit = Math.min(constants.DEFAULT_MAX_LIMIT, req.body['limit'] ? req.body['limit'] : constants.DEFAULT_LIMIT);
     const q = req.body['q'] ? req.body['q'] : constants.DEFAULT_Q
     const sort_by = req.body['sort_by'] ? req.body['sort_by'] : constants.DEFAULT_SORT_BY
+    console.log(sort_by);
     const tags = req.body['tags'] ? req.body['tags'] : constants.DEFAULT_TAGS
     const has_media = req.body['has_media'] ? req.body['has_media'] : constants.DEFAULT_HAS_MEDIA
     const accepted = req.body['accepted'] ? req.body['accepted'] : constants.DEFAULT_ACCEPTED;
