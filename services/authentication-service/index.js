@@ -1,5 +1,7 @@
 /* external imports */
 const express = require('express');
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
 
 /* internal imports */
 const database = require('./database');
@@ -12,16 +14,28 @@ require('express-async-errors');
 /* the port the server will listen on */
 const PORT = 8002;
 
+/* redis */
+const sessionOptions = {
+    name: 'soc_login',
+    secret: 'EditThisLaterWithARealSecret',
+    unset: 'destroy',
+    resave: false,
+    saveUninitialized: true,
+    logErrors: true,
+    store: new RedisStore(constants.REDIS_OPTIONS)
+};
+app.use(session(sessionOptions));
+
 /* parse incoming requests data as json */
 app.use(express.json());
 
 /* enable CORS */
 app.use(function(req, res, next) {
-  res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.set('Access-Control-Allow-Credentials', 'true'); 
-  next();
+    res.set('Access-Control-Allow-Origin', constants.FRONT_END.hostname);
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Credentials', 'true'); 
+    next();
 });
 
 /* auth service */

@@ -15,7 +15,7 @@ const httpFileHeaders = {
   withCredentials: true
 };
 
-const url = "http://8.9.11.218"
+const url = "http://130.245.170.211"
 
 @Injectable({
   providedIn: 'root'

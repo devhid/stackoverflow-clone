@@ -32,7 +32,7 @@ const upload = multer();
 
 /* enable CORS */
 app.use(function(req, res, next) {
-    res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
+    res.set('Access-Control-Allow-Origin', constants.FRONT_END.hostname);
     res.set('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
     res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
     res.set('Access-Control-Allow-Credentials', 'true');
@@ -71,8 +71,8 @@ app.get('/media/:id', async(req,res) => {
     res.status(dbRes.status);
     if (dbRes.content_type != undefined){
         res.set('Content-Type', dbRes.content_type);
-        if (dbRes.media != undefined && dbRes.media.type === "Buffer"){
-            return res.send(Buffer.from(dbRes.media.data));
+        if (dbRes.media != undefined){
+            return res.send(dbRes.media);
         }
     }
     return res.json(dbRes.response);
@@ -183,7 +183,8 @@ async function getMedia(req) {
 
     response = generateOK();
     response['content_type'] = image.mimetype;
-    return res.send(image.content);
+    response['media'] = image.content;
+    return response;
 }
 
 /* helper funcs */

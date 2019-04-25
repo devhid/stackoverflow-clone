@@ -8,6 +8,11 @@ module.exports = {
     STATUS_403: 403,    // forbidden
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
+    STATUS_422: 422,    // unprocessable entity
+
+    FRONT_END: {
+        hostname: 'http://130.245.171.47'
+    },
 
     AMQP: {
         protocol: 'amqp',
@@ -26,6 +31,11 @@ module.exports = {
     },
     ELASTICSEARCH_OPTIONS: {
         host: "http://admin:ferdman123@130.245.169.86:92"
+    },
+    REDIS_OPTIONS: {
+        host: '192.168.122.27',
+        port: 6379,
+        pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
     },
 
     EXCHANGE: {
@@ -94,6 +104,7 @@ module.exports = {
     ERR_A_NOTFOUND: 'The specified answer does not exist.',
     ERR_NOT_ALLOWED: 'The specified operation is not allowed for the current user.',
     ERR_ALRDY_ACCEPTED: 'An answer has already been accepted.',
+    ERR_MALFORMED: 'Invalid syntax',
 
     ERR_MEDIA_INVALID: 'One or more media IDs are invalid or are already in use.',
     ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.'

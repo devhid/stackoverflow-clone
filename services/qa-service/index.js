@@ -1,5 +1,7 @@
 /* library imports */
 const express = require('express');
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
 
 /* internal imports */
 const database = require('./database');
@@ -13,16 +15,28 @@ require('express-async-errors');
 /* the port the server will listen on */
 const PORT = 8000;
 
+/* redis */
+const sessionOptions = {
+    name: 'soc_login',
+    secret: 'EditThisLaterWithARealSecret',
+    unset: 'destroy',
+    resave: false,
+    saveUninitialized: true,
+    logErrors: true,
+    store: new RedisStore(constants.REDIS_OPTIONS)
+};
+app.use(session(sessionOptions));
+
 /* parse incoming requests data as json */
 app.use(express.json());
 
 /* enable CORS */
 app.use(function(req, res, next) {
-  res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
-  res.set('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-  res.set('Access-Control-Allow-Credentials', 'true');
-  next();
+    res.set('Access-Control-Allow-Origin', constants.FRONT_END.hostname);
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    next();
 });
 
 /* Start the server. */
@@ -146,24 +160,38 @@ async function addQuestion(req){
     let tags = req.body.tags;
     let media = req.body.media;
     let user = req.session.user;
-
+    if (user != undefined){
+        console.log(`user=${JSON.stringify(user)}`);
+    }
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
         if (user == undefined){
             status = constants.STATUS_401;
         }
         else {
-            status = constants.STATUS_400;
+            status = constants.STATUS_422;
         }   
-        response.setERR(constants.ERR_MISSING_PARAMS);
+        response.setERR(constants.ERR_MALFORMED);
+        // console.log(`status=${status}`);
         return {status: status, response: response.toOBJ()};
     }
+    // if (req.body.answers != undefined){
+    //     status = constants.STATUS_422;
+    //     response.setERR(constants.ERR_MALFORMED);
+    //     return {status: status, response: response.toOBJ()};
+    // }
 
     // perform database operations
-    let addRes = await database.addQuestion(user, title, body, tags, media);
+    let addRes = null;
+    try {
+        addRes = await database.addQuestion(user, title, body, tags, media);   
+        console.log(`status=${addRes.status}`);
+    } catch(err){
+        console.log(`err occurred=${err}`);
+    }
     
     // check response result
-    if (addRes.status === constants.DB_RES_ERROR){
+    if (addRes == null || addRes.status === constants.DB_RES_ERROR){
         status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
@@ -177,6 +205,7 @@ async function addQuestion(req){
         data[constants.ID_KEY] = addRes.data;
     }
     let merged = {...response.toOBJ(), ...data};
+    console.log(`statuscode=${status}`);
     return {status: status, response: merged};
 }
 
@@ -232,7 +261,6 @@ async function addAnswer(req){
     let body = req.body.body;
     let media = req.body.media;
     let user = req.session.user;
-    let username = (user == undefined) ? user : user._source.username;
 
     // check if any mandatory parameters are undefined
     if (qid == undefined || body == undefined || user == undefined){
@@ -247,7 +275,7 @@ async function addAnswer(req){
     }
 
     // perform database operations
-    let addRes = await database.addAnswer(qid, username, body, media);
+    let addRes = await database.addAnswer(qid, user, body, media);
     
     // check response result
     if (addRes.status === constants.DB_RES_Q_NOTFOUND){
