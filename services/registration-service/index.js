@@ -10,7 +10,7 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 2000;
+const PORT = 8003;
 
 /* connect to the email server */
 const emailjs = require('emailjs')
