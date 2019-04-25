@@ -153,6 +153,7 @@ async function addQuestion(req){
     let status = constants.STATUS_200;
     let response = new APIResponse();
     let data = {};
+    console.log(req.body);
 
     // grab parameters
     let title = req.body.title;
@@ -172,6 +173,12 @@ async function addQuestion(req){
         response.setERR(constants.ERR_MISSING_PARAMS);
         return {status: status, response: response.toOBJ()};
     }
+    if (req.body.answers != undefined){
+        status = constants.STATUS_422;
+        response.setERR(constants.ERR_MALFORMED);
+        return {status: status, response: response.toOBJ()};
+    }
+    console.log(user._source.username);
 
     // perform database operations
     let addRes = await database.addQuestion(user, title, body, tags, media);
