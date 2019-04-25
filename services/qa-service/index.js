@@ -2,6 +2,7 @@
 const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
+const morganBody = require('morgan-body');
 
 /* internal imports */
 const database = require('./database');
@@ -10,6 +11,7 @@ const APIResponse = require('./apiresponse').APIResponse;
 
 /* initialize express application */
 const app = express();
+morganBody(app, {noColors: true, maxBodyLength: 5000, logReqDateTime: false, logReqUserAgent: false});
 require('express-async-errors');
 
 /* the port the server will listen on */
@@ -112,7 +114,6 @@ app.post('/answers/:aid/accept', async(req, res) => {
  * @param {Object} msg the message on the RabbitMQ queue
  */
 async function processRequest(req, endpoint){
-    // console.log(`Received ${req.body}`);
     let response = {};
     switch (endpoint) {
         case constants.ENDPOINTS.QA_ADD_Q:
@@ -160,9 +161,7 @@ async function addQuestion(req){
     let tags = req.body.tags;
     let media = req.body.media;
     let user = req.session.user;
-    if (user != undefined){
-        console.log(`user=${JSON.stringify(user)}`);
-    }
+    
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
         if (user == undefined){
@@ -172,7 +171,6 @@ async function addQuestion(req){
             status = constants.STATUS_422;
         }   
         response.setERR(constants.ERR_MALFORMED);
-        // console.log(`status=${status}`);
         return {status: status, response: response.toOBJ()};
     }
     // if (req.body.answers != undefined){
@@ -185,9 +183,8 @@ async function addQuestion(req){
     let addRes = null;
     try {
         addRes = await database.addQuestion(user, title, body, tags, media);   
-        console.log(`status=${addRes.status}`);
     } catch(err){
-        console.log(`err occurred=${err}`);
+        console.log(`[Error] - addQuestion() : ${err}`);
     }
     
     // check response result
@@ -205,7 +202,6 @@ async function addQuestion(req){
         data[constants.ID_KEY] = addRes.data;
     }
     let merged = {...response.toOBJ(), ...data};
-    console.log(`statuscode=${status}`);
     return {status: status, response: merged};
 }
 

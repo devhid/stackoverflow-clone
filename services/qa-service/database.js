@@ -293,7 +293,6 @@ async function addQuestion(user, title, body, tags, media){
         try {
             cassandraResp = await checkFreeMedia(media, user._source.username);
         } catch (err){
-            //console.log(err);
             dbResult.status = constants.DB_RES_ERROR;
             dbResult.data = err;
             return dbResult;
@@ -336,7 +335,6 @@ async function addQuestion(user, title, body, tags, media){
         dbResult.data = null;
         return dbResult;
     }
-    //console.log(response);
     // create the Question Views document in INDEX_VIEWS
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
@@ -768,7 +766,6 @@ async function getAnswers(qid){
  * @param {string} username the user who originally posted the question
  */
 async function deleteQuestion(qid, username){
-    console.log(`deleteQuestion(${qid},${username})`);
     let dbResult = new DBResult();
     const getRes = await getQuestion(qid, username);
     let response = undefined;
@@ -780,7 +777,6 @@ async function deleteQuestion(qid, username){
 
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
-        console.log(`Deleting ${qid} by ${username}`);
 
         // 2) DELETE from INDEX_VIEWS the Question Views metadata document
         response = await client.deleteByQuery({
@@ -1283,9 +1279,9 @@ async function upvoteQA(qid, aid, username, upvote){
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
     let waived_downvotes = (qa_votes._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
-    console.log(`upvotes = ${upvotes}`);
-    console.log(`downvotes = ${downvotes}`);
-    console.log(`waived_downvotes = ${waived_downvotes}`);
+    // console.log(`upvotes = ${upvotes}`);
+    // console.log(`downvotes = ${downvotes}`);
+    // console.log(`waived_downvotes = ${waived_downvotes}`);
 
     // check if the user downvoted or upvoted the question
     let score_diff = 0;     // the difference in the "score" of a question
@@ -1295,11 +1291,11 @@ async function upvoteQA(qid, aid, username, upvote){
     let waived = waived_downvotes.includes(username);
     let poster = await getUserByPost(qid,aid);
     let poster_rep = await getReputation(poster);
-    console.log(`poster = ${poster}`);
-    console.log(`poster_rep = ${poster_rep}`);
-    console.log(`upvoted = ${upvoted}`);
-    console.log(`downvoted = ${downvoted}`);
-    console.log(`waived = ${waived}`);
+    // console.log(`poster = ${poster}`);
+    // console.log(`poster_rep = ${poster_rep}`);
+    // console.log(`upvoted = ${upvoted}`);
+    // console.log(`downvoted = ${downvoted}`);
+    // console.log(`waived = ${waived}`);
 
     // if the user asks to perform the same operation, we don't need to do anything
     if ((upvote && upvoted) || (!upvote && downvoted)){
