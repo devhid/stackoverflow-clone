@@ -2,7 +2,7 @@
 const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
-const morganBody = require('morgan-body');
+// const morganBody = require('morgan-body');
 
 /* internal imports */
 const database = require('./database');
@@ -11,7 +11,7 @@ const APIResponse = require('./apiresponse').APIResponse;
 
 /* initialize express application */
 const app = express();
-morganBody(app, {noColors: true, maxBodyLength: 5000, logReqDateTime: false, logReqUserAgent: false});
+// morganBody(app, {noColors: true, maxBodyLength: 5000, logReqDateTime: false, logReqUserAgent: false});
 require('express-async-errors');
 
 /* the port the server will listen on */
