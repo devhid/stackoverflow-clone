@@ -8,6 +8,7 @@ module.exports = {
     STATUS_403: 403,    // forbidden
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
+    STATUS_503: 503,	// service unavailable
 
     AMQP: {
         protocol: 'amqp',
