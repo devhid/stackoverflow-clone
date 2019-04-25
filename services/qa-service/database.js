@@ -57,8 +57,9 @@ function transformArrToCassandraList(arr, quotes){
  * Associates the free media in Cassandra with a Question.
  * @param {string} qa_id the _id of a Question
  * @param {id[]} ids array of media IDs in Cassandra
+ * @param {string} poster the username of the person who is asking to associate the media
  */
-async function associateFreeMedia(qa_id, ids){
+async function associateFreeMedia(qa_id, ids, poster){
     var dbResult = new DBResult();
 
     // if no media, no need to do anything  
@@ -69,7 +70,7 @@ async function associateFreeMedia(qa_id, ids){
     }
 
     var list_ids = transformArrToCassandraList(ids, false);
-    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id='${qa_id}' WHERE id in ${list_ids}`;
+    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id='${qa_id}', poster=${poster} WHERE id in ${list_ids}`;
     console.log(`[Cassandra]: associateFreeMedia query=${query}`);
 
     // execute the query in a Promise
@@ -91,22 +92,16 @@ async function associateFreeMedia(qa_id, ids){
 /**
  * Checks if the given media IDs are valid and can be associated with a new Question.
  * @param {id[]} ids array of media IDs in Cassandra
+ * @param {string} poster the person who wishes to use the media ids listed
  */
-async function checkFreeMedia(ids){
+async function checkFreeMedia(ids, poster){
     var dbResult = new DBResult();
-
-    // if no media, no need to do anything
-    if (ids == null || ids.length == 0){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = 0;
-        return dbResult;
-    }
 
     // var list_ids = transformArrToCassandraList(ids, false);
     let queries = [];
     let query = null;
     for (var id of ids){
-        query = `SELECT filename FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=${id} AND qa_id=''`;
+        query = `SELECT filename, poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=${id} AND qa_id='' AND poster='${poster}'`;
         queries.push(query);
     }
     console.log(`[Cassandra]: checkFreeMedia queries=${queries}`);
@@ -291,22 +286,25 @@ async function addQuestion(user, title, body, tags, media){
     let dbResult = new DBResult();
     
     media = (media == undefined) ? [] : media;
-    let cassandraResp = null;
 
-    // first, check that the media IDs specified are not already associated with another Question or Answer document
-    try {
-        cassandraResp = await checkFreeMedia(media);
-    } catch (err){
-        dbResult.status = constants.DB_RES_ERROR;
-        dbResult.data = err;
-        return dbResult;
-    }
-    for (var result of cassandraResp){
-        let row = result.rows[0];
-        if (row == undefined){
-            dbResult.status = constants.DB_RES_MEDIA_INVALID;
-            dbResult.data = null;
+    if (media.length > 0){
+        let cassandraResp = null;
+
+        // first, check that the media IDs specified are not already associated with another Question or Answer document
+        try {
+            cassandraResp = await checkFreeMedia(media, user._source.username);
+        } catch (err){
+            dbResult.status = constants.DB_RES_ERROR;
+            dbResult.data = err;
             return dbResult;
+        }
+        for (var result of cassandraResp){
+            let row = result.rows[0];
+            if (row == undefined){
+                dbResult.status = constants.DB_RES_MEDIA_INVALID;
+                dbResult.data = null;
+                return dbResult;
+            }
         }
     }
 
@@ -373,7 +371,7 @@ async function addQuestion(user, title, body, tags, media){
     }
 
     // associate the free media IDs with the new Question
-    let associateMediaResponse = await associateFreeMedia(response._id,media);
+    let associateMediaResponse = await associateFreeMedia(response._id,media, user._source.username);
     if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
         console.log(`associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
         console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
@@ -584,29 +582,33 @@ async function getQuestion(qid, username, ip, update){
  *  2) in INDEX_A_UPVOTES, the Answer Upvotes metadata document
  * 
  * @param {string} qid the _id of the question
- * @param {string} username the username posting the answer
+ * @param {string} user the user object
  * @param {string} body the body of the answer
  * @param {id[]} media array of media IDs attached to the answer
  */
-async function addAnswer(qid, username, body, media){
+async function addAnswer(qid, user, body, media){
     let dbResult = new DBResult();
+    let username = user._source.username;
     media = (media == undefined) ? [] : media;
-    let cassandraResp = null;
 
-    // first, check that the media IDs specified are not already associated with another Question or Answer document
-    try {
-        cassandraResp = await checkFreeMedia(media);
-    } catch (err){
-        dbResult.status = constants.DB_RES_ERROR;
-        dbResult.data = err;
-        return dbResult;
-    }
-    for (var result of cassandraResp){
-        let row = result.rows[0];
-        if (row == undefined){
-            dbResult.status = constants.DB_RES_MEDIA_INVALID;
-            dbResult.data = null;
+    if (media.length > 0){
+        let cassandraResp = null;
+
+        // first, check that the media IDs specified are not already associated with another Question or Answer document
+        try {
+            cassandraResp = await checkFreeMedia(media, username);
+        } catch (err){
+            dbResult.status = constants.DB_RES_ERROR;
+            dbResult.data = err;
             return dbResult;
+        }
+        for (var result of cassandraResp){
+            let row = result.rows[0];
+            if (row == undefined){
+                dbResult.status = constants.DB_RES_MEDIA_INVALID;
+                dbResult.data = null;
+                return dbResult;
+            }
         }
     }
 
@@ -652,7 +654,8 @@ async function addAnswer(qid, username, body, media){
     }
 
     // create the Answer Upvote metadata document
-    let user_id = await getUserIDByName(username);
+    // let user_id = await getUserIDByName(username);
+    let user_id = user._id;
     let upvoteResponse = await client.index({
         index: INDEX_A_UPVOTES,
         type: "_doc",
@@ -695,7 +698,7 @@ async function addAnswer(qid, username, body, media){
 
     // associate the free media IDs with the Question this Answer is associated to
     //      as we cannot delete an individual Answer document, this will make deleting easier
-    let associateMediaResponse = await associateFreeMedia(qid,media);
+    let associateMediaResponse = await associateFreeMedia(qid,media,username);
     if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
         console.log(`associateFreeMedia failed with qa_id=${qid}, media=${media}`);
         console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
