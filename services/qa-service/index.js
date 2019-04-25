@@ -172,7 +172,7 @@ async function addQuestion(req){
             status = constants.STATUS_422;
         }   
         response.setERR(constants.ERR_MALFORMED);
-        console.log(`status=${status}`);
+        // console.log(`status=${status}`);
         return {status: status, response: response.toOBJ()};
     }
     // if (req.body.answers != undefined){

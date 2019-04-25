@@ -57,9 +57,8 @@ function transformArrToCassandraList(arr, quotes){
  * Associates the free media in Cassandra with a Question.
  * @param {string} qa_id the _id of a Question
  * @param {id[]} ids array of media IDs in Cassandra
- * @param {string} poster the username of the person who is asking to associate the media
  */
-async function associateFreeMedia(qa_id, ids, poster){
+async function associateFreeMedia(qa_id, ids){
     var dbResult = new DBResult();
 
     // if no media, no need to do anything  
@@ -70,7 +69,7 @@ async function associateFreeMedia(qa_id, ids, poster){
     }
 
     var list_ids = transformArrToCassandraList(ids, false);
-    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id='${qa_id}', poster=${poster} WHERE id in ${list_ids}`;
+    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id='${qa_id}' WHERE id in ${list_ids}`;
     console.log(`[Cassandra]: associateFreeMedia query=${query}`);
 
     // execute the query in a Promise
@@ -374,7 +373,7 @@ async function addQuestion(user, title, body, tags, media){
     }
     console.log('derp');
     // associate the free media IDs with the new Question
-    let associateMediaResponse = await associateFreeMedia(response._id,media, user._source.username);
+    let associateMediaResponse = await associateFreeMedia(response._id,media);
     if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
         console.log(`associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
         console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
@@ -701,7 +700,7 @@ async function addAnswer(qid, user, body, media){
 
     // associate the free media IDs with the Question this Answer is associated to
     //      as we cannot delete an individual Answer document, this will make deleting easier
-    let associateMediaResponse = await associateFreeMedia(qid,media,username);
+    let associateMediaResponse = await associateFreeMedia(qid,media);
     if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
         console.log(`associateFreeMedia failed with qa_id=${qid}, media=${media}`);
         console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
