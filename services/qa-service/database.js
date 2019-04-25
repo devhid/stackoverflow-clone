@@ -101,7 +101,7 @@ async function checkFreeMedia(ids, poster){
     let queries = [];
     let query = null;
     for (var id of ids){
-        query = `SELECT filename, poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=${id} AND qa_id='' AND poster='${poster}'`;
+        query = `SELECT filename, poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=${id} AND qa_id='' AND poster='${poster}' ALLOW FILTERING`;
         queries.push(query);
     }
     console.log(`[Cassandra]: checkFreeMedia queries=${queries}`);
