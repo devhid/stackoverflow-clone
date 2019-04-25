@@ -24,43 +24,49 @@ ProxyCommand ssh jump -W %h:%p
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
-Host auth-service
+Host user
 HostName 192.168.122.30
 ProxyCommand ssh jump -W %h:%p
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
-Host email-verification-service
+Host qa1
+HostName 192.168.122.35
+ProxyCommand ssh jump -W %h:%p
+User ubuntu
+IdentityFile ~/.ssh/id_rsa
+
+Host media
 HostName 192.168.122.31
 ProxyCommand ssh jump -W %h:%p
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
-Host media-service
-HostName 192.168.122.22
+Host qa2
+HostName 192.168.122.36
 ProxyCommand ssh jump -W %h:%p
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
-Host qa-service
+Host qa0
 HostName 192.168.122.26
 ProxyCommand ssh jump -W %h:%p
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
-Host registration-service
+Host search
 HostName 192.168.122.32
 ProxyCommand ssh jump -W %h:%p
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
-Host search-service
+Host ear1
 HostName 192.168.122.29
 ProxyCommand ssh jump -W %h:%p
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
-Host user-service
+Host ear0
 HostName 192.168.122.28
 ProxyCommand ssh jump -W %h:%p
 User ubuntu
