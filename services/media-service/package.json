@@ -24,6 +24,7 @@
     "express": "^4.16.4",
     "express-async-errors": "^3.1.1",
     "express-session": "^1.16.1",
+    "morgan-body": "^2.4.7",
     "multer": "^1.4.1",
     "redis": "^2.8.0"
   },
