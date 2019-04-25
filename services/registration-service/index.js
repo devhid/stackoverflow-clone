@@ -18,7 +18,8 @@ const emailjs = require('emailjs')
 const mail_server = emailjs.server.connect({
     user: "ubuntu",
     password: "",
-    host: "mail.cse356-mailserver.cloud.compas.cs.stonybrook.edu",
+    //host: "192.168.122.34",
+    host: "192.168.122.13",
     ssl: false
 });
 
@@ -117,8 +118,8 @@ app.get('/emailtest', async(req, res) => {
     console.log(mail_server);
     mail_server.send({
         text: "Email received.",
-        from: "no-reply <ubuntu@cse356-mailserver.cloud.compas.cs.stonybrook.edu>",
-        to: "bofinexe@postemail.net",
+        from: "no-reply <>",
+        to: "tijo@smartbusiness.me",
         subject: "Test email"
         }, function(err, message) {
             console.log(err);
@@ -131,11 +132,13 @@ async function addUser(req){
     const email = req.body["email"];
     const username = req.body["username"];
     const password = req.body["password"];
+    console.log(email + " " + username + " " + password);
 
     let status = constants.STATUS_200;
     let response = {};
 
     if (!notEmpty([email, username, password])) {
+	console.log('empty fields');
         status = constants.STATUS_400;
         response = {"status": "error", "error": "One or more fields are empty."};
         return {status: status, response: response};
@@ -143,7 +146,8 @@ async function addUser(req){
     let userExists = await database.userExists(email, username);
 
     if (userExists) {
-        status = constants.STATUS_400;
+	console.log('user exists');
+        status = constants.STATUS_409;
         response = {"status": "error", "error": "A user with that email or username already exists."};
         return {status: status, response: response};
     }
@@ -153,17 +157,25 @@ async function addUser(req){
 
     mail_server.send({
         text: message,
-        from: "no-reply <ubuntu@cse356-mailserver.cloud.compas.cs.stonybrook.edu>",
+        from: "no-reply",
         to: email,
         subject: "Validation Key"
         }, function(err, message) {
-            //console.log(err);
-            //console.log(message);
+	    if (err) {
+		console.log(err);
+		status = constants.STATUS_503;
+		response = { "status": "error" };
+		return { status: status, response: response };
+	    }
+	    else {
+		console.log('mail sent');
+		status = constants.STATUS_200;
+		response = { "status": "OK" };
+		return { status: status, response: response };
+	    }
     });
 
-    status = constants.STATUS_200;
-    response = {"status": "OK"};
-    return {status: status, response: response};
+
 }
 
 /* Checks if any of the variables in the fields array are empty. */

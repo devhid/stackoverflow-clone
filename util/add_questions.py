@@ -6,10 +6,10 @@ file = "stackoverflow-data-idf.json"
 headers = {
     'Content-Type': "application/json",
     'cache-control': "no-cache",
-    'Postman-Token': "b4e11362-94a9-4bab-99cc-85b6393b4383"
+    'Postman-Token': "d2983f03-96f9-4eb6-b312-711f81ec1687"
 }
 
-cookies = {"soc_login": "s%3Az-EkE9FVurEpBVdabOZCBOXH-JkdAhsl.HWYNcwQ6bWsBvUs%2BjndWbx2FbVZXVf%2BruG7jn%2B8xZGs"}
+cookies = {"soc_login": "s%3AkAqalE7qn2AhKQv7G52jmWs0TPmSBtzu.dM53WyX%2FGUp1%2BBGn1GR5emGFkh2xnn9%2FXzPVcXyuRAA"}
 
 with open(file) as fd:
     i = 0

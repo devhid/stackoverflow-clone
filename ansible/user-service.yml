@@ -2,7 +2,7 @@
 #
 # Playbook to setup the user service.
 #
-- hosts: user
+- hosts: user_service
   remote_user: ubuntu
   become: yes
   become_user: root
@@ -12,14 +12,13 @@
     GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
   roles:
   - { role: ssh }
-  - { role: nginx }
   - { role: nodejs }
 
   tasks:
     - name: Clone stackoverflow-clone repository from Git
       become_user: ubuntu
       git:
-        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN}}@github.com/devhid/stackoverflow-clone.git
+        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN }}@github.com/devhid/stackoverflow-clone.git
         dest: /home/ubuntu/stackoverflow-clone
     
     - name: Install dependencies for {{ SERVICE }}

@@ -80,7 +80,7 @@ async function processRequest(msg){
         case constants.ENDPOINTS.AUTH_LOGIN:
             response = await login(data);
             break;
-        case constants.ENDPOINtS.AUTH_LOGOUT:
+        case constants.ENDPOINTS.AUTH_LOGOUT:
             response = await logout(data);
             break;
         default:
@@ -217,13 +217,14 @@ async function login(req) {
         return response;
     }
 
-    req.session.user = await database.getUser(username);
+    let user = await database.getUser(username);
 
     response = { 
         "status": constants.STATUS_200,
         "response": {
             "status": constants.STATUS_OK
-        }
+        },
+        "user": user
     };
     return response;
 }
@@ -259,15 +260,13 @@ async function logout(req) {
         return response;
     }
 
-    req.session.destroy(function done() {
-        response = { 
-            "status": constants.STATUS_200,
-            "response": {
-                "status": constants.STATUS_OK, 
-            }
-        };
-        return response;
-    });
+    response = {
+        "status": constants.STATUS_200,
+        "response": {
+            "status": constants.STATUS_OK
+        }
+    };
+    return response;
 }
 
 /* a counter for sessions */

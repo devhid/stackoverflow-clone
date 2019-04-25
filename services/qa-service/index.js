@@ -173,9 +173,9 @@ async function addQuestion(req){
         status = constants.STATUS_400;
         response.setERR(constants.ERR_GENERAL);
     }
-    else if (addRes.status === constants.DB_RES_MEDIA_IN_USE){
+    else if (addRes.status === constants.DB_RES_MEDIA_INVALID){
         status = constants.STATUS_400;
-        response.setERR(constants.ERR_MEDIA_IN_USE);
+        response.setERR(constants.ERR_MEDIA_INVALID);
     }
     else if (addRes.status === constants.DB_RES_SUCCESS){
         status = constants.STATUS_200;
@@ -198,7 +198,8 @@ async function getQuestion(req){
 
     // on getting the IP
     // https://stackoverflow.com/questions/10849687/express-js-how-to-get-remote-client-address
-    let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    // let ip = req.headers['x-forwarded-for'] || req.connection.remoteAddress;
+    let ip = req.ip; // passed in from rabbit-router
 
     // check if any mandatory parameters are undefined
     if (qid == undefined){

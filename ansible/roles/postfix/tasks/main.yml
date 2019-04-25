@@ -1,0 +1,12 @@
+---
+#
+# Install Postfix
+#
+
+# Install postfix using APT
+
+  - name: Install postfix
+    apt:
+      name: postfix
+      state: present
+      update_cache: yes

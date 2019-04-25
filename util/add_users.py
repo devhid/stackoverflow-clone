@@ -18,4 +18,4 @@ with open(file) as fd:
             "password": info[2][:-1]
         }
         
-        requests.post('http://130.245.171.197/adduser', json=user, headers=headers)
+        response = requests.post('http://130.245.171.197/adduser', json=user, headers=headers)

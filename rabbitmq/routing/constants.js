@@ -8,6 +8,12 @@ module.exports = {
     
     AMQP_HOST: 'amqp://localhost',
 
+    REDIS_OPTIONS: {
+        host: '192.168.122.27',
+        port: 6379,
+        pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
+    },
+
     EXCHANGE: {
         TYPE: 'direct',
         NAME: 'stackoverflow',

@@ -8,6 +8,16 @@ HostName 130.245.169.86
 User ubuntu
 IdentityFile ~/.ssh/id_rsa
 
+Host mail-server
+HostName 130.245.171.134
+User ubuntu
+IdentityFile ~/.ssh/id_rsa
+
+Host router
+HostName 130.245.170.211
+User ubuntu
+IdentityFile ~/.ssh/id_rsa
+
 Host redis
 HostName 192.168.122.27
 ProxyCommand ssh jump -W %h:%p

@@ -8,22 +8,31 @@ const constants = require('./constants');
 
 /* initialize express application */
 const app = express();
-/* offer async/await support for ExpressJS */
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 8005;
+const PORT = 2000;
+
+/* connect to the email server */
+const emailjs = require('emailjs')
+const mail_server = emailjs.server.connect({
+    user: "ubuntu",
+    password: "",
+    host: "mail.cse356-mailserver.cloud.compas.cs.stonybrook.edu",
+    ssl: false
+});
 
 /* parse incoming requests data as json */
 app.use(express.json());
 
 /* enable CORS */
 app.use(function(req, res, next) {
-    res.set('Access-Control-Allow-Origin', '*');
-    res.set('Access-Control-Allow-Headers', 'Content-Type');
-    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-    next();
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Headers', 'Content-Type');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  next();
 });
+
 
 /* amqplib connection */
 var conn = null;
@@ -51,13 +60,13 @@ function setupConnection(){
                     throw error2;
                 }
                 console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
-                ch.assertQueue(constants.SERVICES.SEARCH, constants.QUEUE.PROPERTIES, function(error3, q){
+                ch.assertQueue(constants.SERVICES.REGISTER, constants.QUEUE.PROPERTIES, function(error3, q){
                     if (error3){
                         throw error3;
                     }
                     console.log(`[Rabbit] Asserted queue... ${q.queue}`);
-                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.SEARCH);
-                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.SEARCH} to ${ex.exchange}...`);
+                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.REGISTER);
+                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.REGISTER} to ${ex.exchange}...`);
                     ch.prefetch(1); 
                     console.log(`[Rabbit] Set prefetch 1...`);
                     ch.consume(q.queue, processRequest);
@@ -68,6 +77,7 @@ function setupConnection(){
     });
 }
 
+
 /**
  * Processes the request contained in the message and replies to the specified queue.
  * @param {Object} msg the message on the RabbitMQ queue
@@ -77,8 +87,8 @@ async function processRequest(msg){
     let endpoint = req.endpoint;
     let response = {};
     switch (endpoint) {
-        case constants.ENDPOINTS.SEARCH:
-            response = await search(req);
+        case constants.ENDPOINTS.REGISTER:
+            response = await addUser(req);
             break;
         default:
             break;
@@ -103,32 +113,65 @@ main();
 
 /* ------------------ ENDPOINTS ------------------ */
 
-/* handle searching */
-async function search(req){
-    const timestamp = req.body['timestamp'] ? req.body['timestamp'] : constants.currentTime();
-    const limit = Math.min(constants.DEFAULT_MAX_LIMIT, req.body['limit'] ? req.body['limit'] : constants.DEFAULT_LIMIT);
-    const q = req.body['q'] ? req.body['q'] : constants.DEFAULT_Q
-    const sort_by = req.body['sort_by'] ? req.body['sort_by'] : constants.DEFAULT_SORT_BY
-    const tags = req.body['tags'] ? req.body['tags'] : constants.DEFAULT_TAGS
-    const has_media = req.body['has_media'] ? req.body['has_media'] : constants.DEFAULT_HAS_MEDIA
-    const accepted = req.body['accepted'] ? req.body['accepted'] : constants.DEFAULT_ACCEPTED;
+app.get('/emailtest', async(req, res) => {
+    console.log(mail_server);
+    mail_server.send({
+        text: "Email received.",
+        from: "no-reply <ubuntu@cse356-mailserver.cloud.compas.cs.stonybrook.edu>",
+        to: "bofinexe@postemail.net",
+        subject: "Test email"
+        }, function(err, message) {
+            console.log(err);
+            console.log(message);
+    });
+});
+
+/* Register a user if they do not already exist. */
+async function addUser(req){
+    const email = req.body["email"];
+    const username = req.body["username"];
+    const password = req.body["password"];
 
     let status = constants.STATUS_200;
     let response = {};
 
-    if (sort_by !== "timestamp" && sort_by !== "score") {
+    if (!notEmpty([email, username, password])) {
         status = constants.STATUS_400;
-        response = { "status":"error", "message": constants.ERR_INVALID_SORT };
+        response = {"status": "error", "error": "One or more fields are empty."};
+        return {status: status, response: response};
+    }
+    let userExists = await database.userExists(email, username);
+
+    if (userExists) {
+        status = constants.STATUS_400;
+        response = {"status": "error", "error": "A user with that email or username already exists."};
         return {status: status, response: response};
     }
 
-    const searchResults = await database.searchQuestions(timestamp, limit, q, sort_by, tags, has_media, accepted);
+    const key = await database.addUser(email, username, password);
+    const message = "validation key: \<" + key + "\>";
+
+    mail_server.send({
+        text: message,
+        from: "no-reply <ubuntu@cse356-mailserver.cloud.compas.cs.stonybrook.edu>",
+        to: email,
+        subject: "Validation Key"
+        }, function(err, message) {
+            //console.log(err);
+            //console.log(message);
+    });
 
     status = constants.STATUS_200;
-    response = { "status": "OK", "questions": searchResults };
-    // console.log(response);
-    // console.log("length: " + response['questions'].length);
+    response = {"status": "OK"};
     return {status: status, response: response};
+}
+
+/* Checks if any of the variables in the fields array are empty. */
+function notEmpty(fields) {
+    for(let i in fields) {
+        if(!fields[i]) { return false; }
+    }
+    return true;
 }
 
 /* Start the server. */
