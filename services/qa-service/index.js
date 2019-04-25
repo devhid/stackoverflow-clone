@@ -160,7 +160,9 @@ async function addQuestion(req){
     let tags = req.body.tags;
     let media = req.body.media;
     let user = req.session.user;
-    console.log(`user=${JSON.stringify(user)}`);
+    if (user != undefined){
+        console.log(`user=${JSON.stringify(user)}`);
+    }
     // check if any mandatory parameters are undefined
     if (user == undefined || title == undefined || body == undefined || tags == undefined){
         if (user == undefined){

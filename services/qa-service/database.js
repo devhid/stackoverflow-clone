@@ -337,7 +337,8 @@ async function addQuestion(user, title, body, tags, media){
         dbResult.data = null;
         return dbResult;
     }
-    
+    console.log(response);
+    console.log('derp');
     // create the Question Views document in INDEX_VIEWS
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
@@ -351,9 +352,10 @@ async function addQuestion(user, title, body, tags, media){
     });
     if (viewResponse.result !== "created"){
         console.log(`Failed to create Question Views metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
-        console.log(response);
+        console.log(viewResponse);
     }
 
+    console.log('derp');
     // create the Question Upvotes document in INDEX_Q_UPVOTES
     let upvoteResponse = await client.index({
         index: INDEX_Q_UPVOTES,
@@ -368,16 +370,16 @@ async function addQuestion(user, title, body, tags, media){
     });
     if (upvoteResponse.result !== "created"){
         console.log(`Failed to create Question Upvotes metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
-        console.log(response);
+        console.log(upvoteResponse);
     }
-
+    console.log('derp');
     // associate the free media IDs with the new Question
     let associateMediaResponse = await associateFreeMedia(response._id,media, user._source.username);
     if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
         console.log(`associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
         console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
     }
-
+    console.log('derp');
     if (response){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = response._id;
