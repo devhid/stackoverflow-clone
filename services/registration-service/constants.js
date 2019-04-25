@@ -10,6 +10,10 @@ module.exports = {
     STATUS_409: 409,    // conflict
     STATUS_503: 503,	// service unavailable
 
+    FRONT_END: {
+        hostname: '130.245.171.47'
+    },
+
     AMQP: {
         protocol: 'amqp',
         hostname: '192.168.122.33',

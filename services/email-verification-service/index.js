@@ -15,6 +15,15 @@ const PORT = 8001;
 /* parse incoming requests data as json */
 app.use(express.json());
 
+/* enable CORS */
+app.use(function(req, res, next) {
+    res.set('Access-Control-Allow-Origin', constants.FRONT_END.hostname);
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Credentials', 'true'); 
+    next();
+});
+
 app.post('/verify', async(req, res) => {
     let endpoint = constants.ENDPOINTS.EMAIL_VERIFY;
     let dbRes = await processRequest(req, endpoint);

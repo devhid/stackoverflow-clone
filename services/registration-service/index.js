@@ -25,12 +25,14 @@ const mail_server = emailjs.server.connect({
 /* parse incoming requests data as json */
 app.use(express.json());
 
+
 /* enable CORS */
 app.use(function(req, res, next) {
-  res.set('Access-Control-Allow-Origin', '*');
-  res.set('Access-Control-Allow-Headers', 'Content-Type');
-  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  next();
+    res.set('Access-Control-Allow-Origin', constants.FRONT_END.hostname);
+    res.set('Access-Control-Allow-Headers', 'Content-Type');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.set('Access-Control-Allow-Credentials', 'true'); 
+    next();
 });
 
 app.post('/adduser', async(req, res) => {
