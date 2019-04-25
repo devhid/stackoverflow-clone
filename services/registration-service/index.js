@@ -17,8 +17,8 @@ const emailjs = require('emailjs')
 const mail_server = emailjs.server.connect({
     user: "ubuntu",
     password: "",
-    //host: "192.168.122.34",
-    host: "192.168.122.13",
+    host: "192.168.122.34",
+    //host: "192.168.122.13",
     ssl: false
 });
 
