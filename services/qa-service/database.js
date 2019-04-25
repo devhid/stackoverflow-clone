@@ -293,7 +293,7 @@ async function addQuestion(user, title, body, tags, media){
         try {
             cassandraResp = await checkFreeMedia(media, user._source.username);
         } catch (err){
-            console.log(err);
+            //console.log(err);
             dbResult.status = constants.DB_RES_ERROR;
             dbResult.data = err;
             return dbResult;
@@ -336,7 +336,7 @@ async function addQuestion(user, title, body, tags, media){
         dbResult.data = null;
         return dbResult;
     }
-    console.log(response);
+    //console.log(response);
     // create the Question Views document in INDEX_VIEWS
     let viewResponse = await client.index({
         index: INDEX_VIEWS,
