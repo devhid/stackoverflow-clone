@@ -116,7 +116,7 @@ async function addUser(req){
         subject: "Validation Key"
         }, function(err, message) {
             console.log(err);
-            if (err) {
+            /*if (err) {
                 console.log(err);
                 status = constants.STATUS_503;
                 response = { "status": "error" };
@@ -126,11 +126,14 @@ async function addUser(req){
                 status = constants.STATUS_200;
                 response = { "status": "OK" };
                 return { status: status, response: response };
-            }
+            }*/
         }
     );
-
-
+    
+    console.log('mail sent');
+    status = constants.STATUS_200;
+    response = { "status": "OK" };
+    return { status: status, response: response };
 }
 
 /* Checks if any of the variables in the fields array are empty. */

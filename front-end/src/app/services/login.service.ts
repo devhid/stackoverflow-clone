@@ -12,7 +12,7 @@ const httpHeaders = {
   observe: 'response' as 'response'
 };
 
-const authenticationUrl = "http://8.9.11.218"
+const url = "http://130.245.170.211"
 
 @Injectable({
   providedIn: 'root'
@@ -26,14 +26,14 @@ export class LoginService {
   login(username: string, password: string): Observable<any> {
     let body = { username: username, password: password };
     console.log(body);
-    return this.http.post(authenticationUrl + "/login", body, httpHeaders)
+    return this.http.post(url + "/login", body, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )
   }
 
   logout(): Observable<any> {
-    return this.http.post(authenticationUrl + "/logout", {}, httpHeaders)
+    return this.http.post(url + "/logout", {}, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )
