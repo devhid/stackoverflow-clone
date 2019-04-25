@@ -10,12 +10,12 @@ import { catchError } from 'rxjs/operators';
 
 const httpFileHeaders = {
   headers: new HttpHeaders({ 
-    'Content-Type': 'multipart/form-data'
+    //'Content-Type': 'multipart/form-data'
   }),
   withCredentials: true
 };
 
-const url = "http://8.9.11.218"
+const url = 'http://130.245.170.211';  // URL to web api
 
 @Injectable({
   providedIn: 'root'
@@ -27,6 +27,7 @@ export class MediaService {
   ) { }
 
   public upload(file: File): Observable<any> {
+    console.log(file);
     const formData: FormData = new FormData();
     formData.append('content', file);
     return this.http.post(url + "/addmedia", formData, httpFileHeaders)
@@ -36,7 +37,7 @@ export class MediaService {
   }
 
   public retrieveMedia(id: string): Observable<any> {
-    return this.http.get(url + "/media/" + id)
+    return this.http.get(url + "/media/" + id, { responseType: 'blob' })
     .pipe(
       catchError(this.handleError)
     )

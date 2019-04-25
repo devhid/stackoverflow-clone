@@ -2,9 +2,11 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
+import { Observable } from 'rxjs';
 import { QAService } from '../services/qa.service';
 import { MediaService } from '../services/media.service';
 import { FileUploader, FileSelectDirective } from 'ng2-file-upload/ng2-file-upload';
+import 'rxjs/add/observable/forkJoin';
 
 @Component({
   selector: 'app-askquestion',
@@ -33,21 +35,28 @@ export class AskQuestionComponent implements OnInit {
 
   askQuestionSubmit() {
     let tags = this.newQuestionForm.value.tags.split(" ");
-    console.log(tags);
-    this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags)
+
+    let fileIds = [];
+    //console.log(this.files);
+
+    let observables: Observable<any>[] = [];
+
+    for(let file of this.files){
+      //console.log(file)
+      observables.push(this.mediaService.upload(file));
+    }
+
+    Observable.forkJoin(observables)
+    .subscribe(dataArray => {
+        // All observables in `observables` array have resolved and `dataArray` is an array of result of each observable
+    });
+    
+    /*this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags)
     .subscribe(response => {
       console.log(response);
-      for(let file of this.files){
-        console.log(file)
-        this.mediaService.upload(file).subscribe(
-          response => {
-            console.log(response);
-            //this.router.navigate(['/']); 
-          }
-        )
-      }
+      
       //this.router.navigate(['/']); 
-    });
+    });*/
   }
 
   onFileChange(event) {

@@ -13,7 +13,7 @@ const httpHeaders = {
   })
 };
 
-const url = 'http://8.9.11.218';  // URL to web api
+const url = 'http://130.245.170.211';  // URL to web api
 const searchUrl = 'http://64.190.91.125' // URL to search microservice
 
 @Injectable({
@@ -60,6 +60,7 @@ export class RetrievalService {
     let body = {
       limit: 100,
       q: query
+      
     }
     console.log(body);
     return this.http.post(url + "/search", body, httpHeaders)

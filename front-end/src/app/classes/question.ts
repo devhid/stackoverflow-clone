@@ -11,7 +11,7 @@ export class Question {
         public view_count: number,
         public answer_count: number,
         public timestamp: number,
-        public media: Array<number>, //M3
+        public media: Array<any>, //M3
         public tags: Array<number>, //M3
         public accepted_answer_id: string
     ) { }
