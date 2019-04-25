@@ -1,5 +1,7 @@
 /* library imports */
 const express = require('express');
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
 
 /* internal imports */
 const database = require('./database');
@@ -12,6 +14,18 @@ require('express-async-errors');
 
 /* the port the server will listen on */
 const PORT = 8000;
+
+/* redis */
+const sessionOptions = {
+    name: 'soc_login',
+    secret: 'EditThisLaterWithARealSecret',
+    unset: 'destroy',
+    resave: false,
+    saveUninitialized: true,
+    logErrors: true,
+    store: new RedisStore(constants.REDIS_OPTIONS)
+};
+app.use(session(sessionOptions));
 
 /* parse incoming requests data as json */
 app.use(express.json());
