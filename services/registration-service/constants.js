@@ -11,7 +11,7 @@ module.exports = {
     STATUS_503: 503,	// service unavailable
 
     FRONT_END: {
-        hostname: '130.245.171.47'
+        hostname: 'http://130.245.171.47'
     },
 
     AMQP: {
