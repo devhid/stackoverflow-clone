@@ -1,6 +1,5 @@
 /* external imports */
 const express = require('express');
-const amqp = require('amqplib/callback_api');
 
 /* internal imports */
 const database = require('./database');
@@ -25,84 +24,45 @@ app.use(function(req, res, next) {
   next();
 });
 
-/* amqplib connection */
-var conn = null;
-var ch = null;
+/* auth service */
+app.post('/login', async(req,res) => {
+    let endpoint = constants.ENDPOINTS.AUTH_LOGIN;
+    let dbRes = await processRequest(req, endpoint);
+    if (dbRes.user != undefined){
+        req.session.user = dbRes.user;
+    }
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
 
-/**
- * Asserts the Exchange and Queue exists and sets up the connection variables.
- */
-function setupConnection(){
-    console.log(`[Rabbit] Setting up connection...`);
-    amqp.connect(constants.AMQP, function(error0, connection) {
-        if (error0) {
-            throw error0;
-        }
-        console.log(`[Rabbit] Connected...`);
-        conn = connection;
-        connection.createChannel(function(error1, channel) {
-            if (error1) {
-                throw error1;
-            }
-            console.log(`[Rabbit] Channel created...`);
-            ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
-                if (error2){
-                    throw error2;
-                }
-                console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
-                ch.assertQueue(constants.SERVICES.AUTH, constants.QUEUE.PROPERTIES, function(error3, q){
-                    if (error3){
-                        throw error3;
-                    }
-                    console.log(`[Rabbit] Asserted queue... ${q.queue}`);
-                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.AUTH);
-                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.AUTH} to ${ex.exchange}...`);
-                    ch.prefetch(1); 
-                    console.log(`[Rabbit] Set prefetch 1...`);
-                    ch.consume(q.queue, processRequest);
-                    console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
-                });
-            });
-        });
-    });
-}
+app.post('/logout', async(req,res) => {
+    let endpoint = constants.ENDPOINTS.AUTH_LOGOUT;
+    let dbRes = await processRequest(req, endpoint);
+    if (dbRes.status === constants.STATUS_200){
+        req.session.destroy();
+    }
+    res.status(dbRes.status);
+    return res.json(dbRes.response);
+});
 
 /**
  * Processes the request contained in the message and replies to the specified queue.
  * @param {Object} msg the message on the RabbitMQ queue
  */
-async function processRequest(msg){
-    let data = JSON.parse(msg.content.toString()); // gives back the data object
-    let endpoint = data.endpoint;
+async function processRequest(req, endpoint){
     let response = {};
     switch (endpoint) {
         case constants.ENDPOINTS.AUTH_LOGIN:
-            response = await login(data);
+            response = await login(req);
             break;
         case constants.ENDPOINTS.AUTH_LOGOUT:
-            response = await logout(data);
+            response = await logout(req);
             break;
         default:
             break;
     }
-    ch.sendToQueue(msg.properties.replyTo,
-        Buffer.from(JSON.stringify(response)), {
-            correlationId: msg.properties.correlationId
-        }
-    );
-    ch.ack(msg);
+    return response;
 }
-
-function main(){
-    try {
-        setupConnection();
-    } catch (err){
-        console.log(`[Rabbit] Failed to connect ${err}`);
-    }
-}
-
-main();
 
 /* ------------------ ENDPOINTS ------------------ */
 
