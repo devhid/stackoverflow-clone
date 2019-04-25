@@ -111,20 +111,30 @@ async function checkFreeMedia(ids){
     }
     console.log(`[Cassandra]: checkFreeMedia queries=${queries}`);
 
-    // execute the query in a Promise
-    cassandra_client.batch(queries, { prepare : true})
-        .then(function() {
-            console.log(queries);
-            dbResult.status = constants.DB_RES_ERROR;
-            dbResult.data = null;
-            return dbResult;
-        })
-        .catch(function(err){
-            dbResult.status = constants.DB_RES_ERROR;
-            dbResult.data = error;
-            return dbResult;
+    let promises = [];
+    let promise = null;
+    for (query of queries){
+        promise = cassandra_client.execute(query, [], {prepare:true});
+        promises.push(promise);
+    }
+
+    Promise.all(promises).then(function(values){
+        for (var result of values){
+            let row = result.rows[0];
+            if (row == undefined){
+                dbResult.status = constants.DB_RES_ERROR;
+                dbResult.data = null;
+                return dbResult;
+            }
         }
-    );
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = null;
+        return dbResult;
+    }).catch(function(err){
+        dbResult.status = constants.DB_RES_ERROR;
+        dbResult.data = err;
+        return dbResult;
+    });
 }
 
 /**
@@ -306,6 +316,9 @@ async function addQuestion(user, title, body, tags, media){
     catch(err) {
         cassandraResp = err;
         console.log(`checkFreeMedia failed on media=${media}, err=${err.data}`);
+    }
+
+    if (cassandraResp.status !== constants.DB_RES_SUCCESS){
         dbResult.status = constants.DB_RES_MEDIA_INVALID;
         dbResult.data = null;
         return dbResult;
