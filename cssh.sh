@@ -30,7 +30,7 @@ if sys.argv[1] == "clear":
     indices = ["views", "answers", "questions", "users", "q-upvotes", "a-upvotes"]
 
     for index in indices:
-        response = requests.post("http://admin:ferdman123@107.191.43.73:92/{index}/_delete_by_query".format(index=index), json=data)
+        response = requests.post("http://admin:ferdman123@130.245.169.86:92/{index}/_delete_by_query".format(index=index), json=data)
     exit(0)
 
 hostname = sys.argv[1]

@@ -103,7 +103,7 @@ async function checkFreeMedia(ids){
     }
 
     var list_ids = transformArrToCassandraList(ids, false);
-    const query = `SELECT qa_id FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
+    const query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids} AND qa_id=''`;
     console.log(`[Cassandra]: checkFreeMedia query=${query}`);
 
     // execute the query in a Promise
@@ -112,24 +112,17 @@ async function checkFreeMedia(ids){
             if (error) {
                 dbResult.status = constants.DB_RES_ERROR;
                 dbResult.data = error;
-                reject(dbResult);
-            } else {
-                if (result.rowLength !== ids.length){
-                    dbResult.status = constants.DB_RES_ERROR;
-                    dbResult.data = error;
-                    return reject(dbResult);
-                }
-                for (var row of result.rows){
-                    if (row.qa_id != null){
-                        dbResult.status = constants.DB_RES_ERROR;
-                        dbResult.data = constants.DB_RES_MEDIA_INVALID;
-                        return reject(dbResult);
-                    }
-                }
-                dbResult.status = constants.DB_RES_SUCCESS;
-                dbResult.data = result;
-                resolve(dbResult);
+                return reject(dbResult);
             }
+            let row = result.rows[0];
+            if (row.count != ids.length){
+                dbResult.status = constants.DB_RES_ERROR;
+                dbResult.data = constants.DB_RES_MEDIA_INVALID;
+                return reject(dbResult);
+            }
+            dbResult.status = constants.DB_RES_SUCCESS;
+            dbResult.data = result;
+            return resolve(dbResult);
         });
     });
 }
@@ -788,23 +781,6 @@ async function deleteQuestion(qid, username){
     if (username == question._source.user.username){
         console.log(`Deleting ${qid} by ${username}`);
 
-        // 1) DELETE from INDEX_QUESTIONS the Question document
-        response = await client.deleteByQuery({
-            index: INDEX_QUESTIONS,
-            type: "_doc",
-            body: {
-                query: {
-                    term: {
-                        _id: qid
-                    }
-                }
-            }
-        });
-        if (response.deleted != 1){
-            console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
-            console.log(response);
-        }
-
         // 2) DELETE from INDEX_VIEWS the Question Views metadata document
         response = await client.deleteByQuery({
             index: INDEX_VIEWS,
@@ -825,10 +801,10 @@ async function deleteQuestion(qid, username){
         // 3) DELETE from INDEX_Q_UPVOTES the Question Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the asker
         let undoQuestionVotesResp = await undoAllQuestionVotes(qid);
-        if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS){
+        if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS ||
+            undoQuestionVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
             console.log(`Failed to undo all question votes`);
         }
-        console.log(undoQuestionVotesResp.data);
         response = await client.deleteByQuery({
             index: INDEX_Q_UPVOTES,
             type: "_doc",
@@ -864,10 +840,10 @@ async function deleteQuestion(qid, username){
         // 5) DELETE from INDEX_A_UPVOTES the Answer Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the answerers
         let undoAnswerVotesResp = await undoAllAnswerVotes(qid);
-        if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS){
+        if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS || 
+            undoAnswerVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
             console.log(`Failed to undo all answer votes`);
         }
-        console.log(undoAnswerVotesResp.data);
         response = await client.deleteByQuery({
             index: INDEX_A_UPVOTES,
             type: "_doc",
@@ -894,6 +870,24 @@ async function deleteQuestion(qid, username){
         catch(err){
             console.log(`Failed to delete media items ${media_ids}, error ${err.data}`);
         }
+
+        // 1) DELETE from INDEX_QUESTIONS the Question document
+        response = await client.deleteByQuery({
+            index: INDEX_QUESTIONS,
+            type: "_doc",
+            body: {
+                query: {
+                    term: {
+                        _id: qid
+                    }
+                }
+            }
+        });
+        if (response.deleted != 1){
+            console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
+            console.log(response);
+        }
+        console.log(`deleted question ${qid}`);
 
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
@@ -944,22 +938,24 @@ async function undoAllAnswerVotes(qid){
         downvotes = (ans._source.downvotes == undefined) ? [] : ans._source.downvotes;
         rep_diff = -(upvotes.length - downvotes.length);
         if (poster in undo_votes){
-            undo_votes.poster += rep_diff;
+            undo_votes[poster] += rep_diff;
         }
         else {
-            undo_votes.poster = rep_diff;
+            undo_votes[poster] = rep_diff;
         }
     }
 
     // build the bulk query that will update every User document
-    let bulk_query = {};
-    let bulk_query_body = [];
+    let bulk_query = { body : []};
     let action_doc = undefined;
     let update_doc = undefined;
     let param_rep_diff = "rep_diff";
     let inline_script = `ctx._source.reputation += params.${param_rep_diff}`;
     for (var user_id in undo_votes){
         rep_diff = undo_votes[user_id];
+        if (rep_diff == 0){
+            continue;
+        }
         action_doc = {
             update: {
                 index: INDEX_USERS,
@@ -975,13 +971,15 @@ async function undoAllAnswerVotes(qid){
                 }
             }
         };
-        bulk_query_body.push(action_doc);
-        bulk_query_body.push(update_doc);
+        bulk_query.body.push(action_doc);
+        bulk_query.body.push(update_doc);
     }
-    bulk_query.body = bulk_query_body;
-    const bulkResponse = await client.bulk(bulk_query);
-    console.log(`Bulk performed... ${JSON.stringify(bulk_query_body)}`);
-    console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+    let bulkResponse = null;
+    if (bulk_query.body.length > 0){
+        bulkResponse = await client.bulk(bulk_query);
+        console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
+        console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+    }
 
     dbResult.status = constants.DB_RES_SUCCESS;
     dbResult.data = bulkResponse;
@@ -1180,7 +1178,7 @@ async function updateScore(qid, aid, amount){
 async function updateReputation(username, amount){
     let dbResult = new DBResult();
     if (amount == 0){
-        dbResult.status = success;
+        dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
         return dbResult;
     }
@@ -1282,7 +1280,7 @@ async function upvoteQA(qid, aid, username, upvote){
     //      ElasticSearch treats them as missing fields if they are empty
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
-    let waived_downvotes = (qa_vote._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
+    let waived_downvotes = (qa_votes._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
     console.log(`upvotes = ${upvotes}`);
     console.log(`downvotes = ${downvotes}`);
     console.log(`waived_downvotes = ${waived_downvotes}`);
@@ -1302,7 +1300,7 @@ async function upvoteQA(qid, aid, username, upvote){
     console.log(`waived = ${waived}`);
 
     // if the user asks to perform the same operation, we don't need to do anything
-    if ((upvote && upvoted) || (downvote && downvoted)){
+    if ((upvote && upvoted) || (!upvote && downvoted)){
         dbResult.status = constants.DB_RES_SUCCESS;
         dbResult.data = null;
         return dbResult;

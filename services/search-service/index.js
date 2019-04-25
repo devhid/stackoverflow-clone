@@ -116,7 +116,7 @@ async function search(req){
     let status = constants.STATUS_200;
     let response = {};
 
-    if (sort_by !== "timestamp" || sort_by !== "score") {
+    if (sort_by !== "timestamp" && sort_by !== "score") {
         status = constants.STATUS_400;
         response = { "status":"error", "message": constants.ERR_INVALID_SORT };
         return {status: status, response: response};

@@ -9,8 +9,8 @@
   vars: 
     REGISTRATION_HOST: 192.168.122.32 
   roles:
-  # - { role: ssh }
-  # - { role: postfix }
+  - { role: ssh }
+  - { role: postfix }
 
   tasks:
     - name: Add host private ip to 'mynetworks' in postfix configuration

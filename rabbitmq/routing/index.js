@@ -71,6 +71,7 @@ async function wrapRequest(req, res, key, endpoint){
     let data = {
         endpoint: endpoint,
         session: {user: ((req.session == undefined) ? undefined : req.session.user)},
+        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         params: req.params,
         body: req.body,
         file: req.file
@@ -88,13 +89,13 @@ async function wrapRequest(req, res, key, endpoint){
         req.session.destroy();
     }
 
-    // MEDIA
-    if (dbRes.content_type != undefined){
-        res.set('Content-Type', dbRes.content_type);
-        if (endpoint == constants.ENDPOINTS.MEDIA_GET && dbRes.media != undefined && dbRes.media.type === "Buffer"){
-            return res.send(Buffer.from(dbRes.media.data));
-        }
-    }
+    // MEDIA: nginx proxies directly to media now
+    // if (dbRes.content_type != undefined){
+    //     res.set('Content-Type', dbRes.content_type);
+    //     if (endpoint == constants.ENDPOINTS.MEDIA_GET && dbRes.media != undefined && dbRes.media.type === "Buffer"){
+    //         return res.send(Buffer.from(dbRes.media.data));
+    //     }
+    // }
 
     return res.json(dbRes.response);
 }
