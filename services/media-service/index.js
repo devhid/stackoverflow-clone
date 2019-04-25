@@ -1,6 +1,9 @@
 /* library imports */
 const express = require('express');
 const amqp = require('amqplib/callback_api');
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
+const multer = require('multer');
 
 /* internal imports */
 const database = require('./database');
@@ -12,6 +15,21 @@ require('express-async-errors');
 
 /* the port the server will listen on */
 const PORT = 8007;
+
+/* redis */
+const sessionOptions = {
+    name: 'soc_login',
+    secret: 'EditThisLaterWithARealSecret',
+    unset: 'destroy',
+    resave: false,
+    saveUninitialized: true,
+    logErrors: true,
+    store: new RedisStore(constants.REDIS_OPTIONS)
+};
+app.use(session(sessionOptions));
+
+/* image upload destination */
+const upload = multer();
 
 /* enable CORS */
 app.use(function(req, res, next) {
@@ -25,84 +43,121 @@ app.use(function(req, res, next) {
 /* parse incoming requests data as json */
 app.use(express.json());
 
-/* amqplib connection */
-var conn = null;
-var ch = null;
+// /* amqplib connection */
+// var conn = null;
+// var ch = null;
 
-/**
- * Asserts the Exchange and Queue exists and sets up the connection variables.
- */
-function setupConnection(){
-    console.log(`[Rabbit] Setting up connection...`);
-    amqp.connect(constants.AMQP, function(error0, connection) {
-        if (error0) {
-            throw error0;
+// /**
+//  * Asserts the Exchange and Queue exists and sets up the connection variables.
+//  */
+// function setupConnection(){
+//     console.log(`[Rabbit] Setting up connection...`);
+//     amqp.connect(constants.AMQP, function(error0, connection) {
+//         if (error0) {
+//             throw error0;
+//         }
+//         console.log(`[Rabbit] Connected...`);
+//         conn = connection;
+//         connection.createChannel(function(error1, channel) {
+//             if (error1) {
+//                 throw error1;
+//             }
+//             console.log(`[Rabbit] Channel created...`);
+//             ch = channel;
+//             channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
+//                 if (error2){
+//                     throw error2;
+//                 }
+//                 console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
+//                 ch.assertQueue(constants.SERVICES.MEDIA, constants.QUEUE.PROPERTIES, function(error3, q){
+//                     if (error3){
+//                         throw error3;
+//                     }
+//                     console.log(`[Rabbit] Asserted queue... ${q.queue}`);
+//                     ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.MEDIA);
+//                     console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.MEDIA} to ${ex.exchange}...`);
+//                     ch.prefetch(1); 
+//                     console.log(`[Rabbit] Set prefetch 1...`);
+//                     ch.consume(q.queue, processRequest);
+//                     console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
+//                 });
+//             });
+//         });
+//     });
+// }
+
+// /**
+//  * Processes the request contained in the message and replies to the specified queue.
+//  * @param {Object} msg the message on the RabbitMQ queue
+//  */
+// async function processRequest(msg){
+//     let data = JSON.parse(msg.content.toString()); // gives back the data object
+//     let endpoint = data.endpoint;
+//     let response = {};
+//     switch (endpoint) {
+//         case constants.ENDPOINTS.MEDIA_ADD:
+//             response = await addMedia(data);
+//             break;
+//         case constants.ENDPOINTS.MEDIA_GET:
+//             response = await getMedia(data);
+//             break;
+//         default:
+//             break;
+//     }
+//     ch.sendToQueue(msg.properties.replyTo,
+//         Buffer.from(JSON.stringify(response)), {
+//             correlationId: msg.properties.correlationId
+//         }
+//     );
+//     ch.ack(msg);
+// }
+
+// function main(){
+//     try {
+//         setupConnection();
+//     } catch (err){
+//         console.log(`[Rabbit] Failed to connect ${err}`);
+//     }
+// }
+
+// main();
+
+app.post('/addmedia', upload.single('content'), async (req,res) => {
+    let data = {
+        session: {user: ((req.session == undefined) ? undefined : req.session.user)},
+        params: req.params,
+        body: req.body,
+        file: req.file
+    };
+    let dbRes = await addMedia(data);
+    res.status(dbRes.status);
+    if (dbRes.content_type != undefined){
+        res.set('Content-Type', dbRes.content_type);
+        if (dbRes.media != undefined && dbRes.media.type === "Buffer"){
+            return res.send(Buffer.from(dbRes.media.data));
         }
-        console.log(`[Rabbit] Connected...`);
-        conn = connection;
-        connection.createChannel(function(error1, channel) {
-            if (error1) {
-                throw error1;
-            }
-            console.log(`[Rabbit] Channel created...`);
-            ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
-                if (error2){
-                    throw error2;
-                }
-                console.log(`[Rabbit] Asserted exchange... ${ex.exchange}`);
-                ch.assertQueue(constants.SERVICES.MEDIA, constants.QUEUE.PROPERTIES, function(error3, q){
-                    if (error3){
-                        throw error3;
-                    }
-                    console.log(`[Rabbit] Asserted queue... ${q.queue}`);
-                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.MEDIA);
-                    console.log(`[Rabbit] Binded ${q.queue} with key ${constants.SERVICES.MEDIA} to ${ex.exchange}...`);
-                    ch.prefetch(1); 
-                    console.log(`[Rabbit] Set prefetch 1...`);
-                    ch.consume(q.queue, processRequest);
-                    console.log(`[Rabbit] Attached processRequest callback to ${q.queue}...`);
-                });
-            });
-        });
-    });
-}
-
-/**
- * Processes the request contained in the message and replies to the specified queue.
- * @param {Object} msg the message on the RabbitMQ queue
- */
-async function processRequest(msg){
-    let data = JSON.parse(msg.content.toString()); // gives back the data object
-    let endpoint = data.endpoint;
-    let response = {};
-    switch (endpoint) {
-        case constants.ENDPOINTS.MEDIA_ADD:
-            response = await addMedia(data);
-            break;
-        case constants.ENDPOINTS.MEDIA_GET:
-            response = await getMedia(data);
-            break;
-        default:
-            break;
     }
-    ch.sendToQueue(msg.properties.replyTo,
-        Buffer.from(JSON.stringify(response)), {
-            correlationId: msg.properties.correlationId
+    return res.json(dbRes.response);
+});
+
+app.get('/media/:id', async(req,res) => {
+    let data = {
+        session: {user: ((req.session == undefined) ? undefined : req.session.user)},
+        params: req.params,
+        body: req.body,
+        file: req.file
+    };
+    let dbRes = await getMedia(data);
+    res.status(dbRes.status);
+    if (dbRes.content_type != undefined){
+        res.set('Content-Type', dbRes.content_type);
+        if (dbRes.media != undefined && dbRes.media.type === "Buffer"){
+            return res.send(Buffer.from(dbRes.media.data));
         }
-    );
-    ch.ack(msg);
-}
-
-function main(){
-    try {
-        setupConnection();
-    } catch (err){
-        console.log(`[Rabbit] Failed to connect ${err}`);
     }
-}
+    return res.json(dbRes.response);
+});
 
-main();
 
 /* ------------------ ENDPOINTS ------------------ */
 
@@ -169,7 +224,7 @@ async function addMedia(req) {
     }
 
     response = generateOK();
-    response[constants.ID_KEY] = mediaId;
+    response.response[constants.ID_KEY] = mediaId;
     return response;
 }
 

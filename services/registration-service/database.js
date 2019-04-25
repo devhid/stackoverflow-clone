@@ -15,6 +15,11 @@ const KEY_LENGTH = 16;
  * existence of the user's email and username in the database. 
  */
 async function userExists(email, username) {
+    const search = (await client.search({
+        index: INDEX,
+        body: { query: { match: {"email": email } } }
+    })).hits.hits;
+    console.log(search);
     const emailExists = (await client.count({
         index: INDEX,
         body: { query: { match: { "email": email } } }

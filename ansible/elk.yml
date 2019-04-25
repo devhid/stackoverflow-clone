@@ -9,28 +9,28 @@
   vars:
     nginx_path: /etc/nginx
     nginx_sites: "{{ nginx_path }}/sites-available"
-  # roles:
-  # - { role: ssh }
-  # - { role: nginx }
-  # - { role: java }
-  # - { role: elasticsearch }
-  # - { role: kibana }
+  roles:
+  - { role: ssh }
+  - { role: nginx }
+  - { role: java }
+  - { role: elasticsearch }
+  - { role: kibana }
 
   tasks:
-    # - name: Installing Python3 and pip3
-    #   apt:
-    #     name: python3-pip
-    #     update_cache: yes
+    - name: Installing Python3 and pip3
+      apt:
+        name: python3-pip
+        update_cache: yes
 
-    # - name: Installing passlib as dependency for module 'htpasswd'
-    #   pip:
-    #     name: passlib
+    - name: Installing passlib as dependency for module 'htpasswd'
+      pip:
+        name: passlib
 
-    # - name: Setup basic authorization in Nginx
-    #   htpasswd:
-    #     path: /etc/nginx/htpasswd.users
-    #     name: admin
-    #     password: ferdman123
+    - name: Setup basic authorization in Nginx
+      htpasswd:
+        path: /etc/nginx/htpasswd.users
+        name: admin
+        password: ferdman123
     
     - name: Create and setup server block to proxy Kibana and Elasticsearch from template
       template:

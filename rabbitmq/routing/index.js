@@ -71,18 +71,35 @@ async function wrapRequest(req, res, key, endpoint){
     let data = {
         endpoint: endpoint,
         session: {user: ((req.session == undefined) ? undefined : req.session.user)},
+        ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         params: req.params,
         body: req.body,
         file: req.file
     };
+    if (endpoint === constants.ENDPOINTS.QA_ADD_Q && req.body.answers != undefined){
+        data.body = {};
+    }
     let rabbitRes = await routeRequest(key, data);
     // console.log(`endpoint=${endpoint}, resp status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
-    // mainly for getMedia
-    if (dbRes.content_type != undefined){
-        res.set('Content-Type', dbRes.content_type);
+
+    // AUTH
+    if (dbRes.user != undefined){
+        req.session.user = dbRes.user;
     }
+    if (endpoint == constants.ENDPOINTS.AUTH_LOGOUT && dbRes.status === constants.STATUS_200){
+        req.session.destroy();
+    }
+
+    // MEDIA: nginx proxies directly to media now
+    // if (dbRes.content_type != undefined){
+    //     res.set('Content-Type', dbRes.content_type);
+    //     if (endpoint == constants.ENDPOINTS.MEDIA_GET && dbRes.media != undefined && dbRes.media.type === "Buffer"){
+    //         return res.send(Buffer.from(dbRes.media.data));
+    //     }
+    // }
+
     return res.json(dbRes.response);
 }
 
