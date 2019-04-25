@@ -102,29 +102,29 @@ async function checkFreeMedia(ids){
         return dbResult;
     }
 
-    var list_ids = transformArrToCassandraList(ids, false);
-    const query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids} AND qa_id=''`;
-    console.log(`[Cassandra]: checkFreeMedia query=${query}`);
+    // var list_ids = transformArrToCassandraList(ids, false);
+    let queries = [];
+    let query = null;
+    for (var id of ids){
+        query = `SELECT COUNT(*) FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=${id} AND qa_id=''`;
+        queries.push(query);
+    }
+    console.log(`[Cassandra]: checkFreeMedia queries=${queries}`);
 
     // execute the query in a Promise
-    return new Promise( (resolve, reject) => {
-        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
-            if (error) {
-                dbResult.status = constants.DB_RES_ERROR;
-                dbResult.data = error;
-                return reject(dbResult);
-            }
-            let row = result.rows[0];
-            if (row.count != ids.length){
-                dbResult.status = constants.DB_RES_ERROR;
-                dbResult.data = constants.DB_RES_MEDIA_INVALID;
-                return reject(dbResult);
-            }
-            dbResult.status = constants.DB_RES_SUCCESS;
-            dbResult.data = result;
-            return resolve(dbResult);
-        });
-    });
+    cassandra_client.batch(queries, { prepare : true})
+        .then(function() {
+            console.log(queries);
+            dbResult.status = constants.DB_RES_ERROR;
+            dbResult.data = null;
+            return dbResult;
+        })
+        .catch(function(err){
+            dbResult.status = constants.DB_RES_ERROR;
+            dbResult.data = error;
+            return dbResult;
+        }
+    );
 }
 
 /**
