@@ -15,6 +15,15 @@ const PORT = 8001;
 /* parse incoming requests data as json */
 app.use(express.json());
 
+/* enable CORS */
+app.use(function(req, res, next) {
+    res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
+    res.set('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
+    res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+    res.set('Access-Control-Allow-Credentials', 'true');
+    next();
+});
+
 app.post('/verify', async(req, res) => {
     let endpoint = constants.ENDPOINTS.EMAIL_VERIFY;
     let dbRes = await processRequest(req, endpoint);
@@ -22,7 +31,7 @@ app.post('/verify', async(req, res) => {
     return res.json(dbRes.response);
 });
 
-async function processRequest(req){
+async function processRequest(req, endpoint){
     let response = {};
     switch (endpoint) {
         case constants.ENDPOINTS.EMAIL_VERIFY:
@@ -163,7 +172,5 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 function shutdown(){
-    if (conn) conn.close();
-    if (ch) ch.close();
     server.close();
 }
