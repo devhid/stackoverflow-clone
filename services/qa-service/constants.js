@@ -24,7 +24,7 @@ module.exports = {
         heartbeat: 5,
     }, 
     CASSANDRA_OPTIONS: {
-        contactPoints: ["192.168.122.31"], 
+        contactPoints: ["192.168.122.38, 192.168.122.41"], 
         localDataCenter: 'datacenter1', 
         keyspace: "stackoverflow",
         table: "media"
