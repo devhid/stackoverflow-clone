@@ -84,7 +84,7 @@ module.exports = {
     ERR_MEDIA_TOO_LARGE: 'Media upload failed. File size is likely too large.',
 
     CASSANDRA_OPTIONS: {
-        contactPoints: ["192.168.122.38, 192.168.122.41"], 
+        contactPoints: ["192.168.122.38"], 
         localDataCenter: 'datacenter1', 
         keyspace: "stackoverflow", 
         table: "media"
