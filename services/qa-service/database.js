@@ -298,8 +298,7 @@ async function addQuestion(user, title, body, tags, media){
             return dbResult;
         }
         for (var result of cassandraResp){
-            let row = result.rows[0];
-            if (row == undefined){
+            if (result == undefined){
                 dbResult.status = constants.DB_RES_MEDIA_INVALID;
                 dbResult.data = null;
                 return dbResult;
@@ -599,8 +598,7 @@ async function addAnswer(qid, user, body, media){
             return dbResult;
         }
         for (var result of cassandraResp){
-            let row = result.rows[0];
-            if (row == undefined){
+            if (result == undefined){
                 dbResult.status = constants.DB_RES_MEDIA_INVALID;
                 dbResult.data = null;
                 return dbResult;

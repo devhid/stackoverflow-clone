@@ -107,7 +107,7 @@ async function addUser(req){
         to: email,
         subject: "Validation Key"
         }, function(err, message) {
-            console.log(err);
+            // console.log(err);
             /*if (err) {
                 console.log(err);
                 status = constants.STATUS_503;
