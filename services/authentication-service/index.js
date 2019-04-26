@@ -269,7 +269,5 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 function shutdown(){
-    if (conn) conn.close();
-    if (ch) ch.close();
     server.close();
 }
