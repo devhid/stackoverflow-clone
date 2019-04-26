@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "chakram": "^1.5.0",
+    "loadtest": "^3.0.7",
     "mocha": "^6.1.4"
   }
 }

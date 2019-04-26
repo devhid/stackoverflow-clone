@@ -10,7 +10,7 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 8001;
+const PORT = 8002;
 
 /* parse incoming requests data as json */
 app.use(express.json());
@@ -43,15 +43,6 @@ async function processRequest(req, endpoint){
     return response;
 }
 
-function main(){
-    try {
-        setupConnection();
-    } catch (err){
-        console.log(`[Rabbit] Failed to connect ${err}`);
-    }
-}
-
-main();
 
 /* ------------------ ENDPOINTS ------------------ */
 

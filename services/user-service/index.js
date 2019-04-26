@@ -10,7 +10,7 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 8004;
+const PORT = 8007;
 
 /* parse incoming requests data as json */
 app.use(express.json());

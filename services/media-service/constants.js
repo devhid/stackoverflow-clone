@@ -25,7 +25,7 @@ module.exports = {
     },
     
     REDIS_OPTIONS: {
-        host: '192.168.122.27',
+        host: '192.168.122.40',
         port: 6379,
         pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
     },
@@ -86,6 +86,7 @@ module.exports = {
     CASSANDRA_OPTIONS: {
         contactPoints: ["127.0.0.1"], 
         localDataCenter: 'datacenter1', 
-        keyspace: "media_service" 
+        keyspace: "stackoverflow", 
+        table: "media"
     }
 };

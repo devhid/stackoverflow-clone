@@ -1,0 +1,11 @@
+---
+#
+# Playbook to setup a cassandra node.
+#
+- hosts: cassandra
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  roles:
+  - { role: ssh }
+  - { role: cassandra }

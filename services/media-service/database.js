@@ -18,7 +18,7 @@ client.connect()
 
 async function uploadMedia(username, filename, content, mimetype) {
     const uuid = Uuid.random();
-    const query = `INSERT INTO ${cassandraOptions.keyspace}.imgs (id, content, filename, mimetype, qa_id, poster) VALUES (?, ?, ?, ?, ?, ?)`;
+    const query = `INSERT INTO ${cassandraOptions.keyspace}.${cassandraOptions.table} (id, content, filename, mimetype, qa_id, poster) VALUES (?, ?, ?, ?, ?, ?)`;
     
     return new Promise( (resolve, reject) => {
         client.execute(query, [uuid, content, filename, mimetype, '', username], { prepare: true }, (error, result) => {
@@ -32,7 +32,7 @@ async function uploadMedia(username, filename, content, mimetype) {
 }
 
 async function getMedia(mediaId) {
-    const query = `SELECT id, filename, content, mimetype FROM ${cassandraOptions.keyspace}.imgs WHERE id=?`;
+    const query = `SELECT id, filename, content, mimetype FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=?`;
     return new Promise( (resolve, reject) => {
         client.execute(query, [mediaId], { prepare: true}, (error, result) => {
             if(error) {

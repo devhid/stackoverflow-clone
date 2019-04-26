@@ -12,12 +12,12 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 8002;
+const PORT = 8001;
 
 /* redis */
 const sessionOptions = {
     name: 'soc_login',
-    secret: 'EditThisLaterWithARealSecret',
+    secret: 'KYNxwY2ZeUXo8LKbsbZsMpccLbRewpBr',
     unset: 'destroy',
     resave: false,
     saveUninitialized: true,

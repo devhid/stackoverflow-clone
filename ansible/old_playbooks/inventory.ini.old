@@ -1,0 +1,74 @@
+[elk]
+130.245.169.86
+
+[router]
+130.245.170.211
+
+[mail_server]
+130.245.171.134
+
+[redis]
+192.168.122.27
+
+[authentication_service]
+192.168.122.30
+
+[email_verification_service]
+192.168.122.31
+
+[media_service]
+; 192.168.122.22
+192.168.122.31
+
+[qa_service]
+; 192.168.122.26
+; 192.168.122.35
+; 192.168.122.36
+130.245.171.134
+
+[search_service]
+192.168.122.29
+
+[user_service]
+192.168.122.28
+
+[registration_service]
+192.168.122.32
+
+[cassandra]
+192.168.122.37
+
+[private]
+media-service=192.168.122.22
+qa-service=192.168.122.26
+redis=192.168.122.27
+user-service=192.168.122.28
+search-service=192.168.122.29
+authentication-service=192.168.122.30
+email-verification-service=192.168.122.31
+registration-service=192.168.122.32
+
+[services]
+;media ansible_host=192.168.122.22
+qa ansible_host=192.168.122.26
+user ansible_host=192.168.122.28
+search ansible_host=192.168.122.29
+authentication ansible_host=192.168.122.30
+email ansible_host=192.168.122.31
+registration ansible_host=192.168.122.32
+
+[public]
+130.245.169.86 # elk
+130.245.170.211 # router
+130.245.171.134 # mail-server
+
+[public:vars]
+# Ubuntu 18.04 does not come with python2.
+ansible_python_interpreter=/usr/bin/python3 
+
+[all:vars]
+# Uses the bastion (jump) host to run ansible on private hosts
+ansible_ssh_common_args='-o ProxyCommand="ssh jump -W %h:%p"' 
+
+# Ubuntu 18.04 does not come with python2.
+ansible_python_interpreter=/usr/bin/python3 

@@ -20,6 +20,10 @@
       git:
         repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN }}@github.com/devhid/stackoverflow-clone.git
         dest: /home/ubuntu/stackoverflow-clone
+      
+    - name: Checkout to nginx-proxy branch
+      become_user: ubuntu
+      shell: cd stackoverflow-clone && git checkout nginx-proxy && git pull
     
     - name: Install dependencies for {{ SERVICE }}
       become_user: ubuntu

@@ -26,14 +26,14 @@ module.exports = {
     CASSANDRA_OPTIONS: {
         contactPoints: ["192.168.122.31"], 
         localDataCenter: 'datacenter1', 
-        keyspace: "media_service",
-        table: "imgs"
+        keyspace: "stackoverflow",
+        table: "media"
     },
     ELASTICSEARCH_OPTIONS: {
         host: "http://admin:ferdman123@130.245.169.86:92"
     },
     REDIS_OPTIONS: {
-        host: '192.168.122.27',
+        host: '192.168.122.40',
         port: 6379,
         pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
     },

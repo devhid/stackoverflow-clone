@@ -1,0 +1,11 @@
+---
+#
+# Playbook to setup the routing instance that will act as an API gateway.
+#
+- hosts: routing
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  roles:
+  - { role: ssh }
+  - { role: nginx }

@@ -3,7 +3,6 @@ const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const multer = require('multer');
-const morganBody = require('morgan-body');
 
 /* internal imports */
 const database = require('./database');
@@ -11,16 +10,15 @@ const constants = require('./constants');
 
 /* initialize express application */
 const app = express();
-morganBody(app, {noColors: true, maxBodyLength: 5000, logReqDateTime: false, logReqUserAgent: false});
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 8005;
+const PORT = 8003;
 
 /* redis */
 const sessionOptions = {
     name: 'soc_login',
-    secret: 'EditThisLaterWithARealSecret',
+    secret: 'KYNxwY2ZeUXo8LKbsbZsMpccLbRewpBr',
     unset: 'destroy',
     resave: false,
     saveUninitialized: true,
