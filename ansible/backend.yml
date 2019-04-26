@@ -61,13 +61,13 @@
     #   register: result
     #   until: result.stderr == ""
 
-    - name: Create Table {{ CASSANDRA_TABLE }}
-      become_user: ubuntu
-      shell: cqlsh -e "create table {{ CASSANDRA_KEYSPACE }}.{{ CASSANDRA_TABLE }} (id uuid PRIMARY KEY, content blob, filename text, mimetype text, qa_id text, poster text);" {{ inventory_hostname }} 9042    
+    # - name: Create Table {{ CASSANDRA_TABLE }}
+    #   become_user: ubuntu
+    #   shell: cqlsh -e "create table {{ CASSANDRA_KEYSPACE }}.{{ CASSANDRA_TABLE }} (id uuid PRIMARY KEY, content blob, filename text, mimetype text, qa_id text, poster text);" {{ inventory_hostname }} 9042    
     
-    - name: Create Index for Column 'qa_id'
-      become_user: ubuntu
-      shell: cqlsh -e "create index on {{ CASSANDRA_KEYSPACE }}.{{ CASSANDRA_TABLE }}(qa_id);" {{ inventory_hostname }} 9042
+    # - name: Create Index for Column 'qa_id'
+    #   become_user: ubuntu
+    #   shell: cqlsh -e "create index on {{ CASSANDRA_KEYSPACE }}.{{ CASSANDRA_TABLE }}(qa_id);" {{ inventory_hostname }} 9042
 
     - name: Clone Git Repository
       become_user: ubuntu

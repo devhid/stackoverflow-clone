@@ -58,16 +58,6 @@ async function processRequest(req, endpoint){
     return response;
 }
 
-function main(){
-    try {
-        setupConnection();
-    } catch (err){
-        console.log(`[Rabbit] Failed to connect ${err}`);
-    }
-}
-
-main();
-
 /* ------------------ ENDPOINTS ------------------ */
 
 app.get('/emailtest', async(req, res) => {
