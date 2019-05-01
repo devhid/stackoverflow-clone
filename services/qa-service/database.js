@@ -31,6 +31,8 @@ const INDEX_USERS = "users";          // INDEX_USERS is where users are stored
 const INDEX_Q_UPVOTES = "q-upvotes";  // INDEX_Q_UPVOTES is where question upvotes are stored
 const INDEX_A_UPVOTES = "a-upvotes";  // INDEX_A_UPVOTES is where answer upvotes are stored
 
+const INDEX_MEDIA = "media";          // INDEX_MEDIA is where the media metadata is located
+
 /* media */
 
 function shutdown(){
@@ -54,8 +56,7 @@ function transformArrToCassandraList(arr, quotes){
 }
 
 /**
- * Associates the free media in Cassandra with a Question.
- * @param {string} qa_id the _id of a Question
+ * Marks the free media in Cassandra to be associated with a Question.
  * @param {id[]} ids array of media IDs in Cassandra
  */
 async function associateFreeMedia(qa_id, ids){
@@ -68,24 +69,62 @@ async function associateFreeMedia(qa_id, ids){
         return dbResult;
     }
 
-    var list_ids = transformArrToCassandraList(ids, false);
-    const query = `UPDATE ${cassandraOptions.keyspace}.${cassandraOptions.table} SET qa_id='${qa_id}' WHERE id in ${list_ids}`;
-    console.log(`[Cassandra]: associateFreeMedia query=${query}`);
-
-    // execute the query in a Promise
-    return new Promise( (resolve, reject) => {
-        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
-            if (error) {
-                dbResult.status = constants.DB_RES_ERROR;
-                dbResult.data = error;
-                reject(dbResult);
-            } else {
-                dbResult.status = constants.DB_RES_SUCCESS;
-                dbResult.data = result;
-                resolve(dbResult);
+    // build the bulk request that will index a Media metadata document
+    let bulk_query = { body : [] };
+    let action_doc = undefined;
+    let partial_doc = undefined;
+    for (var id in ids){
+        action_doc = {
+            index: {
+                _index: INDEX_MEDIA,
+                _type: "_doc",
+                _id: id
             }
-        });
-    });
+        };
+        partial_doc = {
+            "qa_id": qa_id
+        };
+        bulk_query.body.push(action_doc);
+        bulk_query.body.push(partial_doc);
+    }
+    let bulkResponse = null;
+    if (bulk_query.body.length > 0){
+        bulkResponse = await client.bulk(bulk_query);
+        console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
+        console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+    }
+
+    // // create the media metadata documents for each media id
+    // let promises = [];
+    // let promise = null;
+    // for (var id of ids){
+    //     promise = client.index({
+    //         _id: id,
+    //         index: INDEX_MEDIA,
+    //         type: "_doc",
+    //         refresh: "true",
+    //         body: {
+    //             "qa_id": qa_id
+    //         }
+    //     });
+    //     promises.push(promise);
+    // }
+
+    // // index them concurrently and wait for all the results
+    // let results = await Promise.all(promises);
+    // let response = null;
+    // for (var index in results){
+    //     response = results[index];
+    //     if (response.result !== "created"){
+    //         console.log(`Failed to create Media metadata document with id ${ids[index]}`);
+    //         console.log(response);
+    //     }
+    // }
+
+    // indicate success
+    dbResult.status = constants.DB_RES_SUCCESS;
+    dbResult.data = null;
+    return dbResult;
 }
 
 /**
@@ -96,28 +135,66 @@ async function associateFreeMedia(qa_id, ids){
 async function checkFreeMedia(ids, poster){
     var dbResult = new DBResult();
 
-    // var list_ids = transformArrToCassandraList(ids, false);
-    let queries = [];
-    let query = null;
-    for (var id of ids){
-        query = `SELECT filename, poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=${id} AND qa_id='' AND poster='${poster}' ALLOW FILTERING`;
-        queries.push(query);
+    // if no media, no need to do anything  
+    if (ids == null || ids.length == 0){
+        dbResult.status = constants.DB_RES_SUCCESS;
+        dbResult.data = null;
+        return dbResult;
     }
-    console.log(`[Cassandra]: checkFreeMedia queries=${queries}`);
 
+    // check if the ids have already been associated with some other Question or Answer
     let promises = [];
     let promise = null;
-    for (query of queries){
-        promise = cassandra_client.execute(query, [], {prepare:true});
+    for (var id of ids){
+        promise = client.get({
+            _id: id,
+            index: INDEX_MEDIA,
+            type: "_doc",
+            refresh: "true",
+            _source: false
+        });
         promises.push(promise);
     }
 
-    return Promise.all(promises);
+    // execute the GETs concurrently and wait for all the results
+    let results = await Promise.all(promises);
+    let response = null;
+    for (var index in results){
+        response = results[index];
+        console.log(response);
+    }
+
+    // grab the poster name for each media id
+    let list_ids = transformArrToCassandraList(ids, false);
+    let query = `SELECT poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id in ${list_ids}`;
+    console.log(`[Cassandra]: checkFreeMedia query=${query}`);
+
+    // await the cassandra query and check for the response
+    let result = await cassandra_client.execute(query, [], {prepare: true});
+    if (result.rowLength != ids.length){
+        dbResult.status = constants.DB_RES_MEDIA_INVALID;
+        dbResult.data = null;
+        return dbResult;
+    }
+    for (var row of result.rows){
+        if (row.poster !== poster){
+            dbResult.status = constants.DB_RES_MEDIA_INVALID;
+            dbResult.data = null;
+            return dbResult;
+        }
+    }
+
+    dbResult.status = constants.DB_RES_SUCCESS;
+    dbResult.data = null;
+    return dbResult;
 }
 
 /**
- * Deletes media from Cassandra given an array of their IDs.
+ * Deletes media from Cassandra given an array of their IDs and its associated Question or Answer.
+ * @param {id} qa_id the associated Question or Answer
  * @param {id[]} ids array of media IDs in Cassandra
+ * 
+ * TODO: check if Cassandra actually deleted the media
  */
 async function deleteArrOfMedia(ids){
     var dbResult = new DBResult();
@@ -136,92 +213,52 @@ async function deleteArrOfMedia(ids){
     const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
     console.log(`[Cassandra]: deleteArrOfMedia query=${query}`);
 
-    // execute the query in a Promise
-    return new Promise( (resolve, reject) => {
-        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
-            if (error) {
-                dbResult.status = constants.DB_RES_ERROR;
-                dbResult.data = error;
-                reject(dbResult);
-            } else {
-                dbResult.status = constants.DB_RES_SUCCESS;
-                dbResult.data = null;
-                resolve(dbResult);
+    // we DON'T have to await this call... just hope Cassandra is up and reliable
+    let cassandraResp = cassandra_client.execute(query, [], {prepare: true});
+
+    // build the bulk request that will delete all Media metadata documents
+    let bulk_query = { body : [] };
+    let action_doc = null;
+    for (var id in ids){
+        action_doc = {
+            delete: {
+                _index: INDEX_MEDIA,
+                _type: "_doc",
+                _id: id
             }
-        });
-    });
-}
-
-/**
- * Deletes all media associated with a specified document from QA.
- * @param {string} qa_id the _id of the Question/Answer document
- */
-async function deleteMediaByQAID(qa_id){
-    var dbResult = new DBResult();
-
-    // if no media, no need to do anything
-    if (ids == null || ids.length == 0){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
-        return dbResult;
+        };
+        bulk_query.body.push(action_doc);
+    }
+    let bulkResponse = null;
+    if (bulk_query.body.length > 0){
+        bulkResponse = await client.bulk(bulk_query);
+        console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
+        console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
-    // prepare the query
-    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE qa_id='${qa_id}'`;
-    console.log(`[Cassandra]: deleteMediaByQAID query=${query}`);
+    // delete the associated metadata documents
+    // let elasticResp = await client.deleteByQuery({
+    //     index: INDEX_MEDIA,
+    //     type: "_doc",
+    //     body: { 
+    //         query: { 
+    //             term: { 
+    //                 "qa_id.keyword": qa_id
+    //             } 
+    //         }, 
+    //     }
+    // });
+    // if (elasticResp.deleted != ids.length){
+    //     console.log(`Failed to delete correct number of Media metadatad documents`);
+    //     console.log(response);
+    // }
 
-    // execute the query in a Promise
-    return new Promise( (resolve, reject) => {
-        cassandra_client.execute(query, [], { prepare: true }, (error, result) => {
-            if (error) {
-                dbResult.status = constants.DB_RES_ERROR;
-                dbResult.data = error;
-                reject(dbResult);
-            } else {
-                dbResult.status = constants.DB_RES_SUCCESS;
-                dbResult.data = null;
-                resolve(dbResult);
-            }
-        });
-    });
+    dbResult.status = constants.DB_RES_SUCCESS;
+    dbResult.data = null;
+    return dbResult;
 }
-
-// async function getQuestionsByUser(username){
-//     let questions = (await client.search({
-//         index: INDEX_QUESTIONS,
-//         size: 10000,
-//         type: "_doc",
-//         body: {
-//             query: {
-//                 match: {
-//                     "user.username": username
-//                 }
-//             }
-//         }
-//     })).hits.hits;
-//     let qids = [];
-//     for (var question of questions){
-//         qids.push(question._id);
-//     }
-//     return qids;
-// }
 
 /* helpers */
-
-async function getUserIDByName(username){
-    let user = (await client.search({
-        index: INDEX_USERS,
-        body: {
-            query: {
-                match: {
-                    username: username
-                }
-            }
-        }
-    })).hits.hits[0];
-    let id = (user == undefined) ? user: user._id;
-    return id;
-}
 
 /**
  * Gets the username of a User by a post.
@@ -287,22 +324,14 @@ async function addQuestion(user, title, body, tags, media){
     media = (media == undefined) ? [] : media;
 
     if (media.length > 0){
-        let cassandraResp = null;
-
-        // first, check that the media IDs specified are not already associated with another Question or Answer document
-        try {
-            cassandraResp = await checkFreeMedia(media, user._source.username);
-        } catch (err){
-            dbResult.status = constants.DB_RES_ERROR;
-            dbResult.data = err;
+        // first, check that the media IDs specified 
+        //       1) are not already associated with another Question or Answer document
+        //       2) belong to the user trying to post the question
+        let cassandraResp = await checkFreeMedia(media, user._source.username);
+        if (cassandraResp.status != constants.DB_RES_SUCCESS){
+            dbResult.status = constants.DB_RES_MEDIA_INVALID;
+            dbResult.data = null;
             return dbResult;
-        }
-        for (var result of cassandraResp){
-            if (result.rowLength == 0){
-                dbResult.status = constants.DB_RES_MEDIA_INVALID;
-                dbResult.data = null;
-                return dbResult;
-            }
         }
     }
 
@@ -585,24 +614,16 @@ async function addAnswer(qid, user, body, media){
     let dbResult = new DBResult();
     let username = user._source.username;
     media = (media == undefined) ? [] : media;
-
+    
     if (media.length > 0){
-        let cassandraResp = null;
-
-        // first, check that the media IDs specified are not already associated with another Question or Answer document
-        try {
-            cassandraResp = await checkFreeMedia(media, username);
-        } catch (err){
-            dbResult.status = constants.DB_RES_ERROR;
-            dbResult.data = err;
+        // first, check that the media IDs specified 
+        //       1) are not already associated with another Question or Answer document
+        //       2) belong to the user trying to post the question
+        let cassandraResp = await checkFreeMedia(media, user._source.username);
+        if (cassandraResp.status != constants.DB_RES_SUCCESS){
+            dbResult.status = constants.DB_RES_MEDIA_INVALID;
+            dbResult.data = null;
             return dbResult;
-        }
-        for (var result of cassandraResp){
-            if (result.rowLength == 0){
-                dbResult.status = constants.DB_RES_MEDIA_INVALID;
-                dbResult.data = null;
-                return dbResult;
-            }
         }
     }
 
