@@ -60,20 +60,16 @@ function transformArrToCassandraList(arr, quotes){
  * @param {id[]} ids array of media IDs in Cassandra
  */
 async function associateFreeMedia(qa_id, ids){
-    var dbResult = new DBResult();
-
     // if no media, no need to do anything  
     if (ids == null || ids.length == 0){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_SUCCESS, null);
     }
 
     // build the bulk request that will index a Media metadata document
     let bulk_query = { body : [] };
     let action_doc = undefined;
     let partial_doc = undefined;
-    for (var id in ids){
+    for (var id of ids){
         action_doc = {
             index: {
                 _index: INDEX_MEDIA,
@@ -90,41 +86,12 @@ async function associateFreeMedia(qa_id, ids){
     let bulkResponse = null;
     if (bulk_query.body.length > 0){
         bulkResponse = await client.bulk(bulk_query);
-        console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
-        console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+        // console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
+        // console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
-    // // create the media metadata documents for each media id
-    // let promises = [];
-    // let promise = null;
-    // for (var id of ids){
-    //     promise = client.index({
-    //         _id: id,
-    //         index: INDEX_MEDIA,
-    //         type: "_doc",
-    //         refresh: "true",
-    //         body: {
-    //             "qa_id": qa_id
-    //         }
-    //     });
-    //     promises.push(promise);
-    // }
-
-    // // index them concurrently and wait for all the results
-    // let results = await Promise.all(promises);
-    // let response = null;
-    // for (var index in results){
-    //     response = results[index];
-    //     if (response.result !== "created"){
-    //         console.log(`Failed to create Media metadata document with id ${ids[index]}`);
-    //         console.log(response);
-    //     }
-    // }
-
     // indicate success
-    dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = null;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
 /**
@@ -133,13 +100,9 @@ async function associateFreeMedia(qa_id, ids){
  * @param {string} poster the person who wishes to use the media ids listed
  */
 async function checkFreeMedia(ids, poster){
-    var dbResult = new DBResult();
-
     // if no media, no need to do anything  
     if (ids == null || ids.length == 0){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_SUCCESS, null);
     }
 
     // check if the ids have already been associated with some other Question or Answer
@@ -147,7 +110,7 @@ async function checkFreeMedia(ids, poster){
     let promise = null;
     for (var id of ids){
         promise = client.get({
-            _id: id,
+            id: id,
             index: INDEX_MEDIA,
             type: "_doc",
             refresh: "true",
@@ -157,11 +120,19 @@ async function checkFreeMedia(ids, poster){
     }
 
     // execute the GETs concurrently and wait for all the results
-    let results = await Promise.all(promises);
-    let response = null;
-    for (var index in results){
-        response = results[index];
-        console.log(response);
+    let results = null;
+    try {
+        results = await Promise.all(promises);
+
+        // if the promises executed successfully, there is an invalid media id
+        let response = null;
+        for (var index in results){
+            response = results[index];
+            console.log(`[QA] Found media in use ${response._id}`);
+        }
+        return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
+    } catch (err){
+        console.log(`err ${err}`);
     }
 
     // grab the poster name for each media id
@@ -170,23 +141,24 @@ async function checkFreeMedia(ids, poster){
     console.log(`[Cassandra]: checkFreeMedia query=${query}`);
 
     // await the cassandra query and check for the response
-    let result = await cassandra_client.execute(query, [], {prepare: true});
+    let result = null;
+    try {
+        result = await cassandra_client.execute(query, [], {prepare: true});
+    } catch (err){
+        console.log(`[Cassandra]: ${err}`);
+        return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
+    }
+
     if (result.rowLength != ids.length){
-        dbResult.status = constants.DB_RES_MEDIA_INVALID;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
     }
     for (var row of result.rows){
         if (row.poster !== poster){
-            dbResult.status = constants.DB_RES_MEDIA_INVALID;
-            dbResult.data = null;
-            return dbResult;
+            return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
         }
     }
 
-    dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = null;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
 /**
@@ -197,13 +169,9 @@ async function checkFreeMedia(ids, poster){
  * TODO: check if Cassandra actually deleted the media
  */
 async function deleteArrOfMedia(ids){
-    var dbResult = new DBResult();
-
     // if no media, no need to do anything
     if (ids == null || ids.length == 0){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_SUCCESS, null);
     }
 
     // transform the array of media IDs to the expected format Cassandra wants them in ('id', 'id')
@@ -252,10 +220,7 @@ async function deleteArrOfMedia(ids){
     //     console.log(`Failed to delete correct number of Media metadatad documents`);
     //     console.log(response);
     // }
-
-    dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = null;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
 /* helpers */
@@ -319,8 +284,6 @@ async function getReputation(username){
  * @param {id[]} media the ids of any attached media
  */
 async function addQuestion(user, title, body, tags, media){
-    let dbResult = new DBResult();
-    
     media = (media == undefined) ? [] : media;
 
     if (media.length > 0){
@@ -329,9 +292,7 @@ async function addQuestion(user, title, body, tags, media){
         //       2) belong to the user trying to post the question
         let cassandraResp = await checkFreeMedia(media, user._source.username);
         if (cassandraResp.status != constants.DB_RES_SUCCESS){
-            dbResult.status = constants.DB_RES_MEDIA_INVALID;
-            dbResult.data = null;
-            return dbResult;
+            return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
         }
     }
 
@@ -359,9 +320,7 @@ async function addQuestion(user, title, body, tags, media){
     if (response.result !== "created"){
         console.log(`Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
-        dbResult.status = constants.DB_RES_ERROR;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_ERROR, null);
     }
     // create the Question Views document in INDEX_VIEWS
     let viewResponse = await client.index({
@@ -401,15 +360,11 @@ async function addQuestion(user, title, body, tags, media){
         console.log(`associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
         console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
     }
+
     if (response){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = response._id;
+        return new DBResult(constants.DB_RES_SUCCESS, response._id);
     }
-    else {
-        dbResult.status = constants.DB_RES_ERROR;
-        dbResult.data = null;
-    }
-    return dbResult;
+    return new DBResult(constants.DB_RES_ERROR, null);
 }
 
 /** GET /questions/:qid
@@ -419,8 +374,6 @@ async function addQuestion(user, title, body, tags, media){
  * @param {string} ip the IP address for which to update the view count
  */
 async function updateViewCount(qid, username, ip){
-    let dbResult = new DBResult();
-    
     // grab the document representing the views for the question
     let question_view = (await client.search({
         index: INDEX_VIEWS,
@@ -435,9 +388,7 @@ async function updateViewCount(qid, username, ip){
 
     // check whether or not the question exists
     if (question_view == undefined){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
     }
 
     // check whether or not we increment by username or IP address
@@ -544,14 +495,9 @@ async function updateViewCount(qid, username, ip){
         }
     })).hits.hits[0];
     if (question){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = question;
+        return new DBResult(constants.DB_RES_SUCCESS, question);
     }
-    else {
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-    }
-    return dbResult;
+    return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
 }
 
 /** GET /questions/:qid
@@ -562,10 +508,9 @@ async function updateViewCount(qid, username, ip){
  * @param {boolean} update whether or not to update the view count of the question
  */
 async function getQuestion(qid, username, ip, update){
-    let dbResult = new DBResult();
     let question = undefined;
     if (update){
-        dbResult = await updateViewCount(qid, username, ip);
+        let dbResult = await updateViewCount(qid, username, ip);
         question = dbResult.data;
     }
     // if update:
@@ -588,14 +533,9 @@ async function getQuestion(qid, username, ip, update){
         })).hits.hits[0];
     }
     if (question){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = question;
+        return new DBResult(constants.DB_RES_SUCCESS, question);
     }
-    else {
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-    }
-    return dbResult;
+    return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
 }
 
 /** POST /questions/:qid/answers/add
@@ -611,7 +551,6 @@ async function getQuestion(qid, username, ip, update){
  * @param {id[]} media array of media IDs attached to the answer
  */
 async function addAnswer(qid, user, body, media){
-    let dbResult = new DBResult();
     let username = user._source.username;
     media = (media == undefined) ? [] : media;
     
@@ -621,9 +560,7 @@ async function addAnswer(qid, user, body, media){
         //       2) belong to the user trying to post the question
         let cassandraResp = await checkFreeMedia(media, user._source.username);
         if (cassandraResp.status != constants.DB_RES_SUCCESS){
-            dbResult.status = constants.DB_RES_MEDIA_INVALID;
-            dbResult.data = null;
-            return dbResult;
+            return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
         }
     }
 
@@ -642,9 +579,7 @@ async function addAnswer(qid, user, body, media){
 
     // check that the Question exists
     if (!question){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
     }
     
     // create the Answer document
@@ -665,7 +600,7 @@ async function addAnswer(qid, user, body, media){
     if (!response || response.result !== "created"){
         console.log(`Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
         console.log(response);
-        return dbResult;
+        return new DBResult(constants.DB_RES_ERROR, response);
     }
 
     // create the Answer Upvote metadata document
@@ -719,9 +654,7 @@ async function addAnswer(qid, user, body, media){
         console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
     }
 
-    dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = response._id;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, response._id);
 }
 
 /** GET /questions/:qid/answers
@@ -729,8 +662,6 @@ async function addAnswer(qid, user, body, media){
  * @param {string} qid the _id of the question
  */
 async function getAnswers(qid){
-    let dbResult = new DBResult();
-
     // check if the Question exists first
     let question = (await client.search({
         index: INDEX_QUESTIONS,
@@ -745,9 +676,7 @@ async function getAnswers(qid){
     })).hits.hits[0];
 
     if (!question){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
     }
 
     // grab all Answer documents for the specified Question
@@ -763,9 +692,7 @@ async function getAnswers(qid){
         }
     })).hits.hits;
 
-    dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = answers;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, answers);
 }
 
 /* milestone 2 */
@@ -785,7 +712,6 @@ async function getAnswers(qid){
  * @param {string} username the user who originally posted the question
  */
 async function deleteQuestion(qid, username){
-    let dbResult = new DBResult();
     const getRes = await getQuestion(qid, username);
     let response = undefined;
     if (getRes.status === constants.DB_RES_Q_NOTFOUND){
@@ -883,7 +809,7 @@ async function deleteQuestion(qid, username){
         //      it suffices to delete all media associated with QID as all media associated to its Answers
         //      have their associated ID field set to QID instead of AID to optimize deletion
         try {
-            response = await deleteMediaByQAID(qid);
+            response = await deleteArrOfMedia(media_ids);
         }
         catch(err){
             console.log(`Failed to delete media items ${media_ids}, error ${err.data}`);
@@ -906,15 +832,11 @@ async function deleteQuestion(qid, username){
             console.log(response);
         }
         console.log(`deleted question ${qid}`);
-
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
+        return new DBResult(constants.DB_RES_SUCCESS, null);
     }
     else {
-        dbResult.status = constants.DB_RES_NOT_ALLOWED;
-        dbResult.data = null;
+        return new DBResult(constants.DB_RES_NOT_ALLOWED, null);
     }
-    return dbResult;
 }
 
 /* milestone 3 */
@@ -924,8 +846,6 @@ async function deleteQuestion(qid, username){
  * @param {string} qid the _id of the associated Question
  */
 async function undoAllAnswerVotes(qid){
-    let dbResult = new DBResult();
-
     // grab the associated Upvotes document
     let qa_votes = (await client.search({
         index: INDEX_A_UPVOTES,
@@ -939,9 +859,7 @@ async function undoAllAnswerVotes(qid){
     })).hits.hits;
 
     if (qa_votes.length == 0){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
     }
 
     // aggregate the updates that need to be made to every user who answered the question
@@ -996,13 +914,11 @@ async function undoAllAnswerVotes(qid){
     let bulkResponse = null;
     if (bulk_query.body.length > 0){
         bulkResponse = await client.bulk(bulk_query);
-        console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
-        console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+        // console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
+        // console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
-    dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = bulkResponse;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, bulkResponse);
 }
 
 /** helper for DELETE /questions/:qid
@@ -1010,8 +926,6 @@ async function undoAllAnswerVotes(qid){
  * @param {string} qid the _id of the Question
  */
 async function undoAllQuestionVotes(qid){
-    let dbResult = new DBResult();
-
     // grab the associated Upvotes document
     let qa_votes = (await client.search({
         index: INDEX_Q_UPVOTES,
@@ -1025,32 +939,23 @@ async function undoAllQuestionVotes(qid){
     })).hits.hits[0];
 
     if (qa_votes == undefined){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
     }
 
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
     let rep_diff = -(upvotes.length - downvotes.length);
     if (rep_diff == 0){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_SUCCESS, null);
     }
     
     let poster = await getUserByPost(qid, undefined);
     let updateRepRes = await updateReputation(poster, rep_diff);
-    if (updateRepRes.status !== constants.DB_RES_SUCCESS){
-        console.log(`Failed updateReputation in undoAllQuestionVotes(${qid})`);
-        dbResult.status = constants.DB_RES_ERROR;
-        dbResult.data = updateRepRes;
+    if (updateRepRes.status === constants.DB_RES_SUCCESS){
+        return new DBResult(constants.DB_RES_SUCCESS, updateRepRes);
     }
-    else if (updateRepRes.status === constants.DB_RES_SUCCESS){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = updateRepRes;
-    }
-    return dbResult;
+    console.log(`Failed updateReputation in undoAllQuestionVotes(${qid})`);
+    return new DBResult(constants.DB_RES_ERROR, updateRepRes);
 }
 
 /** helper for POST /questions/:qid/upvote and POST /answers/:aid/upvote
@@ -1062,7 +967,6 @@ async function undoAllQuestionVotes(qid){
  * @param {boolean} waived whether or not the user's downvote was waived (only valid if !upvote)
  */
 async function undoVote(qid, aid, username, upvote, waived){
-    let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1095,9 +999,7 @@ async function undoVote(qid, aid, username, upvote, waived){
     if (success !== constants.DB_RES_SUCCESS){
         console.log(`Failed undoVote(${qid}, ${aid}, ${username}, ${upvote})`);
     }
-    dbResult.status = success;
-    dbResult.data = null;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
 /** helper for POST /questions/:qid/upvote and POST /answers/:aid/upvote
@@ -1109,7 +1011,6 @@ async function undoVote(qid, aid, username, upvote, waived){
  * @param {boolean} waived whether the user's downvote should be waived
  */
 async function addVote(qid, aid, username, upvote, waived){
-    let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1142,9 +1043,7 @@ async function addVote(qid, aid, username, upvote, waived){
     if (success !== constants.DB_RES_SUCCESS){
         console.log(`Failed addVote(${qid}, ${aid}, ${username}, ${upvote})`);
     }
-    dbResult.status = success;
-    dbResult.data = null;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
 /** helper for POST /questions/:qid/upvote and POST /answers/:aid/upvote
@@ -1154,7 +1053,6 @@ async function addVote(qid, aid, username, upvote, waived){
  * @param {integer} amount the amount by which to add to the current score of the question or answer
  */
 async function updateScore(qid, aid, amount){
-    let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_QUESTIONS : INDEX_ANSWERS;
     let id_value = (aid == undefined) ? qid : aid;
     let param_amount = "amount";
@@ -1182,9 +1080,7 @@ async function updateScore(qid, aid, amount){
     if (success !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateScore(${qid}, ${aid}, ${amount})`);
     }
-    dbResult.status = success;
-    dbResult.data = null;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
 /**
@@ -1195,11 +1091,8 @@ async function updateScore(qid, aid, amount){
  * @param {int} amount amount by which to update the reputation
  */
 async function updateReputation(username, amount){
-    let dbResult = new DBResult();
     if (amount == 0){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_SUCCESS, null);
     }
     let param_amount = "amount";
     let inline_script = `ctx._source.reputation += params.${param_amount}`;
@@ -1253,9 +1146,7 @@ async function updateReputation(username, amount){
         console.log(`Failed updateQReputation(${username}, ${amount})`);
     }
 
-    dbResult.status = success;
-    dbResult.data = null;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
 /**
@@ -1266,7 +1157,6 @@ async function updateReputation(username, amount){
  * @param {boolean} upvote whether the user's vote is to upvote or downvote
  */
 async function upvoteQA(qid, aid, username, upvote){
-    let dbResult = new DBResult();
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1286,13 +1176,11 @@ async function upvoteQA(qid, aid, username, upvote){
     // if it could not be found, the question or answer does not exist
     if (qa_votes == undefined){
         if (which_index == INDEX_Q_UPVOTES){
-            dbResult.status = constants.DB_RES_Q_NOTFOUND;
+            return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
         }
         else {
-            dbResult.status = constants.DB_RES_A_NOTFOUND;
+            return new DBResult(constants.DB_RES_A_NOTFOUND, null);
         }
-        dbResult.data = null;
-        return dbResult;
     }
 
     // first check if there are any elements in the upvotes and downvotes
@@ -1320,9 +1208,7 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // if the user asks to perform the same operation, we don't need to do anything
     if ((upvote && upvoted) || (!upvote && downvoted)){
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_SUCCESS, null);
     }
 
     // if the user already voted, undo the vote
@@ -1374,9 +1260,7 @@ async function upvoteQA(qid, aid, username, upvote){
         console.log(`Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
-    dbResult.status = constants.DB_RES_SUCCESS;
-    dbResult.data = null;
-    return dbResult;
+    return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
 /** POST /questions/:qid/upvote
@@ -1413,7 +1297,6 @@ async function upvoteAnswer(aid, username, upvote){
  * TODO: cleanup, cannot accept a diff answer
  */
 async function acceptAnswer(aid, username){
-    let dbResult = new DBResult();
     let qid = undefined;
 
     // grab the Answer document
@@ -1431,9 +1314,7 @@ async function acceptAnswer(aid, username){
     
     // check that the Answer exists
     if (!answer){
-        dbResult.status = constants.DB_RES_A_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_A_NOTFOUND, null);
     }
 
     // grab the Question document
@@ -1452,18 +1333,14 @@ async function acceptAnswer(aid, username){
     
     // check that the Question exists
     if (!question){
-        dbResult.status = constants.DB_RES_Q_NOTFOUND;
-        dbResult.data = null;
-        return dbResult;
+        return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
     }
 
     // if the user is the original asker, update the Question and Answer documents
     if (username == question._source.user.username){
         // check that the Question does not already have an accepted answer
         if (question._source.accepted_answer_id != null){
-            dbResult.status = constants.DB_RES_ALRDY_ACCEPTED;
-            dbResult.data = null;
-            return dbResult;
+            return new DBResult(constants.DB_RES_ALRDY_ACCEPTED, null);
         }
 
         // // check if the asker has already accepted a different answer
@@ -1532,14 +1409,11 @@ async function acceptAnswer(aid, username){
             console.log(`Failed to update Answer ${aid}'s is_accepted field to true`);
             console.log(updateAnswerResponse);
         }
-        dbResult.status = constants.DB_RES_SUCCESS;
-        dbResult.data = null;
+        return new DBResult(constants.DB_RES_SUCCESS, null);
     }
     else {
-        dbResult.status = constants.DB_RES_NOT_ALLOWED;
-        dbResult.data = null;
+        return new DBResult(constants.DB_RES_NOT_ALLOWED, null);
     }
-    return dbResult;
 }
 
 
