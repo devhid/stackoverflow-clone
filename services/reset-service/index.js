@@ -33,7 +33,7 @@ function shutdown(){
     server.close();
 }
 
-/* qa service */
+/* rest service */
 app.post('/reset', async(req, res) => {
     let endpoint = 'reset'
     let dbRes = await processRequest(req, endpoint);

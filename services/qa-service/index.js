@@ -19,7 +19,7 @@ const PORT = 8004;
 /* redis */
 const sessionOptions = {
     name: 'soc_login',
-    secret: 'EditThisLaterWithARealSecret',
+    secret: 'KYNxwY2ZeUXo8LKbsbZsMpccLbRewpBr',
     unset: 'destroy',
     resave: false,
     saveUninitialized: true,

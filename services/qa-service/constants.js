@@ -104,7 +104,7 @@ module.exports = {
     ERR_A_NOTFOUND: 'The specified answer does not exist.',
     ERR_NOT_ALLOWED: 'The specified operation is not allowed for the current user.',
     ERR_ALRDY_ACCEPTED: 'An answer has already been accepted.',
-    ERR_MALFORMED: 'Invalid syntax',
+    ERR_MALFORMED: 'The request was malformed. Required parameters are missing.',
 
     ERR_MEDIA_INVALID: 'One or more media IDs are invalid or are already in use.',
     ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.'
