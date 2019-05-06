@@ -62,7 +62,8 @@ const indices = ["users", "questions", "answers", "views", "q-upvotes", "a-downv
 
 async function resetDB(req){
     for (var index of indices){
-        request.post(`admin:ferdman123@130.245.169.86:92/_delete_by_query/${index}`, { "query": { "match_all": {} } });
+        console.log(`clearing ${index}`);
+        request.post(`http://admin:ferdman123@130.245.169.86:92/${index}/_delete_by_query`, { json: { "query": { "match_all": {} } } });
     }
     return {status: 200, response: {status: 'OK'}};
 }
