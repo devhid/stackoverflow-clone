@@ -25,14 +25,6 @@ app.use(function(req, res, next) {
   next();
 });
 
-/* configure rabbot */
-rabbot.configure(constants.RABBOT_SETTINGS)
-    .then(function(){
-        console.log('[Rabbot-Router] Rabbot configured...');
-    }).catch(err => {
-        console.log(`[Rabbot-Router] err ${err}`);
-    });
-
 rabbot.nackOnError();
 
 /* install handlers */
@@ -43,7 +35,14 @@ rabbot.handle({
     handler: database.HANDLERS.QA_ADD_Q
 });
 
-var handle_qa_add_q = rabbot.handle(constants.ENDPOINTS.QA_ADD_Q, database.HANDLERS.QA_ADD_Q, constants.SERVICES.QA);
+
+/* configure rabbot */
+rabbot.configure(constants.RABBOT_SETTINGS)
+    .then(function(){
+        console.log('[Rabbot-Router] Rabbot configured...');
+    }).catch(err => {
+        console.log(`[Rabbot-Router] err ${err}`);
+    });
 
 /* Start the server. */
 var server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));

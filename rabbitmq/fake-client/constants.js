@@ -36,13 +36,13 @@ module.exports = {
             { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }
         ],
         queues: [
-            { name: SERVICES.AUTH, limit: 300, queueLimit: 1000, durable: true },
-            { name: SERVICES.EMAIL, limit: 300, queueLimit: 1000, durable: true },
-            { name: SERVICES.MEDIA, limit: 300, queueLimit: 1000, durable: true },
-            { name: SERVICES.QA, limit: 300, queueLimit: 1000, durable: true },
-            { name: SERVICES.REGISTER, limit: 300, queueLimit: 1000, durable: true },
-            { name: SERVICES.SEARCH, limit: 300, queueLimit: 1000, durable: true },
-            { name: SERVICES.USER, limit: 300, queueLimit: 1000, durable: true }
+            { name: SERVICES.AUTH, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
+            { name: SERVICES.EMAIL, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
+            { name: SERVICES.MEDIA, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
+            { name: SERVICES.QA, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
+            { name: SERVICES.REGISTER, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
+            { name: SERVICES.SEARCH, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
+            { name: SERVICES.USER, limit: 300, queueLimit: 1000, durable: true, subscribe: true }
         ],
         bindings: [
             { exchange: EXCHANGE.NAME, target: SERVICES.AUTH, keys: SERVICES.AUTH },
