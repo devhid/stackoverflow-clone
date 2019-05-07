@@ -1,9 +1,10 @@
 /* library imports */
 const express = require('express');
-const amqp = require('amqplib/callback_api');
+const rabbot = require('rabbot');
 
 /* internal imports */
 const constants = require('./constants');
+const database = require('./database');
 
 /* initialize express application */
 const app = express();
@@ -24,81 +25,18 @@ app.use(function(req, res, next) {
   next();
 });
 
-/* amqplib connection */
-var conn = null;
-var ch = null;
+/* configure rabbot */
+rabbot.configure(constants.RABBOT_SETTINGS).done(function(){
+    console.log('[Rabbot-Router] Rabbot configured...');
+});
 
-/**
- * Asserts the Exchange and Queue exists and sets up the connection variables.
- */
-function setupConnection(){
-    amqp.connect(constants.AMQP_HOST, function(error0, connection) {
-        if (error0) {
-            throw error0;
-        }
-        conn = connection;
-        connection.createChannel(function(error1, channel) {
-            if (error1) {
-                throw error1;
-            }
-            ch = channel;
-            channel.assertExchange(constants.EXCHANGE.NAME, constants.EXCHANGE.TYPE, constants.EXCHANGE.PROPERTIES, (error2, ex) => {
-                if (error2){
-                    throw error2;
-                }
-                ch.assertQueue(constants.SERVICES.QA, constants.QUEUE.PROPERTIES, function(error3, q){
-                    if (error3){
-                        throw error3;
-                    }
-                    ch.bindQueue(q.queue, ex.exchange, constants.SERVICES.QA);
-                    ch.prefetch(1); 
-                    ch.consume(q.queue, processRequest);
-                });
-            });
-        });
-    });
-}
-
-/**
- * Processes the request contained in the message and replies to the specified queue.
- * @param {Object} msg the message on the RabbitMQ queue
- */
-async function processRequest(msg){
-    console.log(`Received ${msg.content.toString()}`);
-    // JSON.parse(msg.content.toString()); // gives back the data object
-    ch.sendToQueue(msg.properties.replyTo,
-        Buffer.from(JSON.stringify(addQuestion(msg))), {
-            correlationId: msg.properties.correlationId
-        }
-    );
-    ch.ack(msg);
-}
-
-function main(){
-    try {
-        setupConnection();
-    } catch (err){
-        console.log(`[Rabbit] Failed to connect ${err}`);
-    }
-}
-
-main();
-
-function addQuestion(request){
-    return {
-        status: constants.STATUS_200,
-        response: {status: "OK"}
-    };
-}
+/* install handlers */
+rabbot.handle({
+    queue: constants.SERVICES.QA,
+    type: constants.ENDPOINTS.QA_ADD_Q,
+    autoNack: false,
+    handler: database.HANDLERS.QA_ADD_Q
+});
 
 /* Start the server. */
 var server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-
-function shutdown(){
-    if (ch) ch.close();
-    if (conn) conn.close();
-    server.close();
-}

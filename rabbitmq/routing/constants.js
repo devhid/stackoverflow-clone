@@ -1,3 +1,18 @@
+const SERVICES = {
+    AUTH: 'auth',
+    EMAIL: 'email',
+    MEDIA: 'media',
+    QA: 'qa',
+    REGISTER: 'reg',
+    SEARCH: 'search',
+    USER: 'user'
+};
+
+const EXCHANGE = {
+    NAME: 'stackoverflow',
+    TYPE: 'direct'
+};
+
 module.exports = {
     STATUS_200: 200,    // OK
     STATUS_400: 400,    // bad request
@@ -5,8 +20,6 @@ module.exports = {
     STATUS_403: 403,    // forbidden
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
-    
-    AMQP_HOST: 'amqp://localhost',
 
     REDIS_OPTIONS: {
         host: '192.168.122.27',
@@ -14,32 +27,22 @@ module.exports = {
         pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
     },
 
-    EXCHANGE: {
-        TYPE: 'direct',
-        NAME: 'stackoverflow',
-        PROPERTIES: {
-            durable: true
-        }
+    SERVICES: SERVICES,
+    EXCHANGE: EXCHANGE,
+    RABBOT_SETTINGS: {
+        connection: {
+            user: 'so',
+            pass: 'so123',
+            server: '127.0.0.1',
+            port: 5672,
+            timeout: 2000,
+            vhost: '/'
+        },
+        exchanges: [
+            { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }
+        ]
     },
 
-    QUEUE: {
-        PROPERTIES: {
-            autoDelete: true,
-            durable: true
-        }
-    },
-
-    CALLBACK_QUEUE: 'callback',
-
-    SERVICES: {
-        AUTH: 'auth',
-        EMAIL: 'email',
-        MEDIA: 'media',
-        QA: 'qa',
-        REGISTER: 'reg',
-        SEARCH: 'search',
-        USER: 'user'
-    },
 
     ENDPOINTS: {
         AUTH_LOGIN: 0,

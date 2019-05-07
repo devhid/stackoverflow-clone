@@ -1,3 +1,18 @@
+const SERVICES =  {
+    AUTH: 'auth',
+    EMAIL: 'email',
+    MEDIA: 'media',
+    QA: 'qa',
+    REGISTER: 'reg',
+    SEARCH: 'search',
+    USER: 'user'
+};
+
+const EXCHANGE = {
+    NAME: 'stackoverflow',
+    TYPE: 'direct'
+};
+
 module.exports = {
     STATUS_200: 200,    // OK
     STATUS_400: 400,    // bad request
@@ -6,32 +21,38 @@ module.exports = {
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
 
-    AMQP_HOST: 'amqp://localhost',
+    SERVICES: SERVICES,    
 
-    EXCHANGE: {
-        TYPE: 'direct',
-        NAME: 'stackoverflow',
-        PROPERTIES: {
-            durable: true
-        }
-    },
-
-    QUEUE: {
-        PROPERTIES: {
-            durable: true
-        }
-    },
-
-    CALLBACK_QUEUE: 'callback',
-
-    SERVICES: {
-        AUTH: 'auth',
-        EMAIL: 'email',
-        MEDIA: 'media',
-        QA: 'qa',
-        REGISTER: 'reg',
-        SEARCH: 'search',
-        USER: 'user'
+    RABBOT_SETTINGS: {
+        connection: {
+            user: 'so',
+            pass: 'so123',
+            server: '127.0.0.1',
+            port: 5672,
+            timeout: 2000,
+            vhost: '/'
+        },
+        exchanges: [
+            { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }
+        ],
+        queues: [
+            { name: SERVICES.AUTH, limit: 300, queueLimit: 1000, durable: true },
+            { name: SERVICES.EMAIL, limit: 300, queueLimit: 1000, durable: true },
+            { name: SERVICES.MEDIA, limit: 300, queueLimit: 1000, durable: true },
+            { name: SERVICES.QA, limit: 300, queueLimit: 1000, durable: true },
+            { name: SERVICES.REGISTER, limit: 300, queueLimit: 1000, durable: true },
+            { name: SERVICES.SEARCH, limit: 300, queueLimit: 1000, durable: true },
+            { name: SERVICES.USER, limit: 300, queueLimit: 1000, durable: true }
+        ],
+        bindings: [
+            { exchange: 'stackoverflow', target: SERVICES.AUTH, keys: SERVICES.AUTH },
+            { exchange: 'stackoverflow', target: SERVICES.EMAIL, keys: SERVICES.EMAIL },
+            { exchange: 'stackoverflow', target: SERVICES.MEDIA, keys: SERVICES.MEDIA },
+            { exchange: 'stackoverflow', target: SERVICES.QA, keys: SERVICES.QA },
+            { exchange: 'stackoverflow', target: SERVICES.REGISTER, keys: SERVICES.REGISTER },
+            { exchange: 'stackoverflow', target: SERVICES.SEARCH, keys: SERVICES.SEARCH },
+            { exchange: 'stackoverflow', target: SERVICES.USER, keys: SERVICES.USER }
+        ]
     },
 
     ENDPOINTS: {

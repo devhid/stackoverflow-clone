@@ -1,7 +1,7 @@
 /* library imports */
 const express = require('express');
-const session = require('express-session');
-const RedisStore = require('connect-redis')(session);
+// const session = require('express-session');
+// const RedisStore = require('connect-redis')(session);
 const multer = require('multer');
 
 /* internal imports */
@@ -16,16 +16,16 @@ require('express-async-errors');
 const PORT = 8008;
 
 /* redis */
-const sessionOptions = {
-    name: 'soc_login',
-    secret: 'EditThisLaterWithARealSecret',
-    unset: 'destroy',
-    resave: false,
-    saveUninitialized: true,
-    logErrors: true,
-    store: new RedisStore(constants.REDIS_OPTIONS)
-};
-app.use(session(sessionOptions));
+// const sessionOptions = {
+//     name: 'soc_login',
+//     secret: 'EditThisLaterWithARealSecret',
+//     unset: 'destroy',
+//     resave: false,
+//     saveUninitialized: true,
+//     logErrors: true,
+//     store: new RedisStore(constants.REDIS_OPTIONS)
+// };
+// app.use(session(sessionOptions));
 
 /* image upload destination */
 const upload = multer();
@@ -46,13 +46,14 @@ app.use(function(req, res, next) {
  * Routes an incoming request to a work/rpc queue.
  * Returns an object {'status': RMQ_STATUS, 'data': RMQ_DATA} where RMQ_DATA is data returned from the backend call.
  * If RMQ_STATUS == RMQ_SUCCESS, then 'data' will have the status code to set and the response object to return.
- * @param {string} key routing/binding key for the message
- * @param {Object} data data to send in the message
+ * @param {string} routing_key routing key for the message
+ * @param {string} type type of the message
+ * @param {Object} msg message to publish
  */
-async function routeRequest(key, data){
+async function routeRequest(key, type, msg){
     let publishRes = null;
     try {
-        publishRes = await rabbit.publishMessage(key, data);
+        publishRes = await rabbit.publishMessage(key, type, msg);
     }
     catch (err){
         publishRes = err;
@@ -66,10 +67,12 @@ async function routeRequest(key, data){
  * @param {Response} res Express response object
  * @param {string} key routing/binding key for the message (determines which service)
  * @param {string} endpoint which endpoint for the service
+ * 
+ * Expects a response in the form of
+ *      { status: int, data : obj }
  */
 async function wrapRequest(req, res, key, endpoint){
     let data = {
-        endpoint: endpoint,
         session: {user: ((req.session == undefined) ? undefined : req.session.user)},
         ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         params: req.params,
@@ -79,7 +82,7 @@ async function wrapRequest(req, res, key, endpoint){
     if (endpoint === constants.ENDPOINTS.QA_ADD_Q && req.body.answers != undefined){
         data.body = {};
     }
-    let rabbitRes = await routeRequest(key, data);
+    let rabbitRes = await routeRequest(key, endpoint, data);
     // console.log(`endpoint=${endpoint}, resp status=${rabbitRes.status}`);
     let dbRes = rabbitRes.data;
     res.status(dbRes.status);
