@@ -5,10 +5,7 @@ function handle_QA_ADD_Q(request){
     try {
         console.log(`[Rabbot-Client] Received ${JSON.stringify(request)}`);
         request.ack();
-        return {
-            status: constants.STATUS_200,
-            response: {status: "OK"}
-        };
+        request.reply({status: constants.STATUS_200, response: {status: "OK"}});
     } catch (err){
         console.log(`[Rabbot-Client] Caught err ${JSON.stringify(err)}`);
         request.nack();

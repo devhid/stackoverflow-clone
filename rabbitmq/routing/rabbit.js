@@ -7,9 +7,12 @@ const constants = require('./constants');
 const DBResult = require('./dbresult').DBResult;
 
 /* configure rabbot */
-rabbot.configure(constants.RABBOT_SETTINGS).done(function(){
-    console.log('[Rabbot-Router] Rabbot configured...');
-});
+rabbot.configure(constants.RABBOT_SETTINGS)
+    .then(function(){
+        console.log('[Rabbot-Router] Rabbot configured...');
+    }).catch(err => {
+        console.log(`[Rabbot-Router] err ${err}`);
+    });
 
 /**
  * Publishes a message with the specified routing key.
@@ -37,6 +40,5 @@ function publishMessage(routing_key, type, msg){
 }
 
 module.exports = {
-    shutdown: shutdown,
     publishMessage: publishMessage
 }

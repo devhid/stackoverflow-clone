@@ -210,6 +210,5 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 function shutdown(){
-    rabbit.shutdown();
     server.close();
 }

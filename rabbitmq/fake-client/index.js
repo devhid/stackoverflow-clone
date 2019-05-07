@@ -26,9 +26,12 @@ app.use(function(req, res, next) {
 });
 
 /* configure rabbot */
-rabbot.configure(constants.RABBOT_SETTINGS).done(function(){
-    console.log('[Rabbot-Router] Rabbot configured...');
-});
+rabbot.configure(constants.RABBOT_SETTINGS)
+    .then(function(){
+        console.log('[Rabbot-Router] Rabbot configured...');
+    }).catch(err => {
+        console.log(`[Rabbot-Router] err ${err}`);
+    });
 
 /* install handlers */
 rabbot.handle({

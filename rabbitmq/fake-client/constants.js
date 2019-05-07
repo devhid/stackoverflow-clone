@@ -25,9 +25,9 @@ module.exports = {
 
     RABBOT_SETTINGS: {
         connection: {
-            user: 'so',
-            pass: 'so123',
-            server: '127.0.0.1',
+            user: 'guest',
+            pass: 'guest',
+            server: 'localhost',
             port: 5672,
             timeout: 2000,
             vhost: '/'
@@ -56,24 +56,24 @@ module.exports = {
     },
 
     ENDPOINTS: {
-        AUTH_LOGIN: 0,
-        AUTH_LOGOUT: 1,
-        EMAIL_VERIFY: 2,
-        MEDIA_ADD: 3,
-        MEDIA_GET: 4,
-        QA_ADD_Q: 5,
-        QA_GET_Q: 6,
-        QA_ADD_A: 7,
-        QA_GET_A: 8,
-        QA_DEL_Q: 9,
-        QA_UPVOTE_Q: 10,
-        QA_UPVOTE_A: 11,
-        QA_ACCEPT: 12,
-        REGISTER: 13,
-        SEARCH: 14,
-        USER_GET: 15,
-        USER_Q: 16,
-        USER_A: 17
+        AUTH_LOGIN: 'auth_login',
+        AUTH_LOGOUT: 'auth_logout',
+        EMAIL_VERIFY: 'verify',
+        MEDIA_ADD: 'media_add',
+        MEDIA_GET: 'media_get',
+        QA_ADD_Q: 'qa_add_q',
+        QA_GET_Q: 'qa_get_q',
+        QA_ADD_A: 'qa_add_a',
+        QA_GET_A: 'qa_get_a',
+        QA_DEL_Q: 'qa_del_q',
+        QA_UPVOTE_Q: 'qa_upvote_q',
+        QA_UPVOTE_A: 'qa_upvote_a',
+        QA_ACCEPT: 'qa_accept',
+        REGISTER: 'register',
+        SEARCH: 'search',
+        USER_GET: 'user_get',
+        USER_Q: 'user_q',
+        USER_A: 'user_a'
     },
 
     RMQ_SUCCESS: 'success',
