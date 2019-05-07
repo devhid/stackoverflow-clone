@@ -35,7 +35,7 @@ module.exports = {
         exchanges: [
             { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }
         ],
-        queues: [
+        queues: [   // for each service, declare and subscribe only to the needed queues
             { name: SERVICES.AUTH, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
             { name: SERVICES.EMAIL, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
             { name: SERVICES.MEDIA, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
@@ -44,7 +44,7 @@ module.exports = {
             { name: SERVICES.SEARCH, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
             { name: SERVICES.USER, limit: 300, queueLimit: 1000, durable: true, subscribe: true }
         ],
-        bindings: [
+        bindings: [ // for each service, declare only needed bindings
             { exchange: EXCHANGE.NAME, target: SERVICES.AUTH, keys: SERVICES.AUTH },
             { exchange: EXCHANGE.NAME, target: SERVICES.EMAIL, keys: SERVICES.EMAIL },
             { exchange: EXCHANGE.NAME, target: SERVICES.MEDIA, keys: SERVICES.MEDIA },
