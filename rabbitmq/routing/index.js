@@ -65,7 +65,7 @@ async function routeRequest(key, type, msg){
  * Wraps a request and routes it to a work/rpc queue.
  * @param {Request} req Express Request object
  * @param {Response} res Express response object
- * @param {string} key routing/binding key for the message (determines which service)
+ * @param {string} key routing key for the message (determines which service)
  * @param {string} endpoint which endpoint for the service
  * 
  * Expects a response in the form of
@@ -205,10 +205,3 @@ app.get('/user/:uid/answers', async (req, res) => {
 
 /* Start the server. */
 var server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
-
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
-
-function shutdown(){
-    server.close();
-}

@@ -34,7 +34,7 @@ function publishMessage(routing_key, type, msg){
         reply.ack();
         return new DBResult(constants.DB_RES_SUCCESS, reply.body);
     }).catch(err => {
-        console.log(`[Rabbot-Routing] Error ${JSON.stringify(err)}`);
+        console.log(`[Rabbot-Routing] Error ${err}`);
         return new DBResult(constants.DB_RES_ERROR, err);
     });
 }

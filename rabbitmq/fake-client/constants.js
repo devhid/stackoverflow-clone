@@ -45,13 +45,13 @@ module.exports = {
             { name: SERVICES.USER, limit: 300, queueLimit: 1000, durable: true }
         ],
         bindings: [
-            { exchange: 'stackoverflow', target: SERVICES.AUTH, keys: SERVICES.AUTH },
-            { exchange: 'stackoverflow', target: SERVICES.EMAIL, keys: SERVICES.EMAIL },
-            { exchange: 'stackoverflow', target: SERVICES.MEDIA, keys: SERVICES.MEDIA },
-            { exchange: 'stackoverflow', target: SERVICES.QA, keys: SERVICES.QA },
-            { exchange: 'stackoverflow', target: SERVICES.REGISTER, keys: SERVICES.REGISTER },
-            { exchange: 'stackoverflow', target: SERVICES.SEARCH, keys: SERVICES.SEARCH },
-            { exchange: 'stackoverflow', target: SERVICES.USER, keys: SERVICES.USER }
+            { exchange: EXCHANGE.NAME, target: SERVICES.AUTH, keys: SERVICES.AUTH },
+            { exchange: EXCHANGE.NAME, target: SERVICES.EMAIL, keys: SERVICES.EMAIL },
+            { exchange: EXCHANGE.NAME, target: SERVICES.MEDIA, keys: SERVICES.MEDIA },
+            { exchange: EXCHANGE.NAME, target: SERVICES.QA, keys: SERVICES.QA },
+            { exchange: EXCHANGE.NAME, target: SERVICES.REGISTER, keys: SERVICES.REGISTER },
+            { exchange: EXCHANGE.NAME, target: SERVICES.SEARCH, keys: SERVICES.SEARCH },
+            { exchange: EXCHANGE.NAME, target: SERVICES.USER, keys: SERVICES.USER }
         ]
     },
 

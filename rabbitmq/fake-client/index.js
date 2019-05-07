@@ -33,6 +33,8 @@ rabbot.configure(constants.RABBOT_SETTINGS)
         console.log(`[Rabbot-Router] err ${err}`);
     });
 
+rabbot.nackOnError();
+
 /* install handlers */
 rabbot.handle({
     queue: constants.SERVICES.QA,
@@ -40,6 +42,8 @@ rabbot.handle({
     autoNack: false,
     handler: database.HANDLERS.QA_ADD_Q
 });
+
+var handle_qa_add_q = rabbot.handle(constants.ENDPOINTS.QA_ADD_Q, database.HANDLERS.QA_ADD_Q, constants.SERVICES.QA);
 
 /* Start the server. */
 var server = app.listen(PORT, () => console.log(`Server running on http://127.0.0.1:${PORT}`));
