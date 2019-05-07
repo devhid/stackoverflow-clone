@@ -58,7 +58,7 @@ async function processRequest(req, endpoint){
 }
 
 /* ------------------ ENDPOINTS ------------------ */
-const indices = ["users", "questions", "answers", "views", "q-upvotes", "a-downvotes"];
+const indices = ["users", "questions", "answers", "views", "q-upvotes", "a-upvotes", "media"];
 
 async function resetDB(req){
     for (var index of indices){
