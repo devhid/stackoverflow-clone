@@ -1157,6 +1157,7 @@ async function updateReputation(username, amount){
  * @param {boolean} upvote whether the user's vote is to upvote or downvote
  */
 async function upvoteQA(qid, aid, username, upvote){
+    console.log(`upvoteQA ${qid}, ${aid}, ${username}, ${upvote}`);
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1206,12 +1207,8 @@ async function upvoteQA(qid, aid, username, upvote){
     // console.log(`downvoted = ${downvoted}`);
     // console.log(`waived = ${waived}`);
 
-    // if the user asks to perform the same operation, we don't need to do anything
-    if ((upvote && upvoted) || (!upvote && downvoted)){
-        return new DBResult(constants.DB_RES_SUCCESS, null);
-    }
-
     // if the user already voted, undo the vote
+    //      calculate the difference to the poster's reputation and score of the post
     if (upvoted || downvoted || waived){
         let in_upvotes = (upvoted) ? true : false;
 
@@ -1228,23 +1225,22 @@ async function upvoteQA(qid, aid, username, upvote){
         }
     }
 
-    // add the vote
-    rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
-    score_diff = (upvote) ? score_diff + 1 : score_diff - 1;
-
-    // determine if we have to waive the vote
     let waive_vote = false;
-    if (poster_rep + rep_diff < 1){
-        waive_vote = true;
-        // later we do poster_rep + (rep_diff) = poster_rep + (1 - poster_rep) = 1
-        rep_diff = 1 - poster_rep;
-    }
 
-    console.log(`adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
-    let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
-    if (addVoteRes.status !== constants.DB_RES_SUCCESS){
-        console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
-    }
+    // if it's NOT just undoing a previous action, we have to calculate the effect of the new vote
+    //      on the poster's reputation and the score of the post
+    if (!((upvote && upvoted) || (!upvote && downvoted))){
+        // add the vote's effect onto rep_diff and score_diff
+        rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
+        score_diff = (upvote) ? score_diff + 1 : score_diff - 1;
+
+        // determine if we have to waive the vote
+        if (poster_rep + rep_diff < 1){
+            waive_vote = true;
+            // later we do poster_rep + (rep_diff) = poster_rep + (1 - poster_rep) = 1
+            rep_diff = 1 - poster_rep;
+        }
+    } 
 
     // update the score of the question or answer
     console.log(`updating score ${qid}, ${aid}, ${score_diff}`);
@@ -1258,6 +1254,21 @@ async function upvoteQA(qid, aid, username, upvote){
     let updateRepRes = await updateReputation(poster, rep_diff);
     if (updateRepRes.status !== constants.DB_RES_SUCCESS){
         console.log(`Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+    }
+
+    // if the user asked to perform the same operation, all we needed to do was undo the previous vote
+    //      1) remove the vote from the corresponding vote array of the post
+    //      2) update the score
+    //      3) update the reputation
+    if ((upvote && upvoted) || (!upvote && downvoted)){
+        return new DBResult(constants.DB_RES_SUCCESS, null);
+    }
+
+    // add the vote to the post
+    console.log(`adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
+    let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
+    if (addVoteRes.status !== constants.DB_RES_SUCCESS){
+        console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
     return new DBResult(constants.DB_RES_SUCCESS, null);
