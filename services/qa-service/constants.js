@@ -11,7 +11,8 @@ module.exports = {
     STATUS_422: 422,    // unprocessable entity
 
     FRONT_END: {
-        hostname: 'http://130.245.171.47'
+        //hostname: 'http://130.245.171.47'
+        hostname: 'http://localhost:4200'
     },
 
     AMQP: {
