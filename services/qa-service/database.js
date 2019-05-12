@@ -169,6 +169,7 @@ async function checkFreeMedia(ids, poster){
  * TODO: check if Cassandra actually deleted the media
  */
 async function deleteArrOfMedia(ids){
+    console.log(`[QA] deleteArrOfMedia ids=${ids}`);
     // if no media, no need to do anything
     if (ids == null || ids.length == 0){
         return new DBResult(constants.DB_RES_SUCCESS, null);
@@ -187,7 +188,7 @@ async function deleteArrOfMedia(ids){
     // build the bulk request that will delete all Media metadata documents
     let bulk_query = { body : [] };
     let action_doc = null;
-    for (var id in ids){
+    for (var id of ids){
         action_doc = {
             delete: {
                 _index: INDEX_MEDIA,
@@ -719,6 +720,7 @@ async function deleteQuestion(qid, username){
     }
     let question = getRes.data;
     let media_ids = question._source.media;
+    console.log(`[QA] deleteQuestion qid=${qid}, media=${media_ids}`);
 
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
@@ -1219,7 +1221,7 @@ async function upvoteQA(qid, aid, username, upvote){
         //      else if it was downvoted, then rep_diff = score_diff = 1
         rep_diff = (waived) ? 0 : ((upvoted) ? -1 : 1);
         score_diff = (waived) ? 1 : ((upvoted) ? -1 : 1);
-        console.log(`[QA] undoing vote by ${poster}`);
+        // console.log(`[QA] undoing vote by ${poster}`);
         let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
         if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
             console.log(`[QA] Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
@@ -1244,14 +1246,14 @@ async function upvoteQA(qid, aid, username, upvote){
     } 
 
     // update the score of the question or answer
-    console.log(`[QA] updating score ${qid}, ${aid}, ${score_diff}`);
+    // console.log(`[QA] updating score ${qid}, ${aid}, ${score_diff}`);
     let updateScoreRes = await updateScore(qid, aid, score_diff);
     if (updateScoreRes.status !== constants.DB_RES_SUCCESS){
         console.log(`[QA] Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
     // update the reputation of the poster
-    console.log(`[QA] updating rep ${poster}, ${rep_diff}`);
+    // console.log(`[QA] updating rep ${poster}, ${rep_diff}`);
     let updateRepRes = await updateReputation(poster, rep_diff);
     if (updateRepRes.status !== constants.DB_RES_SUCCESS){
         console.log(`[QA] Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
@@ -1266,7 +1268,7 @@ async function upvoteQA(qid, aid, username, upvote){
     }
 
     // add the vote to the post
-    console.log(`[QA] adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
+    // console.log(`[QA] adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
     let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
     if (addVoteRes.status !== constants.DB_RES_SUCCESS){
         console.log(`[QA] Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
