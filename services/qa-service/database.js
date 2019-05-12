@@ -86,8 +86,8 @@ async function associateFreeMedia(qa_id, ids){
     let bulkResponse = null;
     if (bulk_query.body.length > 0){
         bulkResponse = await client.bulk(bulk_query);
-        // console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
-        // console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+        // console.log(`[QA] Bulk performed... ${JSON.stringify(bulk_query.body)}`);
+        // console.log(`[QA] Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
     // indicate success
@@ -128,24 +128,24 @@ async function checkFreeMedia(ids, poster){
         let response = null;
         for (var index in results){
             response = results[index];
-            console.log(`[QA] Found media in use ${response._id}`);
+            console.log(`[QA] checkFreeMedia found in use ${response._id}`);
         }
         return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
     } catch (err){
-        console.log(`err ${err}`);
+        console.log(`[QA] checkFreeMedia err ${err}`);
     }
 
     // grab the poster name for each media id
     let list_ids = transformArrToCassandraList(ids, false);
     let query = `SELECT poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id in ${list_ids}`;
-    console.log(`[Cassandra]: checkFreeMedia query=${query}`);
+    console.log(`[QA] checkFreeMedia query=${query}`);
 
     // await the cassandra query and check for the response
     let result = null;
     try {
         result = await cassandra_client.execute(query, [], {prepare: true});
     } catch (err){
-        console.log(`[Cassandra]: ${err}`);
+        console.log(`[QA] checkFreeMedia getting poster error ${err}`);
         return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
     }
 
@@ -179,7 +179,7 @@ async function deleteArrOfMedia(ids){
 
     // prepare the query
     const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
-    console.log(`[Cassandra]: deleteArrOfMedia query=${query}`);
+    console.log(`[QA] deleteArrOfMedia query=${query}`);
 
     // we DON'T have to await this call... just hope Cassandra is up and reliable
     let cassandraResp = cassandra_client.execute(query, [], {prepare: true});
@@ -200,8 +200,8 @@ async function deleteArrOfMedia(ids){
     let bulkResponse = null;
     if (bulk_query.body.length > 0){
         bulkResponse = await client.bulk(bulk_query);
-        console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
-        console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+        console.log(`[QA] Bulk performed... ${JSON.stringify(bulk_query.body)}`);
+        console.log(`[QA] Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
     // delete the associated metadata documents
@@ -217,10 +217,10 @@ async function deleteArrOfMedia(ids){
     //     }
     // });
     // if (elasticResp.deleted != ids.length){
-    //     console.log(`Failed to delete correct number of Media metadatad documents`);
+    //     console.log(`[QA] Failed to delete correct number of Media metadatad documents`);
     //     console.log(response);
     // }
-    return new DBResult(constants.DB_RES_SUCCESS, null);
+    return new DBResult(constants.DB_RES_SUCCESS, bulkResponse);
 }
 
 /* helpers */
@@ -318,7 +318,7 @@ async function addQuestion(user, title, body, tags, media){
         }
     });
     if (response.result !== "created"){
-        console.log(`Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
+        console.log(`[QA] Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
         return new DBResult(constants.DB_RES_ERROR, null);
     }
@@ -334,7 +334,7 @@ async function addQuestion(user, title, body, tags, media){
         }
     });
     if (viewResponse.result !== "created"){
-        console.log(`Failed to create Question Views metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
+        console.log(`[QA] Failed to create Question Views metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(viewResponse);
     }
 
@@ -351,14 +351,14 @@ async function addQuestion(user, title, body, tags, media){
         }
     });
     if (upvoteResponse.result !== "created"){
-        console.log(`Failed to create Question Upvotes metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
+        console.log(`[QA] Failed to create Question Upvotes metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(upvoteResponse);
     }
     // associate the free media IDs with the new Question
     let associateMediaResponse = await associateFreeMedia(response._id,media);
     if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
-        console.log(`associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
-        console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
+        console.log(`[QA] associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
+        console.log(`[QA] associateFreeMedia err: ${associateMediaResponse.data}`);
     }
 
     if (response){
@@ -421,7 +421,7 @@ async function updateViewCount(qid, username, ip){
                 }
             });
             if (updateViewResponse.updated != 1){
-                console.log(`Failed to update Question Views for ${qid}`);
+                console.log(`[QA] Failed to update Question Views for ${qid}`);
                 console.log(updateViewResponse);
             }
         }
@@ -453,7 +453,7 @@ async function updateViewCount(qid, username, ip){
                 }
             });
             if (updateViewResponse.updated != 1){
-                console.log(`Failed to update Question Views for ${qid}`);
+                console.log(`[QA] Failed to update Question Views for ${qid}`);
                 console.log(updateViewResponse);
             }
         }
@@ -477,7 +477,7 @@ async function updateViewCount(qid, username, ip){
             }
         });
         if (updateResponse.updated != 1){
-            console.log(`Failed to update Question view_count for ${qid}`);
+            console.log(`[QA] Failed to update Question view_count for ${qid}`);
             console.log(updateResponse);
         }
     }
@@ -598,7 +598,7 @@ async function addAnswer(qid, user, body, media){
         }
     });
     if (!response || response.result !== "created"){
-        console.log(`Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
+        console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
         console.log(response);
         return new DBResult(constants.DB_RES_ERROR, response);
     }
@@ -620,7 +620,7 @@ async function addAnswer(qid, user, body, media){
         }
     });
     if (upvoteResponse.result !== "created"){
-        console.log(`Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
+        console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
         console.log(upvoteResponse);
     }
 
@@ -642,7 +642,7 @@ async function addAnswer(qid, user, body, media){
         }
     });
     if (updateQuestionResponse.updated != 1){
-        console.log(`Failed to update Question ${qid}'s answer_count`);
+        console.log(`[QA] Failed to update Question ${qid}'s answer_count`);
         console.log(updateQuestionResponse);
     }
 
@@ -650,8 +650,8 @@ async function addAnswer(qid, user, body, media){
     //      as we cannot delete an individual Answer document, this will make deleting easier
     let associateMediaResponse = await associateFreeMedia(qid,media);
     if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
-        console.log(`associateFreeMedia failed with qa_id=${qid}, media=${media}`);
-        console.log(`associateFreeMedia err: ${associateMediaResponse.data}`);
+        console.log(`[QA] associateFreeMedia failed with qa_id=${qid}, media=${media}`);
+        console.log(`[QA] associateFreeMedia err: ${associateMediaResponse.data}`);
     }
 
     return new DBResult(constants.DB_RES_SUCCESS, response._id);
@@ -736,7 +736,7 @@ async function deleteQuestion(qid, username){
             }
         });
         if (response.deleted != 1){
-            console.log(`Failed to delete question views ${qid} from ${INDEX_VIEWS}`);
+            console.log(`[QA] Failed to delete question views ${qid} from ${INDEX_VIEWS}`);
             console.log(response);
         }
 
@@ -746,7 +746,7 @@ async function deleteQuestion(qid, username){
         // let undoQuestionVotesResp = await undoAllQuestionVotes(qid);
         // if (undoQuestionVotesResp.status !== constants.DB_RES_SUCCESS ||
         //     undoQuestionVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
-        //     console.log(`Failed to undo all question votes`);
+        //     console.log(`[QA] Failed to undo all question votes`);
         // }
         response = await client.deleteByQuery({
             index: INDEX_Q_UPVOTES,
@@ -760,7 +760,7 @@ async function deleteQuestion(qid, username){
             }
         });
         if (response.deleted != 1){
-            console.log(`Failed to delete question upvotes ${qid} from ${INDEX_Q_UPVOTES}`);
+            console.log(`[QA] Failed to delete question upvotes ${qid} from ${INDEX_Q_UPVOTES}`);
             console.log(response);
         }
 
@@ -777,7 +777,7 @@ async function deleteQuestion(qid, username){
             }
         });
         let num_deleted_answers = response.deleted;
-        console.log(`Deleted ${num_deleted_answers} Answers for Question ${qid}`);
+        console.log(`[QA] Deleted ${num_deleted_answers} Answers for Question ${qid}`);
         // console.log(response);
 
         // 5) DELETE from INDEX_A_UPVOTES the Answer Upvotes metadata document
@@ -786,7 +786,7 @@ async function deleteQuestion(qid, username){
         // let undoAnswerVotesResp = await undoAllAnswerVotes(qid);
         // if (undoAnswerVotesResp.status !== constants.DB_RES_SUCCESS || 
         //     undoAnswerVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
-        //     console.log(`Failed to undo all answer votes`);
+        //     console.log(`[QA] Failed to undo all answer votes`);
         // }
         response = await client.deleteByQuery({
             index: INDEX_A_UPVOTES,
@@ -800,8 +800,8 @@ async function deleteQuestion(qid, username){
             }
         });
         if (response.deleted != num_deleted_answers){
-            console.log(`Deleted ${response.deleted} answer upvotes / ${num_deleted_answers} answers`);
-            console.log(`QID=${qid}`);
+            console.log(`[QA] Deleted ${response.deleted} answer upvotes / ${num_deleted_answers} answers`);
+            console.log(`[QA] QID=${qid}`);
             console.log(response);
         }
 
@@ -810,9 +810,10 @@ async function deleteQuestion(qid, username){
         //      have their associated ID field set to QID instead of AID to optimize deletion
         try {
             response = await deleteArrOfMedia(media_ids);
+            console.log(`[QA] DeleteQuestion deleteArrOfMediaResp = ${JSON.stringify(response.data)}`);
         }
         catch(err){
-            console.log(`Failed to delete media items ${media_ids}, error ${err.data}`);
+            console.log(`[QA] DeleteQuestion failed to delete media items ${media_ids}, error ${err.data}`);
         }
 
         // 1) DELETE from INDEX_QUESTIONS the Question document
@@ -828,10 +829,10 @@ async function deleteQuestion(qid, username){
             }
         });
         if (response.deleted != 1){
-            console.log(`Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
+            console.log(`[QA] Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
             console.log(response);
         }
-        console.log(`deleted question ${qid}`);
+        console.log(`[QA] deleted question ${qid}`);
         return new DBResult(constants.DB_RES_SUCCESS, null);
     }
     else {
@@ -914,8 +915,8 @@ async function undoAllAnswerVotes(qid){
     let bulkResponse = null;
     if (bulk_query.body.length > 0){
         bulkResponse = await client.bulk(bulk_query);
-        // console.log(`Bulk performed... ${JSON.stringify(bulk_query.body)}`);
-        // console.log(`Bulk response... ${JSON.stringify(bulkResponse)}`);
+        // console.log(`[QA]Bulk performed... ${JSON.stringify(bulk_query.body)}`);
+        // console.log(`[QA]Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
     return new DBResult(constants.DB_RES_SUCCESS, bulkResponse);
@@ -954,7 +955,7 @@ async function undoAllQuestionVotes(qid){
     if (updateRepRes.status === constants.DB_RES_SUCCESS){
         return new DBResult(constants.DB_RES_SUCCESS, updateRepRes);
     }
-    console.log(`Failed updateReputation in undoAllQuestionVotes(${qid})`);
+    console.log(`[QA] Failed updateReputation in undoAllQuestionVotes(${qid})`);
     return new DBResult(constants.DB_RES_ERROR, updateRepRes);
 }
 
@@ -997,7 +998,7 @@ async function undoVote(qid, aid, username, upvote, waived){
     });
     let success = (undoVoteResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     if (success !== constants.DB_RES_SUCCESS){
-        console.log(`Failed undoVote(${qid}, ${aid}, ${username}, ${upvote})`);
+        console.log(`[QA] Failed undoVote(${qid}, ${aid}, ${username}, ${upvote})`);
     }
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }
@@ -1041,7 +1042,7 @@ async function addVote(qid, aid, username, upvote, waived){
     });
     let success = (addVoteResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     if (success !== constants.DB_RES_SUCCESS){
-        console.log(`Failed addVote(${qid}, ${aid}, ${username}, ${upvote})`);
+        console.log(`[QA] Failed addVote(${qid}, ${aid}, ${username}, ${upvote})`);
     }
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }
@@ -1078,7 +1079,7 @@ async function updateScore(qid, aid, amount){
     });
     let success = (updateResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     if (success !== constants.DB_RES_SUCCESS){
-        console.log(`Failed updateScore(${qid}, ${aid}, ${amount})`);
+        console.log(`[QA] Failed updateScore(${qid}, ${aid}, ${amount})`);
     }
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }
@@ -1117,7 +1118,7 @@ async function updateReputation(username, amount){
     });
     let success = (updateUserResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     if (success !== constants.DB_RES_SUCCESS){
-        console.log(`Failed updateUserReputation(${username}, ${amount})`);
+        console.log(`[QA] Failed updateUserReputation(${username}, ${amount})`);
     }
 
     inline_script = `ctx._source.user.reputation += params.${param_amount}`;
@@ -1143,7 +1144,7 @@ async function updateReputation(username, amount){
     });
     let success2 = (updateQResponse.updated >= 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     if (success2 !== constants.DB_RES_SUCCESS){
-        console.log(`Failed updateQReputation(${username}, ${amount})`);
+        console.log(`[QA] Failed updateQReputation(${username}, ${amount})`);
     }
 
     return new DBResult(constants.DB_RES_SUCCESS, null);
@@ -1157,7 +1158,7 @@ async function updateReputation(username, amount){
  * @param {boolean} upvote whether the user's vote is to upvote or downvote
  */
 async function upvoteQA(qid, aid, username, upvote){
-    console.log(`upvoteQA ${qid}, ${aid}, ${username}, ${upvote}`);
+    console.log(`[QA] upvoteQA ${qid}, ${aid}, ${username}, ${upvote}`);
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1189,9 +1190,9 @@ async function upvoteQA(qid, aid, username, upvote){
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
     let waived_downvotes = (qa_votes._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
-    // console.log(`upvotes = ${upvotes}`);
-    // console.log(`downvotes = ${downvotes}`);
-    // console.log(`waived_downvotes = ${waived_downvotes}`);
+    // console.log(`[QA] upvotes = ${upvotes}`);
+    // console.log(`[QA] downvotes = ${downvotes}`);
+    // console.log(`[QA] waived_downvotes = ${waived_downvotes}`);
 
     // check if the user downvoted or upvoted the question
     let score_diff = 0;     // the difference in the "score" of a question
@@ -1201,11 +1202,11 @@ async function upvoteQA(qid, aid, username, upvote){
     let waived = waived_downvotes.includes(username);
     let poster = await getUserByPost(qid,aid);
     let poster_rep = await getReputation(poster);
-    // console.log(`poster = ${poster}`);
-    // console.log(`poster_rep = ${poster_rep}`);
-    // console.log(`upvoted = ${upvoted}`);
-    // console.log(`downvoted = ${downvoted}`);
-    // console.log(`waived = ${waived}`);
+    // console.log(`[QA] poster = ${poster}`);
+    // console.log(`[QA] poster_rep = ${poster_rep}`);
+    // console.log(`[QA] upvoted = ${upvoted}`);
+    // console.log(`[QA] downvoted = ${downvoted}`);
+    // console.log(`[QA] waived = ${waived}`);
 
     // if the user already voted, undo the vote
     //      calculate the difference to the poster's reputation and score of the post
@@ -1218,10 +1219,10 @@ async function upvoteQA(qid, aid, username, upvote){
         //      else if it was downvoted, then rep_diff = score_diff = 1
         rep_diff = (waived) ? 0 : ((upvoted) ? -1 : 1);
         score_diff = (waived) ? 1 : ((upvoted) ? -1 : 1);
-        console.log(`undoing vote by ${poster}`);
+        console.log(`[QA] undoing vote by ${poster}`);
         let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
         if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
-            console.log(`Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+            console.log(`[QA] Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         }
     }
 
@@ -1243,17 +1244,17 @@ async function upvoteQA(qid, aid, username, upvote){
     } 
 
     // update the score of the question or answer
-    console.log(`updating score ${qid}, ${aid}, ${score_diff}`);
+    console.log(`[QA] updating score ${qid}, ${aid}, ${score_diff}`);
     let updateScoreRes = await updateScore(qid, aid, score_diff);
     if (updateScoreRes.status !== constants.DB_RES_SUCCESS){
-        console.log(`Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+        console.log(`[QA] Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
     // update the reputation of the poster
-    console.log(`updating rep ${poster}, ${rep_diff}`);
+    console.log(`[QA] updating rep ${poster}, ${rep_diff}`);
     let updateRepRes = await updateReputation(poster, rep_diff);
     if (updateRepRes.status !== constants.DB_RES_SUCCESS){
-        console.log(`Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+        console.log(`[QA] Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
     // if the user asked to perform the same operation, all we needed to do was undo the previous vote
@@ -1265,10 +1266,10 @@ async function upvoteQA(qid, aid, username, upvote){
     }
 
     // add the vote to the post
-    console.log(`adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
+    console.log(`[QA] adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
     let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
     if (addVoteRes.status !== constants.DB_RES_SUCCESS){
-        console.log(`Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+        console.log(`[QA] Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     }
 
     return new DBResult(constants.DB_RES_SUCCESS, null);
@@ -1395,7 +1396,7 @@ async function acceptAnswer(aid, username){
             }
         });
         if (updateQuestionResponse.updated != 1){
-            console.log(`Failed to update Question ${qid}'s accepted answer to ${aid}`);
+            console.log(`[QA] Failed to update Question ${qid}'s accepted answer to ${aid}`);
             console.log(updateQuestionResponse);
         }
 
@@ -1417,7 +1418,7 @@ async function acceptAnswer(aid, username){
             }
         });
         if (updateAnswerResponse.updated != 1){
-            console.log(`Failed to update Answer ${aid}'s is_accepted field to true`);
+            console.log(`[QA] Failed to update Answer ${aid}'s is_accepted field to true`);
             console.log(updateAnswerResponse);
         }
         return new DBResult(constants.DB_RES_SUCCESS, null);
