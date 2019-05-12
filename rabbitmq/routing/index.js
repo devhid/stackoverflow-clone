@@ -16,16 +16,16 @@ require('express-async-errors');
 const PORT = 8008;
 
 /* redis */
-// const sessionOptions = {
-//     name: 'soc_login',
-//     secret: 'EditThisLaterWithARealSecret',
-//     unset: 'destroy',
-//     resave: false,
-//     saveUninitialized: true,
-//     logErrors: true,
-//     store: new RedisStore(constants.REDIS_OPTIONS)
-// };
-// app.use(session(sessionOptions));
+const sessionOptions = {
+    name: 'soc_login',
+    secret: 'KYNxwY2ZeUXo8LKbsbZsMpccLbRewpBr',
+    unset: 'destroy',
+    resave: false,
+    saveUninitialized: true,
+    logErrors: true,
+    store: new RedisStore(constants.REDIS_OPTIONS)
+};
+app.use(session(sessionOptions));
 
 /* image upload destination */
 const upload = multer();
