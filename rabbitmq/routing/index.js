@@ -1,7 +1,7 @@
 /* library imports */
 const express = require('express');
-// const session = require('express-session');
-// const RedisStore = require('connect-redis')(session);
+const session = require('express-session');
+const RedisStore = require('connect-redis')(session);
 const multer = require('multer');
 
 /* internal imports */

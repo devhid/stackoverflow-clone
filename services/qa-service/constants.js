@@ -43,7 +43,8 @@ module.exports = {
             server: '192.168.122.39',
             port: 5672,
             timeout: 2000,
-            vhost: '/'
+            vhost: '/',
+            replyQueue: 'qa-reply'
         },
         exchanges: [
             { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }

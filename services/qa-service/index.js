@@ -33,6 +33,7 @@ process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
 
 function shutdown(){
+    rabbot.shutdown(true);
     database.shutdown();
     server.close();
 }
@@ -107,7 +108,9 @@ rabbot.configure(constants.RABBOT_SETTINGS)
 /* ------------------ ENDPOINTS ------------------ */
 
 /* milestone 1 */
-async function addQuestion(req){
+async function addQuestion(request){
+    // grab the message sent
+    req = req.body;
     try {
         let status = constants.STATUS_200;
         let response = new APIResponse();
@@ -129,8 +132,9 @@ async function addQuestion(req){
                 status = constants.STATUS_400;
             }   
             response.setERR(constants.ERR_MISSING_PARAMS);
-            req.reply({status: status, response: response.toOBJ()});
-            req.ack();
+
+            request.reply({status: status, response: response.toOBJ()});
+            request.ack();
             return;
         }
 
@@ -154,11 +158,11 @@ async function addQuestion(req){
         let merged = {...response.toOBJ(), ...data};
 
         // reply
-        req.reply({status: status, response: merged});
-        req.ack();
+        request.reply({status: status, response: merged});
+        request.ack();
     } catch (err){
         console.log(`[QA] addQuestion err ${JSON.stringify(err)}`);
-        req.nack();
+        request.nack();
     }
 }
 

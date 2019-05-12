@@ -30,7 +30,8 @@ module.exports = {
             server: 'localhost',
             port: 5672,
             timeout: 2000,
-            vhost: '/'
+            vhost: '/',
+            replyQueue: 'clientQueue'
         },
         exchanges: [
             { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }
