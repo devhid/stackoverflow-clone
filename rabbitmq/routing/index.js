@@ -43,6 +43,43 @@ app.use(function(req, res, next) {
 });
 
 /**
+ * Determines whether or not the router should wait for a response.
+ * @param {Request} req Express Request object
+ * @param {string} key routing key for the message (determines which service)
+ * @param {string} endpoint which endpoint for the service
+ */
+function needToWait(req, key, endpoint){
+    if (key === constants.SERVICES.AUTH){
+        return true;
+    }
+    else if (key === constants.SERVICES.EMAIL){
+        return true;
+    }
+    else if (key === constants.SERVICES.MEDIA){
+        return true;
+    }
+    else if (key === constants.SERVICES.QA){
+        if (req.session.user != undefined && (req.body.media == undefined || req.body.media.length == 0)){
+            return false;
+        }
+        return true;
+    }
+    else if (key === constants.SERVICES.REGISTER){
+        return true;
+    }
+    else if (key === constants.SERVICES.SEARCH){
+        return true;
+    }
+    else if (key === constants.SERVICES.USER){
+        return true;
+    }
+
+    // should never be reached
+    console.log(`[Router] what service is this? ${key}`);
+    return true;
+}
+
+/**
  * Routes an incoming request to a work/rpc queue.
  * Returns an object {'status': RMQ_STATUS, 'data': RMQ_DATA} where RMQ_DATA is data returned from the backend call.
  * If RMQ_STATUS == RMQ_SUCCESS, then 'data' will have the status code to set and the response object to return.

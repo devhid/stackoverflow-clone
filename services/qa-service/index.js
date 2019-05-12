@@ -100,9 +100,9 @@ rabbot.handle({
 /* configure rabbot */
 rabbot.configure(constants.RABBOT_SETTINGS)
     .then(function(){
-        console.log('[Rabbot-Router] Rabbot configured...');
+        console.log('[Rabbot] Rabbot configured...');
     }).catch(err => {
-        console.log(`[Rabbot-Router] err ${err}`);
+        console.log(`[Rabbot] err ${err}`);
     });
 
 /* ------------------ ENDPOINTS ------------------ */
@@ -110,7 +110,7 @@ rabbot.configure(constants.RABBOT_SETTINGS)
 /* milestone 1 */
 async function addQuestion(request){
     // grab the message sent
-    req = req.body;
+    let req = request.body;
     try {
         let status = constants.STATUS_200;
         let response = new APIResponse();
@@ -166,7 +166,9 @@ async function addQuestion(request){
     }
 }
 
-async function getQuestion(req){
+async function getQuestion(request){
+    // grab the message sent
+    let req = request.body;
     try {
         let status = constants.STATUS_200;
         let response = new APIResponse();
@@ -186,8 +188,9 @@ async function getQuestion(req){
         if (qid == undefined){
             status = constants.STATUS_400;
             response.setERR(constants.ERR_MISSING_PARAMS);
-            req.reply({status: status, response: response.toOBJ()});
-            req.ack();
+
+            request.reply({status: status, response: response.toOBJ()});
+            request.ack();
             return;
         }
 
@@ -208,15 +211,17 @@ async function getQuestion(req){
             data[constants.QUESTION_KEY] = question._source;
         }
         let merged = {...response.toOBJ(), ...data};
-        req.reply({status: status, response: merged});
-        req.ack();
+        request.reply({status: status, response: merged});
+        request.ack();
     } catch (err){
         console.log(`[QA] getQuestion err ${JSON.stringify(err)}`);
-        req.nack();
+        request.nack();
     }
 }
 
-async function addAnswer(req){
+async function addAnswer(request){
+    // grab the message sent
+    let req = request.body;
     try {
         let status = constants.STATUS_200;
         let response = new APIResponse();
@@ -238,8 +243,8 @@ async function addAnswer(req){
                 status = constants.STATUS_400;
             }
             response.setERR(constants.ERR_MISSING_PARAMS);
-            req.reply({status: status, response: response.toOBJ()});
-            req.ack();
+            request.reply({status: status, response: response.toOBJ()});
+            request.ack();
             return;
         }
 
@@ -261,15 +266,17 @@ async function addAnswer(req){
             data[constants.ID_KEY] = addRes.data;
         }
         let merged = {...response.toOBJ(), ...data};
-        req.reply({status: status, response: merged});
-        req.ack();
+        request.reply({status: status, response: merged});
+        request.ack();
     } catch (err){
         console.log(`[QA] addAnswer err ${JSON.stringify(err)}`);
-        req.nack();
+        request.nack();
     }
 }
 
-async function getAnswers(req){
+async function getAnswers(request){
+    // grab the message sent
+    let req = request.body;
     try {
         let status = constants.STATUS_200;
         let response = new APIResponse();
@@ -282,8 +289,8 @@ async function getAnswers(req){
         if (qid == undefined){
             status = constants.STATUS_400;
             response.setERR(constants.ERR_MISSING_PARAMS);
-            req.reply({status: status, response: response.toOBJ()});
-            req.ack();
+            request.reply({status: status, response: response.toOBJ()});
+            request.ack();
             return;
         }
 
@@ -312,17 +319,19 @@ async function getAnswers(req){
             data[constants.ANSWERS_KEY] = transformedAnswers;
         }
         let merged = {...response.toOBJ(), ...data};
-        req.reply({status: status, response: merged});
-        req.ack();
+        request.reply({status: status, response: merged});
+        request.ack();
     } catch (err){
         console.log(`[QA] getAnswers err ${JSON.stringify(err)}`);
-        req.nack();
+        request.nack();
     }
 }
 
 /* milestone 2 */
 
-async function deleteQuestion(req){
+async function deleteQuestion(request){
+    // grab the message sent
+    let req = request.body;
     try {
         // grab parameters
         let status = constants.STATUS_200;
@@ -342,8 +351,8 @@ async function deleteQuestion(req){
                 status = constants.STATUS_400;
             }
             response.setERR(constants.ERR_MISSING_PARAMS);
-            req.reply({status: status, response: response.toOBJ()});
-            req.ack();
+            request.reply({status: status, response: response.toOBJ()});
+            request.ack();
             return;
         }
 
@@ -363,17 +372,19 @@ async function deleteQuestion(req){
             status = constants.STATUS_200;
             response.setOK();
         }
-        req.reply({status: status, response: response.toOBJ()});
-        req.ack();
+        request.reply({status: status, response: response.toOBJ()});
+        request.ack();
     } catch(err){
         console.log(`[QA] deleteQuestion err ${JSON.stringify(err)}`);
-        req.nack();
+        request.nack();
     }
 }
 
 /* milestone 3 */
 
-async function upvoteQuestion(req){
+async function upvoteQuestion(request){
+    // grab the message sent
+    let req = request.body;
     try {
         let status = constants.STATUS_200;
         let response = new APIResponse();
@@ -393,8 +404,8 @@ async function upvoteQuestion(req){
                 status = constants.STATUS_400;
             }
             response.setERR(constants.ERR_MISSING_PARAMS);
-            req.reply({status: status, response: response.toOBJ()});
-            req.ack();
+            request.reply({status: status, response: response.toOBJ()});
+            request.ack();
             return;
         }
 
@@ -416,15 +427,17 @@ async function upvoteQuestion(req){
         }
 
         // return HTTP response
-        req.reply({status: status, response: response.toOBJ()});
-        req.ack();
+        request.reply({status: status, response: response.toOBJ()});
+        request.ack();
     } catch (err){
         console.log(`[QA] upvoteQuestion err ${JSON.stringify(err)}`);
-        req.nack();
+        request.nack();
     }
 }
 
-async function upvoteAnswer(req){
+async function upvoteAnswer(request){
+    // grab the message sent
+    let req = request.body;
     try {
         let status = constants.STATUS_200;
         let response = new APIResponse();
@@ -444,8 +457,8 @@ async function upvoteAnswer(req){
                 status = constants.STATUS_400;
             }
             response.setERR(constants.ERR_MISSING_PARAMS);
-            req.reply({status: status, response: response.toOBJ()});
-            req.ack();
+            request.reply({status: status, response: response.toOBJ()});
+            request.ack();
             return;
         }
 
@@ -467,15 +480,17 @@ async function upvoteAnswer(req){
         }
 
         // return HTTP response
-        req.reply({status: status, response: response.toOBJ()});
-        req.ack();
+        request.reply({status: status, response: response.toOBJ()});
+        request.ack();
     } catch (err){
         console.log(`[QA] upvoteAnswer err ${JSON.stringify(err)}`);
-        req.nack();
+        request.nack();
     }
 }
 
-async function acceptAnswer(req){
+async function acceptAnswer(request){
+    // grab the message sent
+    let req = request.body;
     try {
         let status = constants.STATUS_200;
         let response = new APIResponse();
@@ -494,8 +509,8 @@ async function acceptAnswer(req){
                 status = constants.STATUS_400;
             }
             response.setERR(constants.ERR_MISSING_PARAMS);
-            req.reply({status: status, response: response.toOBJ()});
-            req.ack();
+            request.reply({status: status, response: response.toOBJ()});
+            request.ack();
             return;
         }
 
@@ -525,10 +540,10 @@ async function acceptAnswer(req){
         }
 
         // return HTTP response
-        req.reply({status: status, response: response.toOBJ()});
-        req.ack();
+        request.reply({status: status, response: response.toOBJ()});
+        request.ack();
     } catch (err){
         console.log(`[QA] acceptAnswer err ${JSON.stringify(err)}`);
-        req.nack();
+        request.nack();
     }
 }
