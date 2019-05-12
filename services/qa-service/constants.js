@@ -38,9 +38,9 @@ module.exports = {
 
     RABBOT_SETTINGS: {
         connection: {
-            user: 'guest',
-            pass: 'guest',
-            server: 'localhost',
+            user: 'so',
+            pass: 'so123',
+            server: '192.168.122.39',
             port: 5672,
             timeout: 2000,
             vhost: '/'
@@ -49,22 +49,10 @@ module.exports = {
             { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }
         ],
         queues: [   // for each service, declare and subscribe only to the needed queues
-            { name: SERVICES.AUTH, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
-            { name: SERVICES.EMAIL, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
-            { name: SERVICES.MEDIA, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
-            { name: SERVICES.QA, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
-            { name: SERVICES.REGISTER, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
-            { name: SERVICES.SEARCH, limit: 300, queueLimit: 1000, durable: true, subscribe: true },
-            { name: SERVICES.USER, limit: 300, queueLimit: 1000, durable: true, subscribe: true }
+            { name: SERVICES.QA, limit: 300, queueLimit: 1000, durable: true, subscribe: true }
         ],
         bindings: [ // for each service, declare only needed bindings
-            { exchange: EXCHANGE.NAME, target: SERVICES.AUTH, keys: SERVICES.AUTH },
-            { exchange: EXCHANGE.NAME, target: SERVICES.EMAIL, keys: SERVICES.EMAIL },
-            { exchange: EXCHANGE.NAME, target: SERVICES.MEDIA, keys: SERVICES.MEDIA },
-            { exchange: EXCHANGE.NAME, target: SERVICES.QA, keys: SERVICES.QA },
-            { exchange: EXCHANGE.NAME, target: SERVICES.REGISTER, keys: SERVICES.REGISTER },
-            { exchange: EXCHANGE.NAME, target: SERVICES.SEARCH, keys: SERVICES.SEARCH },
-            { exchange: EXCHANGE.NAME, target: SERVICES.USER, keys: SERVICES.USER }
+            { exchange: EXCHANGE.NAME, target: SERVICES.QA, keys: SERVICES.QA }
         ]
     },
 
