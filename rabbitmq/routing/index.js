@@ -144,6 +144,14 @@ async function generateResponse(key, endpoint, req, obj){
                 response.setERR(constants.ERR_MISSING_PARAMS);
                 return {status: status, response: response.toOBJ(), queue: false};
             }
+            // the only time we can send a response back with media is if we have seen
+            //  at least one of the specified media IDs is in use
+            if (req.body.media != undefined && req.body.media.length > 0){
+                status = constants.STATUS_400;
+                response.setERR(constants.ERR_MEDIA_INVALID);
+                return {status: status, response: response.toOBJ(), queue: false};
+            }
+
             status = constants.STATUS_200;
             response.setOK();
             data = {
@@ -448,6 +456,9 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
             if (endpoint === constants.ENDPOINTS.QA_ADD_A){
                 let qid = req.params.qid;
                 removeCachedObject("question_answers:" + qid);
+                for (var media_id of rabbitRes.response.question.media){
+                    setCachedObject("media:" + media_id);
+                }
             }
         }
         else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
@@ -509,12 +520,20 @@ function needToWait(key, endpoint, req, obj){
     }
     else if (key === constants.SERVICES.QA){
         let user = req.session.user;
-        if ((endpoint === constants.ENDPOINTS.QA_ADD_Q ||
-            endpoint === constants.ENDPOINTS.QA_ADD_A) && 
-            (user == undefined ||
+        if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
+            endpoint === constants.ENDPOINTS.QA_ADD_A){
+            if (user == undefined ||
                 req.body.media == undefined || 
-                req.body.media.length == 0)){
-            return false;
+                req.body.media.length == 0){
+                return false;
+            }
+            for (var media_id of req.body.media){
+                let media_in_use = getCachedObject("media:" + media_id);
+                if (media_in_use != null){
+                    return false;
+                }
+            }
+            return true;
         }
         else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
             // if the cached object is null, we need to go to the backend
