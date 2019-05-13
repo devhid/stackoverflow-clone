@@ -13,6 +13,8 @@ const httpHeaders = {
 const registerUrl = "http://130.245.171.197"
 const verificationUrl = "http://207.148.20.88"
 
+const url = 'http://130.245.170.211';  // URL to web api
+
 @Injectable({
   providedIn: 'root'
 })
@@ -24,7 +26,7 @@ export class RegisterService {
 
   registerAccount(username: string, email: string, password: string): Observable<any> {
     let body = { username: username, email: email, password: password };
-    return this.http.post(registerUrl + "/adduser", body, httpHeaders)
+    return this.http.post(url + "/adduser", body, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )
@@ -32,7 +34,7 @@ export class RegisterService {
 
   verifyAccount(email: string, key: string): Observable<any> {
     let body = { email: email, key: key }
-    return this.http.post(verificationUrl + "/verify", body, httpHeaders)
+    return this.http.post(url + "/verify", body, httpHeaders)
       .pipe(
         catchError(this.handleError)
       )

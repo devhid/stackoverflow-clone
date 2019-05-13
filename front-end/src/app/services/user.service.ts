@@ -12,7 +12,7 @@ const httpHeaders = {
 };
 
 //const url = "http://localhost:4006";
-const url = 'http://8.9.11.218';  // URL to web api
+const url = 'http://130.245.170.211';  // URL to web api
 
 @Injectable({
   providedIn: 'root'

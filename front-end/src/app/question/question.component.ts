@@ -2,8 +2,10 @@ import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
+import { ChangeDetectorRef } from '@angular/core'
 
 import { RetrievalService } from '../services/retrieval.service';
+import { MediaService } from '../services/media.service';
 import { QAService } from '../services/qa.service';
 import { Question } from '../classes/question';
 import { Answer, Answers } from '../classes/answer';
@@ -27,16 +29,29 @@ export class QuestionComponent implements OnInit {
   constructor(
     private retrievalService: RetrievalService,
     private qaService: QAService,
+    private mediaService: MediaService,
     private route: ActivatedRoute,
-    private router: Router
+    private router: Router,
+    private ref: ChangeDetectorRef
   ) { }
 
   ngOnInit() {
     let id = this.retrieveId();
+
     this.retrieveQuestion(id)
     .subscribe((question: Question) => {
       console.log(question);
       this.question = question;
+
+      this.question.media.forEach((value, i) => {
+        console.log(i);
+        console.log(value);
+        this.mediaService.retrieveMedia(value.toString())
+        .subscribe(data =>
+          this.question.media[i] = this.createImage(data)
+        );
+      })
+
       this.retrieveAnswers(id)
       .subscribe(answers => {
         this.answers = answers.sort(function(a,b){ return a.timestamp - b.timestamp });
@@ -79,6 +94,18 @@ export class QuestionComponent implements OnInit {
         return;
       }
     });
+  }
+
+  private retrieveMedia(id: string) {
+    this.mediaService.retrieveMedia(id)
+    .subscribe(response => {
+      console.log(response);
+    });
+  }
+
+  private createImage(image: Blob) {
+    let reader = new FileReader();
+    return reader.readAsDataURL(image);
   }
 
   addAnswerSubmit(): void {
