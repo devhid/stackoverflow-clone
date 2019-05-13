@@ -174,12 +174,13 @@ async function generateResponse(key, endpoint, req, obj){
                 response.setERR(constants.ERR_MISSING_PARAMS);
                 return {status: status, response: response.toOBJ(), queue: false};
             }
-            let question = obj;
+            let question_resp = obj;
+            let question = question_resp.response.question;
             if (question != null){
                 // check if the poster matches the requester
                 if (question.user.username === user._source.username){
                     // mark the question as deleted in cache
-                    removeCachedObject("source:" + qid);
+                    // removeCachedObject("source:" + qid);
                     let delQuestionResp = new APIResponse();
                     delQuestionResp.setERR(constants.ERR_Q_NOTFOUND);
                     let newCachedResp = {status: constants.STATUS_400, response: delQuestionResp.toOBJ()};
@@ -212,7 +213,8 @@ async function generateResponse(key, endpoint, req, obj){
                 response.setERR(constants.ERR_MISSING_PARAMS);
                 return {status: status, response: response.toOBJ(), queue: false};
             }
-            let question = obj;
+            let question_resp = obj;
+            let question = question_resp.response.question;
             if (question != null){
                 // check that there is no accepted answer and the user matches
                 if (question.accepted_answer_id == null && 
@@ -221,7 +223,7 @@ async function generateResponse(key, endpoint, req, obj){
                     // update cached question
                     let newQuestionSource = question;
                     newQuestionSource.accepted_answer_id = aid;
-                    setCachedObject("source:" + question.id);
+                    // setCachedObject("source:" + question.id);
                     let acceptQuestionResp = new APIResponse();
                     acceptQuestionResp.setOK();
                     let merged = {...response.toOBJ(), ...newQuestionSource};
@@ -229,11 +231,12 @@ async function generateResponse(key, endpoint, req, obj){
                     setCachedObject("get:" + question.id, newCachedResp);
 
                     // update cached answer
-                    let answer = await getCachedObject("source:" + aid);
+                    let answer_resp = await getCachedObject("get:" + aid);
+                    let answer = answer_resp.response.answers;
                     if (answer != null){
                         let newAnswerSource = answer;
                         newAnswerSource.is_accepted = true;
-                        setCachedObject("source:" + aid);
+                        // setCachedObject("source:" + aid);
                         acceptQuestionResp = new APIResponse();
                         acceptQuestionResp.setOK();
                         merged = {...response.toOBJ(), ...newAnswerSource};
@@ -277,7 +280,7 @@ async function generateResponse(key, endpoint, req, obj){
             }
 
             // invalidate the cached question/answer
-            removeCachedObject("source:" + which_id);
+            // removeCachedObject("source:" + which_id);
             if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q){
                 removeCachedObject("get:" + which_id);
             }
@@ -294,9 +297,11 @@ async function generateResponse(key, endpoint, req, obj){
                 response.setERR(constants.ERR_MISSING_PARAMS);
                 return {status: status, response: response.toOBJ(), queue: false};
             }
-            let question = obj;
-            let question_views = await getCachedObject("views:" + qid);
-            let question_resp = await getCachedObject("get:" + qid);
+            let question_resp = obj;
+            let question = question_resp.response.question;
+            let question_views = question_resp.views;
+            // let question_views = await getCachedObject("views:" + qid);
+            // let question_resp = await getCachedObject("get:" + qid);
             
             // check if we need to update question view_count
             let user = (req.session != undefined) ? req.session.user : undefined;
@@ -322,9 +327,9 @@ async function generateResponse(key, endpoint, req, obj){
                 }
             }
             if (viewed === false){
-                setCachedObject("views:" + qid, question_views);
+                // setCachedObject("views:" + qid, question_views);
                 question.view_count += 1;
-                setCachedObject("source:" + qid, question);
+                // setCachedObject("source:" + qid, question);
                 question_resp.response.question.view_count += 1;
                 setCachedObject("get:" + qid, question_resp);
             }
@@ -340,9 +345,9 @@ async function generateResponse(key, endpoint, req, obj){
                 response.setERR(constants.ERR_MISSING_PARAMS);
                 return {status: status, response: response.toOBJ(), queue: false};
             }
-            let answers = obj;
-            status = constants.STATUS_200;
-            return {status: status, response: answers, queue: false};
+            let get_answers_resp = obj;
+            get_answers_resp['queue'] = false;
+            return get_answers_resp;
         }
     }
     else if (key === constants.SERVICES.REGISTER){
@@ -380,21 +385,21 @@ async function getRelevantObj(key, endpoint, req){
             if (req.params.qid == undefined){
                 return null;
             }
-            touchCachedObject("source:" + req.params.qid);
-            return await getCachedObject("source:" + req.params.qid);
+            touchCachedObject("get:" + req.params.qid);
+            return await getCachedObject("get:" + req.params.qid);
         }
         else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
             // return the question for the answer
             if (req.params.aid == undefined){
                 return null;
             }
-            touchCachedObject("source:" + req.params.aid);
-            let answer = await getCachedObject("source:" + req.params.aid);
+            touchCachedObject("get:" + req.params.aid);
+            let answer = await getCachedObject("get:" + req.params.aid);
             if (answer == null){
                 return null;
             }
-            touchCachedObject("source:" + answer._source.qid);
-            return await getCachedObject("source:" + answer._source.qid);
+            touchCachedObject("get:" + answer._source.qid);
+            return await getCachedObject("get:" + answer._source.qid);
         }
         else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
                 endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
@@ -406,12 +411,12 @@ async function getRelevantObj(key, endpoint, req){
             if (qid == undefined){
                 return null;
             }
-            let question_views = getCachedObject("views:" + qid);
-            if (question_views == null){
-                return null;
-            }
-            touchCachedObject("source:" + qid);
-            return await getCachedObject("source:" + qid);
+            // let question_views = getCachedObject("views:" + qid);
+            // if (question_views == null){
+            //     return null;
+            // }
+            touchCachedObject("get:" + qid);
+            return await getCachedObject("get:" + qid);
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_A){
             let qid = req.params.qid;
@@ -438,67 +443,163 @@ async function getRelevantObj(key, endpoint, req){
 }
 
 function updateRelevantObj(key, endpoint, req, rabbitRes){
-    if (rabbitRes.status !== constants.STATUS_200){
-        return;
-    }
-    if (key === constants.SERVICES.AUTH){
-        return;
-    }
-    else if (key === constants.SERVICES.EMAIL){
-        return;
-    }
-    else if (key === constants.SERVICES.MEDIA){
-        return;
-    }
-    else if (key === constants.SERVICES.QA){
-        if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
-            endpoint === constants.ENDPOINTS.QA_ADD_A){
-            if (endpoint === constants.ENDPOINTS.QA_ADD_A){
-                let qid = req.params.qid;
-                removeCachedObject("question_answers:" + qid);
-                for (var media_id of rabbitRes.response.question.media){
-                    setCachedObject("media:" + media_id);
+    if (rabbitRes.status === constants.STATUS_200){
+        if (key === constants.SERVICES.AUTH){
+            return;
+        }
+        else if (key === constants.SERVICES.EMAIL){
+            return;
+        }
+        else if (key === constants.SERVICES.MEDIA){
+            // // if we queue media, this could be useful
+            // if (endpoint === constants.ENDPOINTS.MEDIA_ADD){
+            //     for (var media_id of rabbitRes.response.question.media){
+            //         setCachedObject("media_poster:" + media_id, req.session.user);
+            //     }
+            // }
+            return;
+        }
+        else if (key === constants.SERVICES.QA){
+            if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
+                endpoint === constants.ENDPOINTS.QA_ADD_A){
+                let which_id = (endpoint === constants.ENDPOINTS.QA_ADD_Q) ? req.params.qid : req.params.aid;
+                if (endpoint === constants.ENDPOINTS.QA_ADD_A){
+                    removeCachedObject("question_answers:" + qid);
                 }
+                let media = req.body.media;
+                for (var media_id of media){
+                    setCachedObject("media:" + media_id, true);
+                    // removeCachedObject("media_poster:" + media_id);
+                }
+                // let created_id = rabbitRes.response.id;
+                // if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
+                //     let question = {
+                //         id: created_id,
+                //         user: {
+                //             username: req.session.user._source.username,
+                //             reputation: req.session.user._source.reputation
+                //         },
+                //         title: req.body.title,
+                //         body: req.body.body,
+                //         score: 0,
+                //         view_count: 0,
+                //         answer_count: 0,
+                //         timestamp: Date.now()/1000,
+                //         tags: req.body.tags,
+                //         accepted_answer_id: null
+                //     };
+                //     let status = constants.STATUS_200;
+                //     let question_resp = {status: 'OK', question: question};
+                //     setCachedObject("get:" + created_id, question_resp);
+                // }
+                
             }
-        }
-        else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
-            let qid = req.params.qid;
-            removeCachedObject("source:" + qid);
-            let delQuestionResp = new APIResponse();
-            delQuestionResp.setERR(constants.ERR_Q_NOTFOUND);
-            let newCachedResp = {status: constants.STATUS_400, response: delQuestionResp.toOBJ()};
-            setCachedObject("get:" + qid, newCachedResp);
-        }
-        else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
+            else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
+                let qid = req.params.qid;
+                // removeCachedObject("get:" + qid);
+                let delQuestionResp = new APIResponse();
+                delQuestionResp.setERR(constants.ERR_Q_NOTFOUND);
+                let newCachedResp = {status: constants.STATUS_400, response: delQuestionResp.toOBJ()};
+                setCachedObject("get:" + qid, newCachedResp);
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
+                return;
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
+                    endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
+                return;
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
+                let qid = req.params.qid;
+                // setCachedObject("views:" + qid, rabbitRes.views);
+                setCachedObject("get:" + qid, rabbitRes);
+                // setCachedObject("source:" + qid, rabbitRes.response.question);
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_GET_A){
+                setCachedObject("question_answers:" + qid, rabbitRes);
+            }
             return;
         }
-        else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
-                endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
+        else if (key === constants.SERVICES.REGISTER){
             return;
         }
-        else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
-            let qid = req.params.qid;
-            setCachedObject("views:" + qid, rabbitRes.views);
-            setCachedObject("get:" + qid, rabbitRes.response);
-            setCachedObject("source:" + qid, rabbitRes.response.question);
+        else if (key === constants.SERVICES.SEARCH){
+            return;
         }
-        else if (endpoint === constants.ENDPOINTS.QA_GET_A){
-            setCachedObject("question_answers:" + qid, rabbitRes.response);
+        else if (key === constants.SERVICES.USER){
+            if (endpoint === constants.ENDPOINTS.USER_GET){
+                setCachedObject("user_profile:" + req.params.username, rabbitRes);
+            }
+            else if (endpoint === constants.ENDPOINTS.USER_Q){
+                setCachedObject("user_questions:" + req.params.username, rabbitRes);
+            }
+            else if (endpoint === constants.ENDPOINTS.USER_A){
+                setCachedObject("user_answers:" + req.params.username, rabbitRes);
+            }
+            
+            return;
         }
+        // should never be reached
+        console.log(`[Router] updateRelevantObj on success service=${key}`);
         return;
     }
-    else if (key === constants.SERVICES.REGISTER){
-        return;
-    }
-    else if (key === constants.SERVICES.SEARCH){
-        return;
-    }
-    else if (key === constants.SERVICES.USER){
+    else {
+        if (key === constants.SERVICES.AUTH){
+            return;
+        }
+        else if (key === constants.SERVICES.EMAIL){
+            return;
+        }
+        else if (key === constants.SERVICES.MEDIA){
+            return;
+        }
+        else if (key === constants.SERVICES.QA){
+            if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
+                endpoint === constants.ENDPOINTS.QA_ADD_A){
+                return;
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
+                return;
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
+                return;
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
+                    endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
+                return;
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
+                return;
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_GET_A){
+                setCachedObject("question_answers:" + qid, rabbitRes);
+            }
+            return;
+        }
+        else if (key === constants.SERVICES.REGISTER){
+            return;
+        }
+        else if (key === constants.SERVICES.SEARCH){
+            return;
+        }
+        else if (key === constants.SERVICES.USER){
+            if (endpoint === constants.ENDPOINTS.USER_GET){
+                setCachedObject("user_profile:" + req.params.username, rabbitRes);
+            }
+            else if (endpoint === constants.ENDPOINTS.USER_Q){
+                setCachedObject("user_questions:" + req.params.username, rabbitRes);
+            }
+            else if (endpoint === constants.ENDPOINTS.USER_A){
+                setCachedObject("user_answers:" + req.params.username, rabbitRes);
+            }
+            return;
+        }
+        // should never be reached
+        console.log(`[Router] updateRelevantObj on fail service=${key}`);
         return;
     }
 
-    // should never be reached
-    console.log(`[Router] updateRelevantObj what service is this? ${key}`);
+    
 }
 
 /**

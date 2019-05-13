@@ -54,6 +54,16 @@ function transformArrToCassandraList(arr, quotes){
     return list;
 }
 
+function getPreparedList(arr){
+    var list = `(`;
+    for (var elem of arr){
+        list += '?,';
+    }
+    list = list.substring(0,list.length-1);
+    list += `)`;
+    return list;
+}
+
 /**
  * Marks the free media in Cassandra to be associated with a Question.
  * @param {id[]} ids array of media IDs in Cassandra
@@ -135,14 +145,16 @@ async function checkFreeMedia(ids, poster){
     }
 
     // grab the poster name for each media id
-    let list_ids = transformArrToCassandraList(ids, false);
-    let query = `SELECT poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id in ${list_ids}`;
+    //let list_ids = transformArrToCassandraList(ids, false);
+    //let query = `SELECT poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id in ${list_ids}`;
+    let prepared_list = getPreparedList(ids);
+    let query = `SELECT poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id in ${prepared_list}`;
     console.log(`[QA] checkFreeMedia query=${query}`);
 
     // await the cassandra query and check for the response
     let result = null;
     try {
-        result = await cassandra_client.execute(query, [], {prepare: true});
+        result = await cassandra_client.execute(query, ids, {prepare: true});
     } catch (err){
         console.log(`[QA] checkFreeMedia getting poster error ${err}`);
         return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
@@ -175,14 +187,16 @@ async function deleteArrOfMedia(ids){
     }
 
     // transform the array of media IDs to the expected format Cassandra wants them in ('id', 'id')
-    var list_ids = transformArrToCassandraList(ids, false);
+    // var list_ids = transformArrToCassandraList(ids, false);
+    var prepared_list = getPreparedList(ids);
 
     // prepare the query
-    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
+    // const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
+    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${prepared_list}`;
     console.log(`[QA] deleteArrOfMedia query=${query}`);
 
     // we DON'T have to await this call... just hope Cassandra is up and reliable
-    let cassandraResp = cassandra_client.execute(query, [], {prepare: true});
+    let cassandraResp = cassandra_client.execute(query, ids, {prepare: true});
 
     // build the bulk request that will delete all Media metadata documents
     let bulk_query = { body : [] };
@@ -204,22 +218,6 @@ async function deleteArrOfMedia(ids){
         console.log(`[QA] Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
-    // delete the associated metadata documents
-    // let elasticResp = await client.deleteByQuery({
-    //     index: INDEX_MEDIA,
-    //     type: "_doc",
-    //     body: { 
-    //         query: { 
-    //             term: { 
-    //                 "qa_id.keyword": qa_id
-    //             } 
-    //         }, 
-    //     }
-    // });
-    // if (elasticResp.deleted != ids.length){
-    //     console.log(`[QA] Failed to delete correct number of Media metadatad documents`);
-    //     console.log(response);
-    // }
     return new DBResult(constants.DB_RES_SUCCESS, bulkResponse);
 }
 
@@ -830,6 +828,11 @@ async function deleteQuestion(qid, username){
         //      it suffices to delete all media associated with QID as all media associated to its Answers
         //      have their associated ID field set to QID instead of AID to optimize deletion
         try {
+            let answerMedia = await getAnswerMedia(qid);
+            console.log(`>>>>>> [ANSWER MEDIA]: ${answerMedia}`);
+            for (let answerId of answerMedia) {
+                media_ids.push(answerId);
+            }
             response = await deleteArrOfMedia(media_ids);
             console.log(`[QA] DeleteQuestion deleteArrOfMediaResp = ${JSON.stringify(response.data)}`);
         }
@@ -1447,6 +1450,20 @@ async function acceptAnswer(aid, username){
     else {
         return new DBResult(constants.DB_RES_NOT_ALLOWED, null);
     }
+}
+
+async function getAnswerMedia(qid) {
+    const answers = (await getAnswers(qid)).data;
+    let answerMedia = [];
+
+    for (let answer of answers) {
+        let mediaIds = answer._source.media;
+        for (let mediaId of mediaIds) {
+            answerMedia.push(mediaId);
+        }
+    }
+
+    return answerMedia;
 }
 
 
