@@ -197,7 +197,7 @@ async function generateResponse(key, endpoint, req, obj){
                     return {status: status, response: response.toOBJ(), queue: false};
                 }
             }
-            return undefined;
+            return question_resp;
         }
         else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
             let user = req.session.user;
@@ -333,8 +333,8 @@ async function generateResponse(key, endpoint, req, obj){
                 question_resp.response.question.view_count += 1;
                 setCachedObject("get:" + qid, question_resp);
             }
-            status = constants.STATUS_200;
-            return {status: status, response: question_resp, views: question_views, queue: !viewed};
+            question_resp['queue'] = true;
+            return question_resp;
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_A){
             let qid = req.params.qid;
@@ -442,7 +442,7 @@ async function getRelevantObj(key, endpoint, req){
     return undefined;
 }
 
-function updateRelevantObj(key, endpoint, req, rabbitRes){
+async function updateRelevantObj(key, endpoint, req, rabbitRes){
     if (rabbitRes.status === constants.STATUS_200){
         if (key === constants.SERVICES.AUTH){
             return;
@@ -464,11 +464,11 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
                 endpoint === constants.ENDPOINTS.QA_ADD_A){
                 let which_id = (endpoint === constants.ENDPOINTS.QA_ADD_Q) ? req.params.qid : req.params.aid;
                 if (endpoint === constants.ENDPOINTS.QA_ADD_A){
-                    removeCachedObject("question_answers:" + qid);
+                    await removeCachedObject("question_answers:" + qid);
                 }
                 let media = req.body.media;
                 for (var media_id of media){
-                    setCachedObject("media:" + media_id, true);
+                    await setCachedObject("media:" + media_id, true);
                     // removeCachedObject("media_poster:" + media_id);
                 }
                 // let created_id = rabbitRes.response.id;
@@ -500,7 +500,7 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
                 let delQuestionResp = new APIResponse();
                 delQuestionResp.setERR(constants.ERR_Q_NOTFOUND);
                 let newCachedResp = {status: constants.STATUS_400, response: delQuestionResp.toOBJ()};
-                setCachedObject("get:" + qid, newCachedResp);
+                await setCachedObject("get:" + qid, newCachedResp);
             }
             else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
                 return;
@@ -512,11 +512,11 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
             else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
                 let qid = req.params.qid;
                 // setCachedObject("views:" + qid, rabbitRes.views);
-                setCachedObject("get:" + qid, rabbitRes);
+                await setCachedObject("get:" + qid, rabbitRes);
                 // setCachedObject("source:" + qid, rabbitRes.response.question);
             }
             else if (endpoint === constants.ENDPOINTS.QA_GET_A){
-                setCachedObject("question_answers:" + qid, rabbitRes);
+                await setCachedObject("question_answers:" + req.params.qid, rabbitRes);
             }
             return;
         }
@@ -528,13 +528,13 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
         }
         else if (key === constants.SERVICES.USER){
             if (endpoint === constants.ENDPOINTS.USER_GET){
-                setCachedObject("user_profile:" + req.params.username, rabbitRes);
+                await setCachedObject("user_profile:" + req.params.username, rabbitRes);
             }
             else if (endpoint === constants.ENDPOINTS.USER_Q){
-                setCachedObject("user_questions:" + req.params.username, rabbitRes);
+                await setCachedObject("user_questions:" + req.params.username, rabbitRes);
             }
             else if (endpoint === constants.ENDPOINTS.USER_A){
-                setCachedObject("user_answers:" + req.params.username, rabbitRes);
+                await setCachedObject("user_answers:" + req.params.username, rabbitRes);
             }
             
             return;
@@ -572,7 +572,7 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
                 return;
             }
             else if (endpoint === constants.ENDPOINTS.QA_GET_A){
-                setCachedObject("question_answers:" + qid, rabbitRes);
+                await setCachedObject("question_answers:" + qid, rabbitRes);
             }
             return;
         }
@@ -584,13 +584,13 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
         }
         else if (key === constants.SERVICES.USER){
             if (endpoint === constants.ENDPOINTS.USER_GET){
-                setCachedObject("user_profile:" + req.params.username, rabbitRes);
+                await setCachedObject("user_profile:" + req.params.username, rabbitRes);
             }
             else if (endpoint === constants.ENDPOINTS.USER_Q){
-                setCachedObject("user_questions:" + req.params.username, rabbitRes);
+                await setCachedObject("user_questions:" + req.params.username, rabbitRes);
             }
             else if (endpoint === constants.ENDPOINTS.USER_A){
-                setCachedObject("user_answers:" + req.params.username, rabbitRes);
+                await setCachedObject("user_answers:" + req.params.username, rabbitRes);
             }
             return;
         }
@@ -609,7 +609,7 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
  * @param {Request} req Express Request object
  * @param {obj} obj relevant object to the request
  */
-function needToWait(key, endpoint, req, obj){
+async function needToWait(key, endpoint, req, obj){
     if (key === constants.SERVICES.AUTH){
         return true;
     }
@@ -629,7 +629,7 @@ function needToWait(key, endpoint, req, obj){
                 return false;
             }
             for (var media_id of req.body.media){
-                let media_in_use = getCachedObject("media:" + media_id);
+                let media_in_use = await getCachedObject("media:" + media_id);
                 if (media_in_use != null){
                     return false;
                 }
@@ -710,7 +710,7 @@ async function wrapRequest(req, res, key, endpoint){
     //     data.body = {};
     // }
     let relevantObj = await getRelevantObj(key, endpoint, data);
-    let should_wait = needToWait(key, endpoint, data, relevantObj);
+    let should_wait = await needToWait(key, endpoint, data, relevantObj);
     let rabbitRes = undefined;
     if (should_wait){
         rabbitRes = await routeRequest(key, endpoint, data);
@@ -727,7 +727,7 @@ async function wrapRequest(req, res, key, endpoint){
         }
     }
     // update relevant cached objects
-    updateRelevantObj(key, endpoint, data, rabbitRes);
+    await updateRelevantObj(key, endpoint, data, rabbitRes);
 
     // console.log(`endpoint=${endpoint}, resp status=${rabbitRes.status}`);
     res.status(rabbitRes.status);

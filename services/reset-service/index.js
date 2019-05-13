@@ -1,8 +1,12 @@
 /* library imports */
 const express = require('express');
 const request = require('request');
+const Memcached = require('memcached');
+
 
 /* internal imports */
+const MEMCACHED_LOCATIONS = ['130.245.171.134'];
+const memcached = new Memcached(MEMCACHED_LOCATIONS);
 
 /* initialize express application */
 const app = express();
@@ -65,5 +69,7 @@ async function resetDB(req){
         console.log(`clearing ${index}`);
         request.post(`http://admin:ferdman123@130.245.169.86:92/${index}/_delete_by_query`, { json: { "query": { "match_all": {} } } });
     }
+    memcached.flush();
+
     return {status: 200, response: {status: 'OK'}};
 }
