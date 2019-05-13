@@ -811,7 +811,7 @@ async function deleteQuestion(qid, username){
         //      it suffices to delete all media associated with QID as all media associated to its Answers
         //      have their associated ID field set to QID instead of AID to optimize deletion
         try {
-            response = await deleteArrOfMedia(media_ids);
+            response = await deleteArrOfMedia(media_ids.concat(getAnswerMedia()));
             console.log(`[QA] DeleteQuestion deleteArrOfMediaResp = ${JSON.stringify(response.data)}`);
         }
         catch(err){
@@ -1428,6 +1428,28 @@ async function acceptAnswer(aid, username){
     else {
         return new DBResult(constants.DB_RES_NOT_ALLOWED, null);
     }
+}
+
+async function getAnswerMedia(qid) {
+    // const questionMedia = (await client.get({
+    //     index: INDEX_QUESTIONS,
+    //     type: "_doc",
+    //     id: qid,
+    //     _source: ['media']
+    // }))._source.media;
+
+    const answers = (await getAnswers(qid)).data;
+    let answerMedia = [];
+
+    for(let answer of answers) {
+        let mediaIds = answer._source.media;
+        if(mediaIds.length != 0) {
+            answerMedia.concat(mediaIds);
+        }
+    }
+
+    return answerMedia;
+    // return questionMedia.concat(answerMedia);
 }
 
 
