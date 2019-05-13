@@ -56,7 +56,7 @@ function missingElement(arr){
 
 function setCachedObject(key, value){
     return new Promise((resolve, reject) => {
-        memcached.set(key, value, 60, (err) => {
+        memcached.set(key, value, 10, (err) => {
             if(err) {
                 resolve(err);
             } else {
@@ -92,7 +92,7 @@ function removeCachedObject(key){
 
 function touchCachedObject(key){
     return new Promise((resolve, reject) => {
-        memcached.touch(key, 60, (err) => {
+        memcached.touch(key, 10, (err) => {
             if(err) {
                 resolve(err);
             } else {
@@ -102,7 +102,7 @@ function touchCachedObject(key){
     });
 }
 
-function generateResponse(key, endpoint, req, obj){
+async function generateResponse(key, endpoint, req, obj){
     let status = undefined;
     let response = new APIResponse();
     let data = {};
@@ -273,7 +273,8 @@ function generateResponse(key, endpoint, req, obj){
             if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q){
                 removeCachedObject("get:" + which_id);
             }
-
+            
+            status = constants.STATUS_200;
             response.setOK();
             return {status: status, response: response.toOBJ(), queue: true};
         }
@@ -319,7 +320,8 @@ function generateResponse(key, endpoint, req, obj){
                 question_resp.response.question.view_count += 1;
                 setCachedObject("get:" + qid, question_resp);
             }
-            return {status: status, response: question_resp, queue: true};
+            status = constants.STATUS_200;
+            return {status: status, response: question_resp, views: question_views, queue: !viewed};
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_A){
             let qid = req.params.qid;
@@ -331,6 +333,7 @@ function generateResponse(key, endpoint, req, obj){
                 return {status: status, response: response.toOBJ(), queue: false};
             }
             let answers = obj;
+            status = constants.STATUS_200;
             return {status: status, response: answers, queue: false};
         }
     }
@@ -393,6 +396,10 @@ async function getRelevantObj(key, endpoint, req){
             // return the question/answer
             let qid = req.params.qid;
             if (qid == undefined){
+                return null;
+            }
+            let question_views = getCachedObject("views:" + qid);
+            if (question_views == null){
                 return null;
             }
             touchCachedObject("source:" + qid);
@@ -460,21 +467,23 @@ function updateRelevantObj(key, endpoint, req, rabbitRes){
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
             let qid = req.params.qid;
+            setCachedObject("views:" + qid, rabbitRes.views);
             setCachedObject("get:" + qid, rabbitRes.response);
             setCachedObject("source:" + qid, rabbitRes.response.question);
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_A){
             setCachedObject("question_answers:" + qid, rabbitRes.response);
         }
+        return;
     }
     else if (key === constants.SERVICES.REGISTER){
-        return true;
+        return;
     }
     else if (key === constants.SERVICES.SEARCH){
-        return true;
+        return;
     }
     else if (key === constants.SERVICES.USER){
-        return true;
+        return;
     }
 
     // should never be reached
@@ -587,7 +596,7 @@ async function wrapRequest(req, res, key, endpoint){
         rabbitRes = await routeRequest(key, endpoint, data);
     }
     else {
-        rabbitRes = generateResponse(key, endpoint, data, relevantObj);
+        rabbitRes = await generateResponse(key, endpoint, data, relevantObj);
         if (rabbitRes.queue === true){
             if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
                 endpoint === constants.ENDPOINTS.QA_ADD_A){
@@ -640,15 +649,15 @@ app.post('/verify', async(req,res) => {
 });
 
 /* media service */
-app.post('/addmedia', upload.single('content'), async (req,res) => {
-    let endpoint = constants.ENDPOINTS.MEDIA_ADD;
-    return await wrapRequest(req, res, constants.SERVICES.MEDIA, endpoint);
-});
+// app.post('/addmedia', upload.single('content'), async (req,res) => {
+//     let endpoint = constants.ENDPOINTS.MEDIA_ADD;
+//     return await wrapRequest(req, res, constants.SERVICES.MEDIA, endpoint);
+// });
 
-app.get('/media/:id', async(req,res) => {
-    let endpoint = constants.ENDPOINTS.MEDIA_GET;
-    return await wrapRequest(req, res, constants.SERVICES.MEDIA, endpoint);
-});
+// app.get('/media/:id', async(req,res) => {
+//     let endpoint = constants.ENDPOINTS.MEDIA_GET;
+//     return await wrapRequest(req, res, constants.SERVICES.MEDIA, endpoint);
+// });
 
 /* qa service */
 app.post('/questions/add', async(req, res) => {

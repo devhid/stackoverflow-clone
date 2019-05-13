@@ -538,7 +538,17 @@ async function getQuestion(qid, username, ip, update){
         })).hits.hits[0];
     }
     if (question){
-        return new DBResult(constants.DB_RES_SUCCESS, question);
+        let question_views = (await client.search({
+            index: INDEX_VIEWS,
+            body: {
+                query: {
+                    term: {
+                        "qid.keyword": qid
+                    }
+                }
+            }
+        })).hits.hits[0];
+        return {status: constants.DB_RES_SUCCESS, data: question, views: question_views};
     }
     return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
 }

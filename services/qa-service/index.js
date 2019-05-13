@@ -212,7 +212,7 @@ async function getQuestion(request){
             data[constants.QUESTION_KEY] = question._source;
         }
         let merged = {...response.toOBJ(), ...data};
-        request.reply({status: status, response: merged});
+        request.reply({status: status, response: merged, views: getRes.views._source});
         request.ack();
     } catch (err){
         console.log(`[QA] getQuestion err ${JSON.stringify(err)}`);
