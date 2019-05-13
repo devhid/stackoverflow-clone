@@ -521,14 +521,9 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
             else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
                 let qid = req.params.qid;
 
-                let old_question = (await getCachedObject("get:" + qid)).response.question;
-                for (var media_id of old_question.media){
-                    // delete cached records of used media
-                    await removeCachedObject("media:" + media_id);
-                }
-
                 // delete cached records of used media
-                for (var media_id of question.media){
+                let media = req.body.media;
+                for (var media_id of media){
                     await removeCachedObject("media:" + media_id);
                 }
 
