@@ -811,7 +811,9 @@ async function deleteQuestion(qid, username){
         //      it suffices to delete all media associated with QID as all media associated to its Answers
         //      have their associated ID field set to QID instead of AID to optimize deletion
         try {
-            response = await deleteArrOfMedia(media_ids.concat((await getAnswerMedia(qid))));
+            let answerMedia = await getAnswerMedia(qid);
+            console.log(`>>>>>> [ANSWER MEDIA]: ${answerMedia}`);
+            response = await deleteArrOfMedia(media_ids.concat(answerMedia));
             console.log(`[QA] DeleteQuestion deleteArrOfMediaResp = ${JSON.stringify(response.data)}`);
         }
         catch(err){
