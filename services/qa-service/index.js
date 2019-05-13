@@ -162,7 +162,7 @@ async function addQuestion(request){
         request.reply({status: status, response: merged});
         request.ack();
     } catch (err){
-        console.log(`[QA] addQuestion err ${JSON.stringify(err)}`);
+        console.log(`[QA] addQuestion err ${err}`);
         request.nack();
     }
 }
@@ -212,10 +212,11 @@ async function getQuestion(request){
             data[constants.QUESTION_KEY] = question._source;
         }
         let merged = {...response.toOBJ(), ...data};
-        request.reply({status: status, response: merged, views: getRes.views._source});
+        let views = (getRes.views != undefined) ? getRes.views._source : undefined;
+        request.reply({status: status, response: merged, views: views});
         request.ack();
     } catch (err){
-        console.log(`[QA] getQuestion err ${JSON.stringify(err)}`);
+        console.log(`[QA] getQuestion err ${err}`);
         request.nack();
     }
 }
@@ -251,7 +252,7 @@ async function addAnswer(request){
         }
 
         // perform database operations
-        let addRes = await database.addAnswer(qid, username, body, media, id);
+        let addRes = await database.addAnswer(qid, user, body, media, id);
         
         // check response result
         if (addRes.status === constants.DB_RES_Q_NOTFOUND){
@@ -267,11 +268,15 @@ async function addAnswer(request){
             response.setOK();
             data[constants.ID_KEY] = addRes.data;
         }
+        else if (addRes.status === constants.DB_RES_MEDIA_INVALID){
+            status = constants.STATUS_400;
+            response.setERR(constants.ERR_MEDIA_INVALID);
+        }
         let merged = {...response.toOBJ(), ...data};
         request.reply({status: status, response: merged});
         request.ack();
     } catch (err){
-        console.log(`[QA] addAnswer err ${JSON.stringify(err)}`);
+        console.log(`[QA] addAnswer err ${err}`);
         request.nack();
     }
 }
@@ -324,7 +329,7 @@ async function getAnswers(request){
         request.reply({status: status, response: merged});
         request.ack();
     } catch (err){
-        console.log(`[QA] getAnswers err ${JSON.stringify(err)}`);
+        console.log(`[QA] getAnswers err ${err}`);
         request.nack();
     }
 }
@@ -377,7 +382,7 @@ async function deleteQuestion(request){
         request.reply({status: status, response: response.toOBJ()});
         request.ack();
     } catch(err){
-        console.log(`[QA] deleteQuestion err ${JSON.stringify(err)}`);
+        console.log(`[QA] deleteQuestion err ${err}`);
         request.nack();
     }
 }
@@ -432,7 +437,7 @@ async function upvoteQuestion(request){
         request.reply({status: status, response: response.toOBJ()});
         request.ack();
     } catch (err){
-        console.log(`[QA] upvoteQuestion err ${JSON.stringify(err)}`);
+        console.log(`[QA] upvoteQuestion err ${err}`);
         request.nack();
     }
 }
@@ -485,7 +490,7 @@ async function upvoteAnswer(request){
         request.reply({status: status, response: response.toOBJ()});
         request.ack();
     } catch (err){
-        console.log(`[QA] upvoteAnswer err ${JSON.stringify(err)}`);
+        console.log(`[QA] upvoteAnswer err ${err}`);
         request.nack();
     }
 }
@@ -545,7 +550,7 @@ async function acceptAnswer(request){
         request.reply({status: status, response: response.toOBJ()});
         request.ack();
     } catch (err){
-        console.log(`[QA] acceptAnswer err ${JSON.stringify(err)}`);
+        console.log(`[QA] acceptAnswer err ${err}`);
         request.nack();
     }
 }

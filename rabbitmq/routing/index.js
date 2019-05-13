@@ -147,9 +147,25 @@ async function generateResponse(key, endpoint, req, obj){
             // the only time we can send a response back with media is if we have seen
             //  at least one of the specified media IDs is in use
             if (req.body.media != undefined && req.body.media.length > 0){
-                status = constants.STATUS_400;
-                response.setERR(constants.ERR_MEDIA_INVALID);
-                return {status: status, response: response.toOBJ(), queue: false};
+                let media_invalid = false;
+                // check if any media are in use
+                for (var media_id of req.body.media){
+                    let media_in_use = await getCachedObject("media:" + media_id);
+                    if (media_in_use != null){
+                        media_invalid = true;
+                        break;
+                    }
+                    let media_poster = await getCachedObject("media_poster:" + media_id);
+                    if (media_poster == null || media_poster !== req.session.user._source.username){
+                        media_invalid = true;
+                        break;
+                    }
+                }
+                if (media_invalid === true){
+                    status = constants.STATUS_400;
+                    response.setERR(constants.ERR_MEDIA_INVALID);
+                    return {status: status, response: response.toOBJ(), queue: false};
+                }  
             }
 
             status = constants.STATUS_200;
@@ -179,12 +195,17 @@ async function generateResponse(key, endpoint, req, obj){
             if (question != null){
                 // check if the poster matches the requester
                 if (question.user.username === user._source.username){
+                    // delete cached records of used media
+                    for (var media_id of question.media){
+                        await removeCachedObject("media:" + media_id);
+                    }
+                    
                     // mark the question as deleted in cache
                     // removeCachedObject("source:" + qid);
                     let delQuestionResp = new APIResponse();
                     delQuestionResp.setERR(constants.ERR_Q_NOTFOUND);
                     let newCachedResp = {status: constants.STATUS_400, response: delQuestionResp.toOBJ()};
-                    setCachedObject("get:" + qid, newCachedResp);
+                    await setCachedObject("get:" + qid, newCachedResp);
 
                     // send the response
                     status = constants.STATUS_200;
@@ -416,7 +437,11 @@ async function getRelevantObj(key, endpoint, req){
             //     return null;
             // }
             touchCachedObject("get:" + qid);
-            return await getCachedObject("get:" + qid);
+            let question_resp = await getCachedObject("get:" + qid);
+            if (question_resp == null || question_resp.views == null){
+                return null;
+            }
+            return question_resp;
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_A){
             let qid = req.params.qid;
@@ -451,12 +476,11 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
             return;
         }
         else if (key === constants.SERVICES.MEDIA){
-            // // if we queue media, this could be useful
-            // if (endpoint === constants.ENDPOINTS.MEDIA_ADD){
-            //     for (var media_id of rabbitRes.response.question.media){
-            //         setCachedObject("media_poster:" + media_id, req.session.user);
-            //     }
-            // }
+            if (endpoint === constants.ENDPOINTS.MEDIA_ADD){
+                for (var media_id of rabbitRes.response.question.media){
+                    setCachedObject("media_poster:" + media_id, req.session.user._source.username);
+                }
+            }
             return;
         }
         else if (key === constants.SERVICES.QA){
@@ -464,12 +488,12 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                 endpoint === constants.ENDPOINTS.QA_ADD_A){
                 let which_id = (endpoint === constants.ENDPOINTS.QA_ADD_Q) ? req.params.qid : req.params.aid;
                 if (endpoint === constants.ENDPOINTS.QA_ADD_A){
-                    await removeCachedObject("question_answers:" + qid);
+                    await removeCachedObject("question_answers:" + which_id);
                 }
                 let media = req.body.media;
                 for (var media_id of media){
                     await setCachedObject("media:" + media_id, true);
-                    // removeCachedObject("media_poster:" + media_id);
+                    removeCachedObject("media_poster:" + media_id);
                 }
                 // let created_id = rabbitRes.response.id;
                 // if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
@@ -496,6 +520,18 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
             }
             else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
                 let qid = req.params.qid;
+
+                let old_question = (await getCachedObject("get:" + qid)).response.question;
+                for (var media_id of old_question.media){
+                    // delete cached records of used media
+                    await removeCachedObject("media:" + media_id);
+                }
+
+                // delete cached records of used media
+                for (var media_id of question.media){
+                    await removeCachedObject("media:" + media_id);
+                }
+
                 // removeCachedObject("get:" + qid);
                 let delQuestionResp = new APIResponse();
                 delQuestionResp.setERR(constants.ERR_Q_NOTFOUND);
@@ -569,10 +605,11 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                 return;
             }
             else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
+                await setCachedObject("get:" + req.params.qid, rabbitRes);
                 return;
             }
             else if (endpoint === constants.ENDPOINTS.QA_GET_A){
-                await setCachedObject("question_answers:" + qid, rabbitRes);
+                await setCachedObject("question_answers:" + req.params.qid, rabbitRes);
             }
             return;
         }
@@ -628,13 +665,20 @@ async function needToWait(key, endpoint, req, obj){
                 req.body.media.length == 0){
                 return false;
             }
+            let all_media_cached = true;
             for (var media_id of req.body.media){
+                touchCachedObject("media:" + media_id);
                 let media_in_use = await getCachedObject("media:" + media_id);
                 if (media_in_use != null){
                     return false;
                 }
+                touchCachedObject("media_poster:" + media_id);
+                let media_poster = await getCachedObject("media_poster:" + media_id);
+                if (media_poster == null){
+                    all_media_cached = false;
+                }
             }
-            return true;
+            return !all_media_cached;
         }
         else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
             // if the cached object is null, we need to go to the backend
