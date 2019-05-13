@@ -27,7 +27,7 @@ export class RegisterService {
     let body = { username: username, email: email, password: password };
     return this.http.post(url + "/adduser", body, httpHeaders)
       .pipe(
-        catchError(this.handleError)
+        //catchError(this.handleError)
       )
   }
 
@@ -35,7 +35,7 @@ export class RegisterService {
     let body = { email: email, key: key }
     return this.http.post(url + "/verify", body, httpHeaders)
       .pipe(
-        catchError(this.handleError)
+        //catchError(this.handleError)
       )
   }
 

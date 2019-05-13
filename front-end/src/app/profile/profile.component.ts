@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
+import { Router } from '@angular/router';
 
 import { UserService } from '../services/user.service';
 import { User } from '../classes/user';
@@ -21,7 +22,8 @@ export class ProfileComponent implements OnInit {
   constructor(
     private userService: UserService,
     private retrievalService: RetrievalService,
-    private route: ActivatedRoute
+    private route: ActivatedRoute,
+    private router: Router
   ) { }
 
   ngOnInit() {

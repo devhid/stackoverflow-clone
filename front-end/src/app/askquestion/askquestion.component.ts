@@ -35,23 +35,33 @@ export class AskQuestionComponent implements OnInit {
   async askQuestionSubmit() {
     let tags = this.newQuestionForm.value.tags.split(" ");
 
-    let arr = [];
-    for(let file of this.files){
-      console.log(file)
-      arr.push(this.mediaService.upload(file));
-    }
+    if(this.files.length !== 0){
+      let arr = [];
+      for(let file of this.files){
+        console.log(file)
+        arr.push(this.mediaService.upload(file));
+      }
 
-    forkJoin(arr)
-      .subscribe(responses => {
-        let mediaIds = [];
-        for(let response of responses) {
-          mediaIds.push(response.id);
-        }
-        this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags, mediaIds)
-          .subscribe(async response => {
-            console.log(response);
-          });
-      });
+      forkJoin(arr)
+        .subscribe(responses => {
+          let mediaIds = [];
+          for(let response of responses) {
+            mediaIds.push(response.id);
+          }
+          this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags, mediaIds)
+            .subscribe(async response => {
+              console.log(response);
+              this.router.navigate(['/question/' + response.id]); 
+            });
+        });
+    } else {
+      this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags, mediaIds)
+        .subscribe(async response => {
+          console.log(response);
+          this.router.navigate(['/question/' + response.id]); 
+        });
+    }
+    
   }
 
   onFileChange(event) {

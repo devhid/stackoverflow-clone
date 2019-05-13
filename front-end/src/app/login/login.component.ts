@@ -40,7 +40,7 @@ export class LoginComponent implements OnInit {
     },
     (err: HttpErrorResponse) => {
       console.log(err);
-      this.results = "Error on login.";
+      this.results = err.error.error;
     });
   }
 
@@ -52,7 +52,7 @@ export class LoginComponent implements OnInit {
     },
     (err: HttpErrorResponse) => {
       console.log(err);
-      this.results = "Error on logout.";
+      this.results = err.error.error;
     });
   }
 }

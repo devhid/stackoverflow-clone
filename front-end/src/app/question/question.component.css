@@ -31,6 +31,17 @@
     margin-bottom: 2%;
 }
 
+.question-media {
+    display: flex;
+    justify-content: space-around;
+    flex-direction: row;
+}
+
+.question-media img {
+    max-width: 200px;
+    max-height: auto;
+}
+
 .question-delete {
     width: auto;
     display: flex;

@@ -3,11 +3,13 @@ import { ActivatedRoute } from '@angular/router';
 import { FormGroup, FormControl } from '@angular/forms';
 import { Router } from '@angular/router';
 
+import { map } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
 import { RetrievalService } from '../services/retrieval.service';
 import { QAService } from '../services/qa.service';
+import { MediaService } from '../services/media.service';
 import { Question } from '../classes/question';
 import { Answer, Answers } from '../classes/answer';
-import { map } from 'rxjs/operators';
 
 @Component({
   selector: 'app-question',
@@ -24,9 +26,12 @@ export class QuestionComponent implements OnInit {
     body: new FormControl(''),
   });
 
+  answerFiles: File[] = [];
+
   constructor(
     private retrievalService: RetrievalService,
     private qaService: QAService,
+    private mediaService: MediaService,
     private route: ActivatedRoute,
     private router: Router
   ) { }
@@ -37,6 +42,7 @@ export class QuestionComponent implements OnInit {
     .subscribe((question: Question) => {
       console.log(question);
       this.question = question;
+      // Retrieve answers
       this.retrieveAnswers(id)
       .subscribe(answers => {
         this.answers = answers.sort(function(a,b){ return a.timestamp - b.timestamp });
@@ -55,19 +61,11 @@ export class QuestionComponent implements OnInit {
   }
 
   private retrieveQuestion(id: string) {
-    return this.retrievalService.getQuestion(id)
-    /*.subscribe((question: Question) => {
-      console.log(question);
-      this.question = question;
-    });*/
+    return this.retrievalService.getQuestion(id);
   }
 
   private retrieveAnswers(id: string) {
-    return this.retrievalService.getQuestionAnswers(id)
-    /*.subscribe(answers => {
-      console.log(answers);
-      this.answers = answers;
-    });*/
+    return this.retrievalService.getQuestionAnswers(id);
   }
 
   private retrieveAcceptedAnswer(id: string) {
@@ -85,12 +83,36 @@ export class QuestionComponent implements OnInit {
     let body = this.newAnswerForm.value.body;
     let questionId = this.retrieveId();
     console.log(body);
-    this.qaService.addAnswer(questionId, this.newAnswerForm.value.body)
-    .subscribe(response => {
-      console.log(response);
-      this.router.navigateByUrl('/', {skipLocationChange: true}).then(()=>
-      this.router.navigate(['/question/' + questionId])); 
-    });
+    
+    // Upload media
+    if(this.answerFiles.length !== 0) {
+      let arr = [];
+      for(let file of this.answerFiles){
+        console.log(file)
+        arr.push(this.mediaService.upload(file));
+      }
+
+      forkJoin(arr)
+        .subscribe(responses => {
+          let mediaIds = [];
+          for(let response of responses) {
+            mediaIds.push(response.id);
+          }
+          this.qaService.addAnswer(questionId, this.newAnswerForm.value.body, mediaIds)
+            .subscribe(response => {
+              console.log(response);
+              this.router.navigateByUrl('/', {skipLocationChange: true}).then(()=>
+              this.router.navigate(['/question/' + questionId])); 
+            });
+        });
+    } else {
+      this.qaService.addAnswer(questionId, this.newAnswerForm.value.body, [])
+        .subscribe(response => {
+          console.log(response);
+          this.router.navigateByUrl('/', {skipLocationChange: true}).then(()=>
+          this.router.navigate(['/question/' + questionId])); 
+        });
+    }
   }
 
   deleteQuestion(): void {
@@ -177,5 +199,17 @@ export class QuestionComponent implements OnInit {
         this.router.navigate(['/question/' + questionId])); 
       }
     });
+  }
+
+  onFileChange(event) {
+    console.log(event);
+    let numFiles = event.target.files.length;
+    if(numFiles > 0) {
+      this.answerFiles = [];
+      for(let i = 0; i < numFiles; i++) {
+        let file = event.target.files[i];
+        this.answerFiles.push(file);
+      }
+    }
   }
 }

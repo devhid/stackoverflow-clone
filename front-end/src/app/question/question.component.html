@@ -21,6 +21,11 @@
       <div class="question-user">
         {{question.username}}
       </div>
+      <div class="question-media">
+        <div *ngFor="let id of question.media">
+          <img src="http://130.245.170.211/media/{{id}}" />
+        </div>
+      </div>
     </div>
     <div class="question-delete">
       <button class="question-delete-button" (click)="deleteQuestion()">
@@ -52,6 +57,11 @@
       <div class="answer-timestamp">
         {{acceptedAnswer.timestamp}}
       </div>
+      <div class="question-media">
+        <div *ngFor="let id of acceptedAnswer.media"> 
+          <img src="http://130.245.170.211/media/{{id}}" />
+        </div>
+      </div>
     </div>
   </div>
 
@@ -77,6 +87,11 @@
       <div class="answer-timestamp">
         {{answer.timestamp}}
       </div>
+      <div class="question-media">
+        <div *ngFor="let id of answer.media">
+          <img src="http://130.245.170.211/media/{{id}}" />
+        </div>
+      </div> 
     </div>
     <div *ngIf="!acceptedAnswer || answer.id !== acceptedAnswer.id" class="answer-accept">
       <button class="answer-accept-button" (click)="acceptAnswer(answer.id)">
@@ -89,6 +104,10 @@
       <div class="form-group">
           <label for="body">Answer</label>
           <input type="text" id="body" required formControlName="body" name="body">
+      </div>
+
+      <div class="form-group">
+          <input type="file" (change)="onFileChange($event)" multiple>
       </div>
       
       <button type="submit">Submit answer</button>

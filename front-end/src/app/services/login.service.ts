@@ -35,7 +35,7 @@ export class LoginService {
   logout(): Observable<any> {
     return this.http.post(url + "/logout", {}, httpHeaders)
       .pipe(
-        catchError(this.handleError)
+        //catchError(this.handleError)
       )
   }
 

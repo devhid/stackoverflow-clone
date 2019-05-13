@@ -57,8 +57,8 @@ export class QAService {
   }
 
   // Answer services
-  addAnswer(questionId: string, body: string): Observable<any> {
-    let postBody = { body: body };
+  addAnswer(questionId: string, body: string, mediaIds: Array<string>): Observable<any> {
+    let postBody = { body: body, media: mediaIds };
     return this.http.post(url + "/questions/" + questionId + "/answers/add", postBody, httpHeaders)
       .pipe(
         catchError(this.handleError)

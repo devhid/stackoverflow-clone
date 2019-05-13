@@ -29,8 +29,8 @@ export class MediaService {
     )
   }
 
-  public retrieveMedia(id: string): Observable<any> {
-    return this.http.get(url + "/media/" + id)
+  public retrieveMedia(id: number): Observable<Blob> {
+    return this.http.get(url + "/media/" + id, { responseType: 'blob' })
     .pipe(
       catchError(this.handleError)
     )

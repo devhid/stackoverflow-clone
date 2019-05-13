@@ -2,23 +2,23 @@
     <div class="user-info-section">
         <div class="info-section">
             <div class="username">
-                {{userInformation.username}}
+                Username: {{userInformation.username}}
             </div>
             <div class="email">
-                {{userInformation.email}}
+                Email: {{userInformation.email}}
             </div>
             <div class="reputation">
-                {{userInformation.reputation}}
+                Reputation: {{userInformation.reputation}}
             </div>
         </div>
     </div>
 
     <div class="statistic-section">
         <div class="question-number">
-            {{userQuestions?.length || '0'}}
+            Number of Questions: {{userQuestions?.length || '0'}}
         </div>
         <div class="answer-number">
-            {{userAnswers?.length || '0'}}
+            Number of Answers: {{userAnswers?.length || '0'}}
         </div>
     </div>
 
@@ -26,13 +26,13 @@
         <h3>Questions</h3>
         <div *ngFor="let question of userQuestions" class="question-section">
             <div class="question-score">
-                {{question.score}}
+                Question score: {{question.score}}
             </div>
             <div class="question-title">
-                {{question.title}}
+                Question title: <a routerLink="/question/{{question.id}}">{{question.title}}</a>
             </div>
             <div class="question-timestamp">
-                {{question.timestamp}}
+                Question timestamp: {{question.timestamp}}
             </div>
         </div>
     </div>
@@ -44,7 +44,7 @@
                 {{answer.score}}
             </div>
             <div class="answer-title">
-                {{answer.id}}
+                Answer id: {{answer.id}}
             </div>
             <div class="answer-timestamp">
                 {{answer.timestamp}}
