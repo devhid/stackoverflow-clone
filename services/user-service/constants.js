@@ -53,7 +53,7 @@ module.exports = {
             { name: SERVICES.USER, limit: 300, queueLimit: 1000, durable: true, subscribe: true }
         ],
         bindings: [ // for each service, declare only needed bindings
-            { exchange: EXCHANGE.NAME, target: SERVICES.SEARCH, keys: SERVICES.SEARCH }
+            { exchange: EXCHANGE.NAME, target: SERVICES.USER, keys: SERVICES.USER }
         ]
     },
 

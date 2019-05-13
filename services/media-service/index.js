@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const multer = require('multer');
+const rabbot = require('rabbot');
 
 /* internal imports */
 const database = require('./database');
@@ -41,6 +42,26 @@ app.use(function(req, res, next) {
 
 /* parse incoming requests data as json */
 app.use(express.json());
+
+rabbot.nackOnError();
+
+/* install handlers */
+rabbot.handle({
+    queue: constants.SERVICES.MEDIA,
+    type: constants.ENDPOINTS.MEDIA_ADD,
+    autoNack: false,
+    handler: addMedia
+});
+
+/* configure rabbot */
+rabbot.configure(constants.RABBOT_SETTINGS)
+    .then(function(){
+        console.log('[Rabbot] Rabbot configured...');
+    }).catch(err => {
+        console.log(`[Rabbot] err ${err}`);
+    });
+
+/* ------------------ ENDPOINTS ------------------ */
 
 app.post('/addmedia', upload.single('content'), async (req,res) => {
     let data = {
@@ -161,5 +182,6 @@ process.on("SIGINT", shutdown);
 process.on("SIGTERM", shutdown);
 
 function shutdown(){
+    rabbot.shutdown(true);
     server.close();
 }

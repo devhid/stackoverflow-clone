@@ -44,10 +44,16 @@ module.exports = {
             port: 5672,
             timeout: 2000,
             vhost: '/',
-            replyQueue: 'qa-reply'
+            replyQueue: 'media-reply'
         },
         exchanges: [
             { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }
+        ],
+        queues: [   // for each service, declare and subscribe only to the needed queues
+            { name: SERVICES.MEDIA, limit: 300, queueLimit: 1000, durable: true, subscribe: true }
+        ],
+        bindings: [ // for each service, declare only needed bindings
+            { exchange: EXCHANGE.NAME, target: SERVICES.MEDIA, keys: SERVICES.MEDIA }
         ]
     },
 
