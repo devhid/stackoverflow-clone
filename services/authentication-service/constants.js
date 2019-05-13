@@ -1,3 +1,18 @@
+const SERVICES =  {
+    AUTH: 'auth',
+    EMAIL: 'email',
+    MEDIA: 'media',
+    QA: 'qa',
+    REGISTER: 'reg',
+    SEARCH: 'search',
+    USER: 'user'
+};
+
+const EXCHANGE = {
+    NAME: 'stackoverflow',
+    TYPE: 'direct'
+};
+
 module.exports = {
     STATUS_OK: 'OK',
     STATUS_ERR: 'error',
@@ -9,66 +24,57 @@ module.exports = {
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
 
-    AMQP: {
-        protocol: 'amqp',
-        hostname: '192.168.122.33',
-        port: 5672,
-        username: 'so',
-        password: 'so123',
-        locale: 'en_US',
-        heartbeat: 5,
+    CASSANDRA_OPTIONS: {
+        contactPoints: ["192.168.122.38"], 
+        localDataCenter: 'datacenter1', 
+        keyspace: "stackoverflow",
+        table: "media"
     },
     ELASTICSEARCH_OPTIONS: {
         host: "http://admin:ferdman123@130.245.169.86:92"
     },
-    REDIS_OPTIONS: {
-        host: '192.168.122.27',
-        port: 6379,
-        pass: 'SWzpgvbqx8GY6Ryvh9HSVAPv6+m6KgqBHesiufT3'
-    },
 
-    EXCHANGE: {
-        TYPE: 'direct',
-        NAME: 'stackoverflow',
-        PROPERTIES: {
-            durable: true
-        }
-    },
+    SERVICES: SERVICES,
 
-    QUEUE: {
-        PROPERTIES: {
-            durable: true
-        }
-    },
-
-    SERVICES: {
-        AUTH: 'auth',
-        EMAIL: 'email',
-        MEDIA: 'media',
-        QA: 'qa',
-        REGISTER: 'reg',
-        SEARCH: 'search',
-        USER: 'user'
+    RABBOT_SETTINGS: {
+        connection: {
+            user: 'so',
+            pass: 'so123',
+            server: '192.168.122.39',
+            port: 5672,
+            timeout: 2000,
+            vhost: '/',
+            replyQueue: 'auth-reply'
+        },
+        exchanges: [
+            { name: EXCHANGE.NAME, type: EXCHANGE.TYPE, publishTimeout: 1000, durable: true }
+        ],
+        queues: [   // for each service, declare and subscribe only to the needed queues
+            { name: SERVICES.AUTH, limit: 300, queueLimit: 1000, durable: true, subscribe: true }
+        ],
+        bindings: [ // for each service, declare only needed bindings
+            { exchange: EXCHANGE.NAME, target: SERVICES.AUTH, keys: SERVICES.AUTH }
+        ]
     },
 
     ENDPOINTS: {
-        AUTH_LOGIN: 0,
-        AUTH_LOGOUT: 1,
-        EMAIL_VERIFY: 2,
-        MEDIA_ADD: 3,
-        MEDIA_GET: 4,
-        QA_ADD_Q: 5,
-        QA_GET_Q: 6,
-        QA_ADD_A: 7,
-        QA_GET_A: 8,
-        QA_DEL_Q: 9,
-        QA_UPVOTE_Q: 10,
-        QA_UPVOTE_A: 11,
-        QA_ACCEPT: 12,
-        REGISTER: 13,
-        SEARCH: 14,
-        USER_GET: 15,
-        USER_Q: 16,
-        USER_A: 17
-    },
-}
+        AUTH_LOGIN: 'auth_login',
+        AUTH_LOGOUT: 'auth_logout',
+        EMAIL_VERIFY: 'verify',
+        MEDIA_ADD: 'media_add',
+        MEDIA_GET: 'media_get',
+        QA_ADD_Q: 'qa_add_q',
+        QA_GET_Q: 'qa_get_q',
+        QA_ADD_A: 'qa_add_a',
+        QA_GET_A: 'qa_get_a',
+        QA_DEL_Q: 'qa_del_q',
+        QA_UPVOTE_Q: 'qa_upvote_q',
+        QA_UPVOTE_A: 'qa_upvote_a',
+        QA_ACCEPT: 'qa_accept',
+        REGISTER: 'register',
+        SEARCH: 'search',
+        USER_GET: 'user_get',
+        USER_Q: 'user_q',
+        USER_A: 'user_a'
+    }
+};
