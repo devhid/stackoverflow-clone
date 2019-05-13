@@ -319,7 +319,7 @@ async function addQuestion(user, title, body, tags, media, id){
         }
     };
     if (id != undefined){
-        question['_id'] = id;
+        question['id'] = id;
     }
     let response = await client.index(question);
     if (response.result !== "created"){
@@ -604,7 +604,7 @@ async function addAnswer(qid, user, body, media, id){
         }
     };
     if (id != undefined){
-        answer['_id'] = id;
+        answer['id'] = id;
     }
     let response = await client.index(answer);
     if (!response || response.result !== "created"){
