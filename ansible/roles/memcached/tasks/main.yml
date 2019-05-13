@@ -1,0 +1,11 @@
+---
+#
+# Install Memcached
+#
+
+# Install Memcached from APT
+
+  - name: Update APT cache and install Memcached
+    apt:
+      name: memcached
+      update_cache: yes
