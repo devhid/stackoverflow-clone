@@ -55,7 +55,7 @@ export class AskQuestionComponent implements OnInit {
             });
         });
     } else {
-      this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags, mediaIds)
+      this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags, [])
         .subscribe(async response => {
           console.log(response);
           this.router.navigate(['/question/' + response.id]); 
