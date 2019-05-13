@@ -17,6 +17,8 @@ export class RegisterComponent implements OnInit {
     key: new FormControl(''),
   });
 
+  results = "";
+
   constructor(
     private registerService: RegisterService
   ) { }
@@ -31,6 +33,11 @@ export class RegisterComponent implements OnInit {
     this.registerService.registerAccount(this.user.username, this.user.email, this.user.password)
     .subscribe(response => {
       console.log(response);
+      this.results = "Email sent to specified email."
+    },
+    err => {
+      console.log(err);
+      this.results = "Error on registration.";
     });
   }
 
@@ -40,6 +47,11 @@ export class RegisterComponent implements OnInit {
     this.registerService.verifyAccount(this.verificationForm.value.email, this.verificationForm.value.key)
     .subscribe(response => {
       console.log(response);
+      this.results = "Account verified."
+    },
+    err => {
+      console.log(err);
+      this.results = "Error on verification.";
     });
   }
 }

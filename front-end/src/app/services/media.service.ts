@@ -1,21 +1,15 @@
 import { Injectable } from '@angular/core';
-import {
-  HttpClient,
-  HttpErrorResponse,
-  HttpHeaders
-} from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
 
 
-const httpFileHeaders = {
-  headers: new HttpHeaders({ 
-    'Content-Type': 'multipart/form-data'
-  }),
-  withCredentials: true
+const options = {
+  withCredentials: true,
 };
 
 const url = "http://130.245.170.211"
+//const url = "http://kellogs.cse356.compas.cs.stonybrook.edu/";
 
 @Injectable({
   providedIn: 'root'
@@ -29,7 +23,7 @@ export class MediaService {
   public upload(file: File): Observable<any> {
     const formData: FormData = new FormData();
     formData.append('content', file);
-    return this.http.post(url + "/addmedia", formData, httpFileHeaders)
+    return this.http.post(url + "/addmedia", formData, options)
     .pipe(
       catchError(this.handleError)
     )

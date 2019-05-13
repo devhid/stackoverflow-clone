@@ -1,6 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { FormGroup, FormControl } from '@angular/forms';
-import { HttpResponse } from '@angular/common/http';
+import { HttpResponse, HttpErrorResponse } from '@angular/common/http';
 
 import { User } from '../classes/user';
 import { LoginService } from '../services/login.service';
@@ -17,6 +17,8 @@ export class LoginComponent implements OnInit {
     username: new FormControl(''),
     password: new FormControl(''),
   });
+
+  results = "";
   
   constructor(
     private loginService: LoginService
@@ -34,6 +36,11 @@ export class LoginComponent implements OnInit {
     .subscribe((response: HttpResponse<any>) => {
       //console.log(response.headers.get('set-cookie'));
       console.log(response.body);
+      this.results = "Successfully logged in."
+    },
+    (err: HttpErrorResponse) => {
+      console.log(err);
+      this.results = "Error on login.";
     });
   }
 
@@ -41,6 +48,11 @@ export class LoginComponent implements OnInit {
     this.loginService.logout()
     .subscribe(response => {
       console.log(response);
+      this.results = "Successfully logged out."
+    },
+    (err: HttpErrorResponse) => {
+      console.log(err);
+      this.results = "Error on logout.";
     });
   }
 }

@@ -32,8 +32,8 @@ export class QAService {
   ) { }
 
   // Question services
-  addQuestion(title: string, body: string, tags: Array<string>): Observable<any> {
-    let postBody = { title: title, body: body, tags: tags, media: null }
+  addQuestion(title: string, body: string, tags: Array<string>, mediaIds: Array<string>): Observable<any> {
+    let postBody = { title: title, body: body, tags: tags, media: mediaIds }
     console.log(postBody);
     return this.http.post(url + "/questions/add", postBody, httpHeaders)
       .pipe(

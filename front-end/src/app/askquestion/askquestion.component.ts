@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
+import { Observable, forkJoin } from 'rxjs';
 import { QAService } from '../services/qa.service';
 import { MediaService } from '../services/media.service';
 import { FileUploader, FileSelectDirective } from 'ng2-file-upload/ng2-file-upload';
@@ -31,23 +32,26 @@ export class AskQuestionComponent implements OnInit {
   ngOnInit() {
   }
 
-  askQuestionSubmit() {
+  async askQuestionSubmit() {
     let tags = this.newQuestionForm.value.tags.split(" ");
-    console.log(tags);
-    this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags)
-    .subscribe(response => {
-      console.log(response);
-      for(let file of this.files){
-        console.log(file)
-        this.mediaService.upload(file).subscribe(
-          response => {
+
+    let arr = [];
+    for(let file of this.files){
+      console.log(file)
+      arr.push(this.mediaService.upload(file));
+    }
+
+    forkJoin(arr)
+      .subscribe(responses => {
+        let mediaIds = [];
+        for(let response of responses) {
+          mediaIds.push(response.id);
+        }
+        this.qaService.addQuestion(this.newQuestionForm.value.title, this.newQuestionForm.value.body, tags, mediaIds)
+          .subscribe(async response => {
             console.log(response);
-            //this.router.navigate(['/']); 
-          }
-        )
-      }
-      //this.router.navigate(['/']); 
-    });
+          });
+      });
   }
 
   onFileChange(event) {
@@ -61,5 +65,4 @@ export class AskQuestionComponent implements OnInit {
       }
     }
   }
-
 }

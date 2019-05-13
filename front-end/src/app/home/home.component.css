@@ -14,11 +14,11 @@
 .question-statistics {
     display: flex;
     justify-content: space-between;
-    width: 10%;
+    width: 17%;
 }
 
 .question-title {
-    width: 65%;
+    width: 60%;
 }
 
 .question-user {

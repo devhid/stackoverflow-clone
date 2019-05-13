@@ -1,24 +1,40 @@
 <div class="questions-list">
-  <div *ngFor="let question of questions" class="question">
-    <!--<div class="question-ranking">
-      1
-    </div>-->
-    <div class="question-statistics">
-      <div class="question-votes">
-        {{question.score}}
-      </div>
-      <div class="question-answers">
-        {{question.answer_count}}
-      </div>
-      <div class="question-views">
-        {{question.view_count}}
-      </div>
+    <div class="question">
+        <div class="question-statistics">
+            <div class="question-votes">
+                Score
+            </div>
+            <div class="question-answers">
+                Answers
+            </div>
+            <div class="question-views">
+                Views
+            </div>
+        </div>
+        <div class="question-title">
+            Title
+        </div>
+        <div class="question-user">
+            Username
+        </div>
     </div>
-    <a class="question-title" routerLink="/question/{{question.id}}">
-      {{question.title}}
-    </a>
-    <a class="question-user" routerLink="/user/{{question.user.username}}">
-      {{question.user.username}} <!--TODO: Link to user profile-->
-    </a>
-  </div>
+    <div *ngFor="let question of questions" class="question">
+        <div class="question-statistics">
+            <div class="question-votes">
+                {{question.score}}
+            </div>
+            <div class="question-answers">
+                {{question.answer_count}}
+            </div>
+            <div class="question-views">
+                {{question.view_count}}
+            </div>
+        </div>
+        <a class="question-title" routerLink="/question/{{question.id}}">
+            {{question.title}}
+        </a>
+        <a class="question-user" routerLink="/user/{{question.user.username}}">
+            {{question.user.username}}
+        </a>
+    </div>
 </div>

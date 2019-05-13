@@ -28,7 +28,7 @@ export class LoginService {
     console.log(body);
     return this.http.post(url + "/login", body, httpHeaders)
       .pipe(
-        catchError(this.handleError)
+        //catchError(this.handleError)
       )
   }
 
