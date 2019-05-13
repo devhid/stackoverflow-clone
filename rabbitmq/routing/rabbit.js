@@ -32,10 +32,10 @@ function publishMessage(routing_key, type, msg){
         }
     ).then(reply => {
         reply.ack();
-        return new DBResult(constants.DB_RES_SUCCESS, reply.body);
+        return reply.body;
     }).catch(err => {
         console.log(`[Rabbot-Routing] Error ${err}`);
-        return new DBResult(constants.DB_RES_ERROR, err);
+        return err;
     });
 }
 

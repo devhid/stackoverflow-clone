@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const RedisStore = require('connect-redis')(session);
 const multer = require('multer');
+const uuidv4 = require('uuid/v4');
 
 /* internal imports */
 const constants = require('./constants');
@@ -42,6 +43,86 @@ app.use(function(req, res, next) {
   next();
 });
 
+function generateResponse(req, key, endpoint){
+    let status = constants.STATUS_200;
+    let response = new APIResponse();
+    let data = {};
+    if (key === constants.SERVICES.AUTH){
+        return response;
+    }
+    else if (key === constants.SERVICES.EMAIL){
+        return response;
+    }
+    else if (key === constants.SERVICES.MEDIA){
+        return response;
+    }
+    else if (key === constants.SERVICES.QA){
+        if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
+            let title = req.body.title;
+            let body = req.body.body;
+            let tags = req.body.tags;
+            let media = (req.body.media == undefined) ? [] : media;
+            let user = req.session.user;
+            if (user == undefined || title == undefined || body == undefined || tags == undefined){
+                if (user == undefined){
+                    status = constants.STATUS_401;
+                }
+                else {
+                    status = constants.STATUS_400;
+                }   
+                response.setERR(constants.ERR_MISSING_PARAMS);
+    
+                return {status: status, response: response.toOBJ(), queue: false};
+            }
+
+            status = constants.STATUS_200;
+            response.setOK();
+            data = {
+                id: uuidv4()
+            };
+            let merged = {...response.toOBJ(), ...data};
+            return {status: status, response: merged, queue: true};
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_ADD_A){
+            let qid = req.params.qid;
+            let body = req.body.body;
+            let media = req.body.media;
+            let user = req.session.user;
+            let username = (user == undefined) ? user : user._source.username;
+            
+            if (qid == undefined || body == undefined || user == undefined){
+                if (user == undefined){
+                    status = constants.STATUS_401;
+                }
+                else {
+                    status = constants.STATUS_400;
+                }
+                response.setERR(constants.ERR_MISSING_PARAMS);
+                return {status: status, response: response.toOBJ(), queue: false};
+            }
+
+            response = {
+                id: uuidv4()
+            };
+            let merged = {...response.toOBJ(), ...data};
+            return {status: status, response: merged, queue: true};
+        }
+    }
+    else if (key === constants.SERVICES.REGISTER){
+        return response;
+    }
+    else if (key === constants.SERVICES.SEARCH){
+        return response;
+    }
+    else if (key === constants.SERVICES.USER){
+        return response;
+    }
+
+    // should never be reached
+    console.log(`[Router] what service is this? ${key}`);
+    return response;
+}
+
 /**
  * Determines whether or not the router should wait for a response.
  * @param {Request} req Express Request object
@@ -59,8 +140,35 @@ function needToWait(req, key, endpoint){
         return true;
     }
     else if (key === constants.SERVICES.QA){
-        if (req.session.user != undefined && (req.body.media == undefined || req.body.media.length == 0)){
+        if (req.session.user == undefined){
             return false;
+        }
+        if ((endpoint === constants.ENDPOINTS.QA_ADD_Q ||
+            endpoint === constants.ENDPOINTS.QA_ADD_A) && 
+            (req.body.media == undefined || 
+                req.body.media.length == 0)){
+            return false;
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
+            // with caching, check if the question is valid in cache
+            //      then check if the poster matches the requester
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
+            // with caching, check if the answer is in cache
+            //      check if the question is in cache
+            //      check that there is no accepted answer yet
+            //      check if the user matches the asker of the question
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
+                endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
+            // generate the response without asking the backend
+            return false;
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
+            // with caching, check if question is valid
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_GET_A){
+            // with caching, check if answer is valid
         }
         return true;
     }
@@ -119,14 +227,29 @@ async function wrapRequest(req, res, key, endpoint){
     if (endpoint === constants.ENDPOINTS.QA_ADD_Q && req.body.answers != undefined){
         data.body = {};
     }
-    let rabbitRes = await routeRequest(key, endpoint, data);
+    let should_wait = needToWait(req, key, endpoint);
+    let rabbitRes = undefined;
+    if (should_wait){
+        rabbitRes = await routeRequest(key, endpoint, data);
+    }
+    else {
+        rabbitRes = generateResponse(req, key, endpoint);
+        if (rabbitRes.queue === true){
+            if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
+                endpoint === constants.ENDPOINTS.QA_ADD_A){
+                data['id'] = rabbitRes.response.id;
+            }
+            // do NOT await here, just publish it
+            routeRequest(key, endpoint, data);
+        }
+    }
+
     // console.log(`endpoint=${endpoint}, resp status=${rabbitRes.status}`);
-    let dbRes = rabbitRes.data;
-    res.status(dbRes.status);
+    res.status(rabbitRes.status);
 
     // AUTH
-    if (dbRes.user != undefined){
-        req.session.user = dbRes.user;
+    if (rabbitRes.user != undefined){
+        req.session.user = rabbitRes.user;
     }
     if (endpoint == constants.ENDPOINTS.AUTH_LOGOUT && dbRes.status === constants.STATUS_200){
         req.session.destroy();
@@ -140,7 +263,7 @@ async function wrapRequest(req, res, key, endpoint){
     //     }
     // }
 
-    return res.json(dbRes.response);
+    return res.json(rabbitRes.response);
 }
 
 /* auth service */
