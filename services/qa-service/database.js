@@ -282,8 +282,9 @@ async function getReputation(username){
  * @param {string} body the body of the question
  * @param {string[]} tags the tags of the question
  * @param {id[]} media the ids of any attached media
+ * @param {id} id the id to use if specified
  */
-async function addQuestion(user, title, body, tags, media){
+async function addQuestion(user, title, body, tags, media, id){
     media = (media == undefined) ? [] : media;
 
     if (media.length > 0){
@@ -297,7 +298,7 @@ async function addQuestion(user, title, body, tags, media){
     }
 
     // create the Question document in INDEX_QUESTIONS
-    let response = await client.index({
+    let question = {
         index: INDEX_QUESTIONS,
         type: "_doc",
         refresh: "true",
@@ -316,7 +317,11 @@ async function addQuestion(user, title, body, tags, media){
             "tags": tags,
             "accepted_answer_id": null
         }
-    });
+    };
+    if (id != undefined){
+        question['_id'] = id;
+    }
+    let response = await client.index(question);
     if (response.result !== "created"){
         console.log(`[QA] Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
@@ -549,8 +554,9 @@ async function getQuestion(qid, username, ip, update){
  * @param {string} user the user object
  * @param {string} body the body of the answer
  * @param {id[]} media array of media IDs attached to the answer
+ * @param {id} id the id to use if specified
  */
-async function addAnswer(qid, user, body, media){
+async function addAnswer(qid, user, body, media, id){
     let username = user._source.username;
     media = (media == undefined) ? [] : media;
     
@@ -583,7 +589,7 @@ async function addAnswer(qid, user, body, media){
     }
     
     // create the Answer document
-    let response = await client.index({
+    let answer = {
         index: INDEX_ANSWERS,
         type: "_doc",
         refresh: "true",
@@ -596,7 +602,11 @@ async function addAnswer(qid, user, body, media){
             "timestamp": Date.now()/1000,
             "media": media
         }
-    });
+    };
+    if (id != undefined){
+        answer['_id'] = id;
+    }
+    let response = await client.index(answer);
     if (!response || response.result !== "created"){
         console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
         console.log(response);

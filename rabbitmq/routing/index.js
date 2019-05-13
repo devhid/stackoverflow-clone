@@ -8,6 +8,7 @@ const uuidv4 = require('uuid/v4');
 /* internal imports */
 const constants = require('./constants');
 const rabbit = require('./rabbit');
+const APIResponse = require('./apiresponse').APIResponse;
 
 /* initialize express application */
 const app = express();
@@ -43,38 +44,54 @@ app.use(function(req, res, next) {
   next();
 });
 
+function missingElement(arr){
+    for (var element of arr){
+        if (element == undefined){
+            return true;
+        }
+    }
+    return false;
+}
+
 function generateResponse(req, key, endpoint){
-    let status = constants.STATUS_200;
+    let status = undefined;
     let response = new APIResponse();
     let data = {};
     if (key === constants.SERVICES.AUTH){
-        return response;
+        return undefined;
     }
     else if (key === constants.SERVICES.EMAIL){
-        return response;
+        return undefined;
     }
     else if (key === constants.SERVICES.MEDIA){
-        return response;
+        return undefined;
     }
     else if (key === constants.SERVICES.QA){
-        if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
-            let title = req.body.title;
-            let body = req.body.body;
-            let tags = req.body.tags;
-            let media = (req.body.media == undefined) ? [] : media;
+        if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
+            endpoint === constants.ENDPOINTS.QA_ADD_A){
+            let missingParams = false;
             let user = req.session.user;
-            if (user == undefined || title == undefined || body == undefined || tags == undefined){
+            if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
+                let title = req.body.title;
+                let body = req.body.body;
+                let tags = req.body.tags;
+                missingParams = missingElement([user, title, body, tags]);
+            }
+            else {
+                let qid = req.params.qid;
+                let body = req.body.body;
+                missingParams = missingElement([user, qid, body]);
+            }
+            if (missingParams === true){
                 if (user == undefined){
                     status = constants.STATUS_401;
                 }
                 else {
                     status = constants.STATUS_400;
-                }   
+                }
                 response.setERR(constants.ERR_MISSING_PARAMS);
-    
                 return {status: status, response: response.toOBJ(), queue: false};
             }
-
             status = constants.STATUS_200;
             response.setOK();
             data = {
@@ -83,44 +100,45 @@ function generateResponse(req, key, endpoint){
             let merged = {...response.toOBJ(), ...data};
             return {status: status, response: merged, queue: true};
         }
-        else if (endpoint === constants.ENDPOINTS.QA_ADD_A){
-            let qid = req.params.qid;
-            let body = req.body.body;
-            let media = req.body.media;
-            let user = req.session.user;
-            let username = (user == undefined) ? user : user._source.username;
-            
-            if (qid == undefined || body == undefined || user == undefined){
-                if (user == undefined){
-                    status = constants.STATUS_401;
-                }
-                else {
-                    status = constants.STATUS_400;
-                }
-                response.setERR(constants.ERR_MISSING_PARAMS);
-                return {status: status, response: response.toOBJ(), queue: false};
-            }
-
-            response = {
-                id: uuidv4()
-            };
-            let merged = {...response.toOBJ(), ...data};
-            return {status: status, response: merged, queue: true};
+        else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
+            // with caching, check if the question is valid in cache
+            //      then check if the poster matches the requester
+            return undefined;
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
+            // with caching, check if the answer is in cache
+            //      check if the question is in cache
+            //      check that there is no accepted answer yet
+            //      check if the user matches the asker of the question
+            return undefined;
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
+                endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
+            // generate the response without asking the backend
+            return undefined;
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
+            // with caching, check if question is valid
+            return undefined;
+        }
+        else if (endpoint === constants.ENDPOINTS.QA_GET_A){
+            // with caching, check if answer is valid
+            return undefined;
         }
     }
     else if (key === constants.SERVICES.REGISTER){
-        return response;
+        return undefined;
     }
     else if (key === constants.SERVICES.SEARCH){
-        return response;
+        return undefined;
     }
     else if (key === constants.SERVICES.USER){
-        return response;
+        return undefined;
     }
 
     // should never be reached
     console.log(`[Router] what service is this? ${key}`);
-    return response;
+    return undefined;
 }
 
 /**
@@ -149,27 +167,27 @@ function needToWait(req, key, endpoint){
                 req.body.media.length == 0)){
             return false;
         }
-        else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
-            // with caching, check if the question is valid in cache
-            //      then check if the poster matches the requester
-        }
-        else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
-            // with caching, check if the answer is in cache
-            //      check if the question is in cache
-            //      check that there is no accepted answer yet
-            //      check if the user matches the asker of the question
-        }
+        // else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
+        //     // with caching, check if the question is valid in cache
+        //     //      then check if the poster matches the requester
+        // }
+        // else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
+        //     // with caching, check if the answer is in cache
+        //     //      check if the question is in cache
+        //     //      check that there is no accepted answer yet
+        //     //      check if the user matches the asker of the question
+        // }
         else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
                 endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
             // generate the response without asking the backend
             return false;
         }
-        else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
-            // with caching, check if question is valid
-        }
-        else if (endpoint === constants.ENDPOINTS.QA_GET_A){
-            // with caching, check if answer is valid
-        }
+        // else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
+        //     // with caching, check if question is valid
+        // }
+        // else if (endpoint === constants.ENDPOINTS.QA_GET_A){
+        //     // with caching, check if answer is valid
+        // }
         return true;
     }
     else if (key === constants.SERVICES.REGISTER){

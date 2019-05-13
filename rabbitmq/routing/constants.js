@@ -14,6 +14,9 @@ const EXCHANGE = {
 };
 
 module.exports = {
+    STATUS_OK: 'OK',
+    STATUS_ERR: 'error',
+    
     STATUS_200: 200,    // OK
     STATUS_400: 400,    // bad request
     STATUS_401: 401,    // unauthorized

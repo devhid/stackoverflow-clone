@@ -122,6 +122,7 @@ async function addQuestion(request){
         let tags = req.body.tags;
         let media = req.body.media;
         let user = req.session.user;
+        let id = req.id;
 
         // check if any mandatory parameters are undefined
         if (user == undefined || title == undefined || body == undefined || tags == undefined){
@@ -139,7 +140,7 @@ async function addQuestion(request){
         }
 
         // perform database operations
-        let addRes = await database.addQuestion(user, title, body, tags, media);
+        let addRes = await database.addQuestion(user, title, body, tags, media, id);
         
         // check response result
         if (addRes.status === constants.DB_RES_ERROR){
@@ -233,6 +234,7 @@ async function addAnswer(request){
         let media = req.body.media;
         let user = req.session.user;
         let username = (user == undefined) ? user : user._source.username;
+        let id = req.id;
 
         // check if any mandatory parameters are undefined
         if (qid == undefined || body == undefined || user == undefined){
@@ -249,7 +251,7 @@ async function addAnswer(request){
         }
 
         // perform database operations
-        let addRes = await database.addAnswer(qid, username, body, media);
+        let addRes = await database.addAnswer(qid, username, body, media, id);
         
         // check response result
         if (addRes.status === constants.DB_RES_Q_NOTFOUND){
