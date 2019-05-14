@@ -500,13 +500,13 @@ async function getRelevantObj(key, endpoint, req){
     }
     else if (key === constants.SERVICES.USER){
         if (endpoint === constants.ENDPOINTS.USER_GET){
-            return await setCachedObject("user_profile:" + req.params.username, rabbitRes);
+            return await getCachedObject("user_profile:" + req.params.username);
         }
         else if (endpoint === constants.ENDPOINTS.USER_Q){
-            return await setCachedObject("user_questions:" + req.params.username, rabbitRes);
+            return await getCachedObject("user_questions:" + req.params.username);
         }
         else if (endpoint === constants.ENDPOINTS.USER_A){
-            return await setCachedObject("user_answers:" + req.params.username, rabbitRes);
+            return await getCachedObject("user_answers:" + req.params.username);
         }
     }
 
@@ -787,7 +787,7 @@ async function needToWait(key, endpoint, req, obj){
         return true;
     }
     else if (key === constants.SERVICES.USER){
-        return obj != null;
+        return obj == undefined;
         // if (endpoint === constants.ENDPOINTS.USER_GET){
         //     let user_get = await getCachedObject("user_profile:" + req.params.username);
         //     return user_get != null;
