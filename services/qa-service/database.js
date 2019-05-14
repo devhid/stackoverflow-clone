@@ -122,7 +122,7 @@ async function checkFreeMedia(ids, poster){
             id: id,
             index: INDEX_MEDIA,
             type: "_doc",
-            refresh: "true",
+            // refresh: "true",
             _source: false
         });
         promises.push(promise);
@@ -301,7 +301,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     let question = {
         index: INDEX_QUESTIONS,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         body: {
             "user": {
                 "username": user._source.username,
@@ -333,7 +333,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     let viewResponse = client.index({
         index: INDEX_VIEWS,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         body: {
             "qid": response._id,
             "authenticated": [],
@@ -343,7 +343,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // let viewResponse = await client.index({
     //     index: INDEX_VIEWS,
     //     type: "_doc",
-    //     refresh: "true",
+    //     // refresh: "true",
     //     body: {
     //         "qid": response._id,
     //         "authenticated": [],
@@ -359,7 +359,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     let upvoteResponse = client.index({
         index: INDEX_Q_UPVOTES,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         body: {
             "qid": response._id,
             "upvotes": [],
@@ -370,7 +370,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // let upvoteResponse = await client.index({
     //     index: INDEX_Q_UPVOTES,
     //     type: "_doc",
-    //     refresh: "true",
+    //     // refresh: "true",
     //     body: {
     //         "qid": response._id,
     //         "upvotes": [],
@@ -431,7 +431,7 @@ async function updateViewCount(qid, username, ip){
             const updateViewResponse = await client.updateByQuery({
                 index: INDEX_VIEWS,
                 type: "_doc",
-                refresh: "true",
+                // refresh: "true",
                 body: { 
                     query: { 
                         term: { 
@@ -463,7 +463,7 @@ async function updateViewCount(qid, username, ip){
             const updateViewResponse = await client.updateByQuery({
                 index: INDEX_VIEWS,
                 type: "_doc",
-                refresh: "true",
+                // refresh: "true",
                 body: { 
                     query: { 
                         term: { 
@@ -491,7 +491,7 @@ async function updateViewCount(qid, username, ip){
         const updateResponse = await client.updateByQuery({
             index: INDEX_QUESTIONS,
             type: "_doc",
-            refresh: "true",
+            // refresh: "true",
             body: { 
                 query: { 
                     term: { 
@@ -516,7 +516,7 @@ async function updateViewCount(qid, username, ip){
             id: qid,
             index: INDEX_QUESTIONS,
             type: "_doc",
-            refresh: "true"
+            // refresh: "true"
         });
         return new DBResult(constants.DB_RES_SUCCESS, question);
     } catch(err){
@@ -550,7 +550,7 @@ async function getQuestion(qid, username, ip, update){
                 id: qid,
                 index: INDEX_QUESTIONS,
                 type: "_doc",
-                refresh: "true"
+                // refresh: "true"
             });
         } catch(err){
             console.log(`[QA] getQuestion ${qid} not found.`);
@@ -621,7 +621,7 @@ async function addAnswer(qid, user, body, media, id){
     let answer = {
         index: INDEX_ANSWERS,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         body: {
             "qid": qid,
             "user": username,
@@ -648,7 +648,7 @@ async function addAnswer(qid, user, body, media, id){
     let upvoteResponse = await client.index({
         index: INDEX_A_UPVOTES,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         body: {
             "qid": qid,
             "aid": response._id,
@@ -667,7 +667,7 @@ async function addAnswer(qid, user, body, media, id){
     const updateQuestionResponse = await client.updateByQuery({
         index: INDEX_QUESTIONS,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         body: { 
             query: { 
                 term: { 
@@ -1025,7 +1025,7 @@ async function undoVote(qid, aid, username, upvote, waived){
     const undoVoteResponse = await client.updateByQuery({
         index: which_index,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         conflicts: "proceed",
         body: { 
             query: { 
@@ -1045,7 +1045,7 @@ async function undoVote(qid, aid, username, upvote, waived){
     // const undoVoteResponse = await client.updateByQuery({
     //     index: which_index,
     //     type: "_doc",
-    //     refresh: "true",
+    //     // refresh: "true",
     //     body: { 
     //         query: { 
     //             term: { 
@@ -1089,7 +1089,7 @@ async function addVote(qid, aid, username, upvote, waived){
     const addVoteResponse = await client.updateByQuery({
         index: which_index,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         conflicts: "proceed",
         body: { 
             query: { 
@@ -1109,7 +1109,7 @@ async function addVote(qid, aid, username, upvote, waived){
     // const addVoteResponse = await client.updateByQuery({
     //     index: which_index,
     //     type: "_doc",
-    //     refresh: "true",
+    //     // refresh: "true",
     //     body: { 
     //         query: { 
     //             term: { 
@@ -1146,7 +1146,7 @@ async function updateScore(qid, aid, amount){
     const updateResponse = await client.updateByQuery({
         index: which_index,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         conflicts: "proceed",
         body: { 
             query: { 
@@ -1166,7 +1166,7 @@ async function updateScore(qid, aid, amount){
     // const updateResponse = await client.updateByQuery({
     //     index: which_index,
     //     type: "_doc",
-    //     refresh: "true",
+    //     // refresh: "true",
     //     body: { 
     //         query: { 
     //             term: { 
@@ -1205,7 +1205,7 @@ async function updateReputation(username, amount){
     const updateUserResponse = await client.updateByQuery({
         index: INDEX_USERS,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         conflicts: "proceed",
         body: { 
             query: { 
@@ -1225,7 +1225,7 @@ async function updateReputation(username, amount){
     // const updateUserResponse = await client.updateByQuery({
     //     index: INDEX_USERS,
     //     type: "_doc",
-    //     refresh: "true",
+    //     // refresh: "true",
     //     body: { 
     //         query: { 
     //             match: { 
@@ -1251,7 +1251,7 @@ async function updateReputation(username, amount){
         index: INDEX_QUESTIONS,
         size: 10000,
         type: "_doc",
-        refresh: "true",
+        // refresh: "true",
         conflicts: "proceed",
         body: { 
             query: { 
@@ -1272,7 +1272,7 @@ async function updateReputation(username, amount){
     //     index: INDEX_QUESTIONS,
     //     size: 10000,
     //     type: "_doc",
-    //     refresh: "true",
+    //     // refresh: "true",
     //     body: { 
     //         query: { 
     //             match: { 
@@ -1343,10 +1343,10 @@ async function upvoteQA(qid, aid, username, upvote){
     let upvoted = upvotes.includes(username);
     let downvoted  = downvotes.includes(username);
     let waived = waived_downvotes.includes(username);
-    let poster = await getUserRByPost(qid,aid);
+    let poster = await getUserByPost(qid,aid);
     let poster_rep = await getReputation(poster);
     let promises = [];
-    
+
     // if the user already voted, undo the vote
     //      calculate the difference to the poster's reputation and score of the post
     if (upvoted || downvoted || waived){
@@ -1510,7 +1510,7 @@ async function acceptAnswer(aid, username){
         const updateQuestionResponse = await client.updateByQuery({
             index: INDEX_QUESTIONS,
             type: "_doc",
-            refresh: "true",
+            // refresh: "true",
             body: {
                 query: {
                     term: {
@@ -1535,7 +1535,7 @@ async function acceptAnswer(aid, username){
         const updateAnswerResponse = await client.updateByQuery({
             index: INDEX_ANSWERS,
             type: "_doc",
-            refresh: "true",
+            // refresh: "true",
             body: {
                 query: {
                     term: {

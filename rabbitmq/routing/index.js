@@ -232,8 +232,10 @@ async function generateResponse(key, endpoint, req, obj){
                 // check if the poster matches the requester
                 if (question.user.username === user._source.username){
                     // delete cached records of used media
-                    for (var media_id of question.media){
-                        await removeCachedObject("media:" + media_id);
+                    if (question.media != null){
+                        for (var media_id of question.media){
+                            await removeCachedObject("media:" + media_id);
+                        }
                     }
                     
                     // mark the question as deleted in cache
