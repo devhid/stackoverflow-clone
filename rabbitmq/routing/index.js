@@ -376,7 +376,6 @@ async function generateResponse(key, endpoint, req, obj){
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_A){
             let qid = req.params.qid;
-            let user = req.session.user;
             let missingParams = missingElement([qid]);
             if (missingParams === true){
                 status = constants.STATUS_400;

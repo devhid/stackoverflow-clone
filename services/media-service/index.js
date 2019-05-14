@@ -64,23 +64,23 @@ rabbot.configure(constants.RABBOT_SETTINGS)
 
 /* ------------------ ENDPOINTS ------------------ */
 
-app.post('/addmedia', upload.single('content'), async (req,res) => {
-    let data = {
-        session: {user: ((req.session == undefined) ? undefined : req.session.user)},
-        params: req.params,
-        body: req.body,
-        file: req.file
-    };
-    let dbRes = await addMedia(data);
-    res.status(dbRes.status);
-    if (dbRes.content_type != undefined){
-        res.set('Content-Type', dbRes.content_type);
-        if (dbRes.media != undefined && dbRes.media.type === "Buffer"){
-            return res.send(Buffer.from(dbRes.media.data));
-        }
-    }
-    return res.json(dbRes.response);
-});
+// app.post('/addmedia', upload.single('content'), async (req,res) => {
+//     let data = {
+//         session: {user: ((req.session == undefined) ? undefined : req.session.user)},
+//         params: req.params,
+//         body: req.body,
+//         file: req.file
+//     };
+//     let dbRes = await addMedia(data);
+//     res.status(dbRes.status);
+//     if (dbRes.content_type != undefined){
+//         res.set('Content-Type', dbRes.content_type);
+//         if (dbRes.media != undefined && dbRes.media.type === "Buffer"){
+//             return res.send(Buffer.from(dbRes.media.data));
+//         }
+//     }
+//     return res.json(dbRes.response);
+// });
 
 app.get('/media/:id', async(req,res) => {
     let data = {
@@ -117,6 +117,7 @@ async function addMedia(req) {
         return response;
     }
 
+    const username = user._source.username;
     const filename = req.file.originalname;
     const content = req.file.buffer;
     const mimetype = req.file.mimetype;
@@ -124,7 +125,7 @@ async function addMedia(req) {
     // get generated id from uploading media
     let mediaId = null;
     try {
-        mediaId = await database.uploadMedia(filename, content, mimetype);
+        mediaId = await database.uploadMedia(username, filename, content, mimetype);
     } catch(err) {
         response = generateERR(constants.STATUS_400, err);
         return response;
