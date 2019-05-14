@@ -41,7 +41,8 @@ app.use(express.json());
 
 /* enable CORS */
 app.use(function(req, res, next) {
-  res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
+  //res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
+  res.set('Access-Control-Allow-Origin', 'http://kellogs.cse356.compas.cs.stonybrook.edu');
   res.set('Access-Control-Allow-Headers', 'Content-Type, Access-Control-Allow-Headers, Authorization, X-Requested-With');
   res.set('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
   res.set('Access-Control-Allow-Credentials', 'true');
@@ -821,7 +822,8 @@ async function wrapRequest(req, res, key, endpoint){
         rabbitRes = await generateResponse(key, endpoint, data, relevantObj);
         if (rabbitRes.queue === true){
             if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
-                endpoint === constants.ENDPOINTS.QA_ADD_A){
+                endpoint === constants.ENDPOINTS.QA_ADD_A ||
+                endpoint === constants.ENDPOINTS.MEDIA_ADD){
                 data['id'] = rabbitRes.response.id;
             }
             // do NOT await here, just publish it
