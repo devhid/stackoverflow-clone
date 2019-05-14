@@ -821,7 +821,8 @@ async function wrapRequest(req, res, key, endpoint){
         rabbitRes = await generateResponse(key, endpoint, data, relevantObj);
         if (rabbitRes.queue === true){
             if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
-                endpoint === constants.ENDPOINTS.QA_ADD_A){
+                endpoint === constants.ENDPOINTS.QA_ADD_A || 
+                endpoint === constants.ENDPOINTS.MEDIA_ADD){
                 data['id'] = rabbitRes.response.id;
             }
             // do NOT await here, just publish it
