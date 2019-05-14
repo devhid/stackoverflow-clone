@@ -569,6 +569,7 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                         view_count: 0,
                         answer_count: 0,
                         timestamp: rabbitRes.response.timestamp,
+                        media: req.body.media,
                         tags: req.body.tags,
                         accepted_answer_id: null
                     };
@@ -586,6 +587,9 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
 
                 // delete cached records of used media
                 let old_question_resp = await getCachedObject("get:" + qid);
+                if (old_question_resp.status === constants.STATUS_400){
+                    return;
+                }
                 if (old_question_resp != null){
                     let media = old_question_resp.response.question.media;
                     if (media != null){
