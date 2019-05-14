@@ -28,8 +28,8 @@ const BACKDOOR_KEY = "abracadabra"
 //     return user._source.key == key || key == BACKDOOR_KEY;
 // }
 
-async function updateVerified(email) {
-    const response = await client.updateByQuery({
+function updateVerified(email) {
+    client.updateByQuery({
         index: INDEX,
         type: "_doc",
         refresh: "true",
@@ -44,8 +44,6 @@ async function updateVerified(email) {
             } 
         }
     });
-
-    return response;
 }
 
 async function emailExists(email) {
