@@ -1311,13 +1311,15 @@ async function upvoteQA(qid, aid, username, upvote){
     let poster_rep = await getReputation(poster);
     let promises = [];
 
+    let in_upvotes = false;
+    let waive_vote = false;
     let undo_vote = false;
     let add_vote = false;
 
     // if the user already voted, undo the vote
     //      calculate the difference to the poster's reputation and score of the post
     if (upvoted || downvoted || waived){
-        let in_upvotes = (upvoted) ? true : false;
+        in_upvotes = (upvoted) ? true : false;
 
         // Remember, downvotes are waived for USER REPUTATION, not POST SCORE
         // if the vote was waived, then rep_diff = 0, score_diff = 1
@@ -1329,8 +1331,6 @@ async function upvoteQA(qid, aid, username, upvote){
         // console.log(`[QA] undoing vote by ${poster}`);
         // promises.push(undoVote(qid,aid,username,in_upvotes,waived));
     }
-
-    let waive_vote = false;
 
     // if it's NOT just undoing a previous action, we have to calculate the effect of the new vote
     //      on the poster's reputation and the score of the post
