@@ -1,6 +1,7 @@
 /* library imports */
 const cassandra = require('cassandra-driver');
 const elasticsearch = require('elasticsearch');
+const uuidv4 = require('uuid/v4');
 
 /* internal imports */
 const constants = require('./constants');
@@ -298,11 +299,14 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
 
     // create the Question document in INDEX_QUESTIONS
     timetsamp = (timestamp == undefined) ? Date.now()/1000 : timestamp;
+    id = (id == undefined) ? uuidv4() : id;
     let question = {
         index: INDEX_QUESTIONS,
         type: "_doc",
+        id: id,
         // refresh: "true",
         body: {
+            "id": id,
             "user": {
                 "username": user._source.username,
                 "reputation": user._source.reputation
@@ -318,9 +322,6 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
             "accepted_answer_id": null
         }
     };
-    if (id != undefined){
-        question['id'] = id;
-    }
     let response = await client.index(question);
     // let response = await client.index(question);
     // // if (response.result !== "created"){
@@ -618,11 +619,14 @@ async function addAnswer(qid, user, body, media, id){
     }
     
     // create the Answer document
+    id = (id == undefined) ? uuidv4() : id;
     let answer = {
         index: INDEX_ANSWERS,
         type: "_doc",
+        id: id,
         // refresh: "true",
         body: {
+            "id": id,
             "qid": qid,
             "user": username,
             "body": body,
@@ -632,9 +636,6 @@ async function addAnswer(qid, user, body, media, id){
             "media": media
         }
     };
-    if (id != undefined){
-        answer['id'] = id;
-    }
     let response = await client.index(answer);
     if (!response || response.result !== "created"){
         console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
@@ -1178,7 +1179,7 @@ function updateReputation(username, qid, score_diff, amount){
         };
     }
     else {
-        inline_script = `ctx._source.user.reputation += params.${param_amount}; if (ctx._id == qid) { ctx._source.score += params.score_diff }`;
+        inline_script = `ctx._source.user.reputation += params.${param_amount}; if (ctx._source.id == qid) { ctx._source.score += params.score_diff }`;
         params = {
             [param_amount]: amount,
             score_diff: score_diff
