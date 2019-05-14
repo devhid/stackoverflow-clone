@@ -1206,6 +1206,7 @@ function updateReputation(username, qid, score_diff, amount){
             } 
         }
     });
+    promises.push(update_question_promise);
 
     return Promise.all(promises);
     // let success2 = (updateQResponse.updated >= 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
@@ -1357,9 +1358,8 @@ async function upvoteQA(qid, aid, username, upvote){
     // if it's for a question, updateReputation will handle it
     if (qid == undefined){
         // update the score of the question or answer
-        promises.push(updateScore(qid, aid, score_diff));
-    }
-
+        promises.psuh(updateScore(qid, aid, score_diff));
+    }       
     // update the reputation of the poster
     promises.push(updateReputation(poster, qid, score_diff, rep_diff));
 
