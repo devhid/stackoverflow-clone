@@ -125,7 +125,7 @@ async function addMedia(request) {
 
         const username = user._source.username;
         const filename = req.file.originalname;
-        const content = req.file.buffer;
+        const content = Buffer.from(req.file.buffer.data);
         const mimetype = req.file.mimetype;
         const specified_id = req.id;
 

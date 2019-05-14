@@ -195,6 +195,14 @@ async function generateResponse(key, endpoint, req, obj){
                 }  
             }
 
+            // invalidate the user's questions or answers
+            if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
+                await removeCachedObject("user_questions:" + user._source.username);
+            }
+            else if (endpoint === constants.ENDPOINTS.QA_ADD_A){
+                await removeCachedObject("user_answers:" + user._source.username);
+            }
+
             status = constants.STATUS_200;
             response.setOK();
             data = {
@@ -513,7 +521,7 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
         else if (key === constants.SERVICES.MEDIA){
             if (endpoint === constants.ENDPOINTS.MEDIA_ADD){
                 let media_id = rabbitRes.response.id;
-                setCachedObject("media_poster:" + media_id, req.session.user._source.username);
+                await setCachedObject("media_poster:" + media_id, req.session.user._source.username);
             }
             return;
         }
@@ -528,7 +536,7 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                 if (media != undefined){
                     for (var media_id of media){
                         await setCachedObject("media:" + media_id, true);
-                        removeCachedObject("media_poster:" + media_id);
+                        await removeCachedObject("media_poster:" + media_id);
                     }
                 }
                 // let created_id = rabbitRes.response.id;
@@ -558,9 +566,14 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                 let qid = req.params.qid;
 
                 // delete cached records of used media
-                let media = req.body.media;
-                for (var media_id of media){
-                    await removeCachedObject("media:" + media_id);
+                let old_question_resp = await getCachedObject("get:" + qid);
+                if (old_question_resp != null){
+                    let media = old_question_resp.response.question.media;
+                    if (media != null){
+                        for (var media_id of media){
+                            await removeCachedObject("media:" + media_id);
+                        }
+                    }
                 }
 
                 // removeCachedObject("get:" + qid);
@@ -764,6 +777,18 @@ async function needToWait(key, endpoint, req, obj){
         return true;
     }
     else if (key === constants.SERVICES.USER){
+        if (endpoint === constants.ENDPOINTS.USER_GET){
+            let user_get = await getCachedObject("user_profile:" + req.params.username);
+            return user_get != null;
+        }
+        else if (endpoint === constants.ENDPOINTS.USER_Q){
+            let user_questions = await getCachedObject("user_questions:" + req.params.username);
+            return user_questions != null;
+        }
+        else if (endpoint === constants.ENDPOINTS.USER_A){
+            let user_answers = await getCachedObject("user_answers:" + req.params.username);
+            return user_answers != null;
+        }
         return true;
     }
 
@@ -822,7 +847,7 @@ async function wrapRequest(req, res, key, endpoint){
         rabbitRes = await generateResponse(key, endpoint, data, relevantObj);
         if (rabbitRes.queue === true){
             if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
-                endpoint === constants.ENDPOINTS.QA_ADD_A ||
+                endpoint === constants.ENDPOINTS.QA_ADD_A || 
                 endpoint === constants.ENDPOINTS.MEDIA_ADD){
                 data['id'] = rabbitRes.response.id;
             }
