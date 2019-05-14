@@ -65,6 +65,33 @@ function getPreparedList(arr){
     return list;
 }
 
+function associateFreeMediaBulkBody(qa_id, ids){
+    // if no media, no need to do anything  
+    if (ids == null || ids.length == 0){
+        return new DBResult(constants.DB_RES_SUCCESS, null);
+    }
+
+    // build the bulk request that will index a Media metadata document
+    let bulk_query = { body : [] };
+    let action_doc = undefined;
+    let partial_doc = undefined;
+    for (var id of ids){
+        action_doc = {
+            index: {
+                _index: INDEX_MEDIA,
+                _type: "_doc",
+                _id: id
+            }
+        };
+        partial_doc = {
+            "qa_id": qa_id
+        };
+        bulk_query.body.push(action_doc);
+        bulk_query.body.push(partial_doc);
+    }
+    return bulk_query.body;
+}
+
 /**
  * Marks the free media in Cassandra to be associated with a Question.
  * @param {id[]} ids array of media IDs in Cassandra
@@ -300,29 +327,56 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // create the Question document in INDEX_QUESTIONS
     timetsamp = (timestamp == undefined) ? Date.now()/1000 : timestamp;
     id = (id == undefined) ? uuidv4() : id;
-    let question = {
-        index: INDEX_QUESTIONS,
-        type: "_doc",
-        id: id,
-        // refresh: "true",
-        body: {
-            "id": id,
-            "user": {
-                "username": user._source.username,
-                "reputation": user._source.reputation
-            },
-            "title": title,
-            "body": body,
-            "score": 0,
-            "view_count": 0,
-            "answer_count": 0,
-            "timestamp": timestamp,
-            "media": media,
-            "tags": tags,
-            "accepted_answer_id": null
+    // let question = {
+    //     index: INDEX_QUESTIONS,
+    //     type: "_doc",
+    //     id: id,
+    //     // refresh: "true",
+    //     body: {
+    //         "id": id,
+    //         "user": {
+    //             "username": user._source.username,
+    //             "reputation": user._source.reputation
+    //         },
+    //         "title": title,
+    //         "body": body,
+    //         "score": 0,
+    //         "view_count": 0,
+    //         "answer_count": 0,
+    //         "timestamp": timestamp,
+    //         "media": media,
+    //         "tags": tags,
+    //         "accepted_answer_id": null
+    //     }
+    // };
+    let bulk_insert = { body: [] };
+    let action_doc = undefined;
+    let partial_doc = undefined;
+    action_doc = {
+        index: {
+            _index: INDEX_QUESTIONS,
+            _type: "_doc",
+            _id: id
         }
     };
-    let response = await client.index(question);
+    partial_doc = {
+        "id": id,
+        "user": {
+            "username": user._source.username,
+            "reputation": user._source.reputation
+        },
+        "title": title,
+        "body": body,
+        "score": 0,
+        "view_count": 0,
+        "answer_count": 0,
+        "timestamp": timestamp,
+        "media": media,
+        "tags": tags,
+        "accepted_answer_id": null
+    };
+    bulk_insert.body.push(action_doc);
+    bulk_insert.body.push(partial_doc);
     // let response = await client.index(question);
     // // if (response.result !== "created"){
     // //     console.log(`[QA] Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
@@ -331,16 +385,29 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // // }
     
     // create the Question Views document in INDEX_VIEWS
-    let viewResponse = await client.index({
-        index: INDEX_VIEWS,
-        type: "_doc",
-        // refresh: "true",
-        body: {
-            "qid": response._id,
-            "authenticated": [],
-            "unauthenticated": []
+    // let viewResponse = client.index({
+    //     index: INDEX_VIEWS,
+    //     type: "_doc",
+    //     // refresh: "true",
+    //     body: {
+    //         "qid": response._id,
+    //         "authenticated": [],
+    //         "unauthenticated": []
+    //     }
+    // });
+    action_doc = {
+        index: {
+            _index: INDEX_VIEWS,
+            _type: "_doc"
         }
-    });
+    };
+    partial_doc = {
+        "qid": id,
+        "authenticated": [],
+        "unauthenticated": []
+    };
+    bulk_insert.body.push(action_doc);
+    bulk_insert.body.push(partial_doc);
     // let viewResponse = await client.index({
     //     index: INDEX_VIEWS,
     //     type: "_doc",
@@ -357,17 +424,31 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // }
 
     // create the Question Upvotes document in INDEX_Q_UPVOTES
-    let upvoteResponse = await client.index({
-        index: INDEX_Q_UPVOTES,
-        type: "_doc",
-        // refresh: "true",
-        body: {
-            "qid": response._id,
-            "upvotes": [],
-            "downvotes": [],
-            "waived_downvotes": []
+    // let upvoteResponse = client.index({
+    //     index: INDEX_Q_UPVOTES,
+    //     type: "_doc",
+    //     // refresh: "true",
+    //     body: {
+    //         "qid": response._id,
+    //         "upvotes": [],
+    //         "downvotes": [],
+    //         "waived_downvotes": []
+    //     }
+    // });
+    action_doc = {
+        index: {
+            _index: INDEX_Q_UPVOTES,
+            _type: "_doc"
         }
-    });
+    };
+    partial_doc = {
+        "qid": id,
+        "upvotes": [],
+        "downvotes": [],
+        "waived_downvotes": []
+    };
+    bulk_insert.body.push(action_doc);
+    bulk_insert.body.push(partial_doc);
     // let upvoteResponse = await client.index({
     //     index: INDEX_Q_UPVOTES,
     //     type: "_doc",
@@ -385,7 +466,10 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // }
     
     // associate the free media IDs with the new Question
-    await associateFreeMedia(response._id,media);
+    let media_body = associateFreeMediaBulkBody(id, media);
+    bulk_insert.body = bulk_insert.body.concat(media_body);
+    
+    await client.bulk(bulk_insert);
     // let associateMediaResponse = await associateFreeMedia(response._id,media);
     // if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
     //     console.log(`[QA] associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
@@ -1138,7 +1222,7 @@ function updateScore(qid, aid, amount){
  * @param {id} qid id of the question if for question
  * @param {int} amount amount by which to update the reputation
  */
-function updateReputation(username, qid, score_diff, amount){
+async function updateReputation(username, qid, score_diff, amount){
     if (amount == 0){
         return new DBResult(constants.DB_RES_SUCCESS, null);
     }
@@ -1147,6 +1231,14 @@ function updateReputation(username, qid, score_diff, amount){
     };
     let inline_script = `ctx._source.reputation += params.amount`;
     let promises = [];
+    
+    let poster_rep = await getReputation(username);
+    let waived = false;
+    if (poster_rep + amount < 1){
+        waived = true;
+        // later we do poster_rep + (rep_diff) = poster_rep + (1 - poster_rep) = 1
+        amount = 1 - poster_rep;
+    }
     
     let update_user_promise = client.updateByQuery({
         index: INDEX_USERS,
@@ -1207,8 +1299,8 @@ function updateReputation(username, qid, score_diff, amount){
         }
     });
     promises.push(update_question_promise);
-
-    return Promise.all(promises);
+    await Promise.all(promises);
+    return waived;
     // let success2 = (updateQResponse.updated >= 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     // if (success2 !== constants.DB_RES_SUCCESS){
     //     console.log(`[QA] Failed updateQReputation(${username}, ${amount})`);
@@ -1315,11 +1407,9 @@ async function upvoteQA(qid, aid, username, upvote){
     let downvoted  = downvotes.includes(username);
     let waived = waived_downvotes.includes(username);
     let poster = await getUserByPost(qid,aid);
-    let poster_rep = await getReputation(poster);
     let promises = [];
 
     let in_upvotes = false;
-    let waive_vote = false;
     let undo_vote = false;
     let add_vote = false;
 
@@ -1346,22 +1436,15 @@ async function upvoteQA(qid, aid, username, upvote){
         rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
         score_diff = (upvote) ? score_diff + 1 : score_diff - 1;
         add_vote = true;
-
-        // determine if we have to waive the vote
-        if (poster_rep + rep_diff < 1){
-            waive_vote = true;
-            // later we do poster_rep + (rep_diff) = poster_rep + (1 - poster_rep) = 1
-            rep_diff = 1 - poster_rep;
-        }
     }
 
     // if it's for a question, updateReputation will handle it
     if (qid == undefined){
         // update the score of the question or answer
-        promises.psuh(updateScore(qid, aid, score_diff));
+        promises.push(updateScore(qid, aid, score_diff));
     }       
     // update the reputation of the poster
-    promises.push(updateReputation(poster, qid, score_diff, rep_diff));
+    let waive_vote = updateReputation(poster, qid, score_diff, rep_diff);
 
     // update the votes accordingly
     promises.push(handleVote(qid, aid, username, in_upvotes, waived, upvote, waive_vote, undo_vote, add_vote));
