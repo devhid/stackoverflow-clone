@@ -89,7 +89,9 @@ async function getUser(request){
         response[constants.USER_KEY] = user;
     
         status = constants.STATUS_200;
-        request.reply({status: status, response: response});
+        let reply = {status: status, response: response};
+        console.log(`getUser reply=${reply}`);
+        request.reply(reply);
         request.ack();
     } catch (err){
         console.log(`[User] getUser err ${JSON.stringify(err)}`);
@@ -128,10 +130,10 @@ async function getUserQuestions(request){
         const qids = await database.getUserQuestions(username);
         response = generateOK();
         response[constants.QUESTIONS_KEY] = qids;
-        console.log(response);
-    
         status = constants.STATUS_200;
-        request.reply({status: status, response: response});
+        let reply = {status: status, response: response};
+        console.log(`getUserQuestions reply=${reply}`);
+        request.reply(reply);
         request.ack();
     } catch (err){
         console.log(`[User] getUserQuestions err ${JSON.stringify(err)}`);
@@ -173,7 +175,9 @@ async function getUserAnswers(request){
         response[constants.ANSWERS_KEY] = aids;
     
         status = constants.STATUS_200;
-        request.reply({status: status, response: response});
+        let reply = {status: status, response: response};
+        console.log(`getUserAnswers reply=${reply}`);
+        request.reply(reply);
         request.ack();
     } catch (err){
         console.log(`[User] getUserAnswers err ${JSON.stringify(err)}`);
