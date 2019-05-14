@@ -1021,7 +1021,7 @@ function undoVote(qid, aid, username, upvote, waived){
     if (!upvote && waived){
         arr = "waived_" + arr;
     }
-    let inline_script = `ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.user))`
+    let inline_script = `if (ctx._source.${arr}.indexOf(params.user) != -1) { ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.user)); }`
     return client.updateByQuery({
         index: which_index,
         type: "_doc",
@@ -1065,7 +1065,7 @@ function addVote(qid, aid, username, upvote, waived){
     if (!upvote && waived){
         arr = "waived_" + arr;
     }
-    let inline_script = `ctx._source.${arr}.add(params.user)`
+    let inline_script = `if (ctx._source.${arr}.indexOf(params.user) == -1) { ctx._source.${arr}.add(params.user); }`
     return client.updateByQuery({
         index: which_index,
         type: "_doc",
@@ -1232,7 +1232,8 @@ function handleVote(qid, aid, username, in_upvotes, waived, upvote, waive_vote, 
             add_arr = "waived_" + add_arr;
         }
         let param_user = "user";
-        let inline_script = `ctx._source.${undo_arr}.remove(ctx._source.${undo_arr}.indexOf(params.${param_user})); ctx._source.${add_arr}.add(params.${param_user})`;
+        let inline_script = `if (ctx._source.${undo_arr}.indexOf(params.user) != -1) { ctx._source.${undo_arr}.remove(ctx._source.${undo_arr}.indexOf(params.user)); } if (ctx._source.${add_arr}.indexOf(params.user) == -1) { ctx._source.${add_arr}.add(params.user); }`;
+        // let inline_script = `ctx._source.${undo_arr}.remove(ctx._source.${undo_arr}.indexOf(params.${param_user})); ctx._source.${add_arr}.add(params.${param_user})`;
         return client.updateByQuery({
             index: which_index,
             type: "_doc",
