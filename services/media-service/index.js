@@ -103,36 +103,50 @@ app.get('/media/:id', async(req,res) => {
 
 /* ------------------ ENDPOINTS ------------------ */
 
-async function addMedia(req) {
-    let response = {};
-    let user = req.session.user;
-
-    if (user === undefined) {
-        response = generateERR(constants.STATUS_401, constants.ERR_NOT_LOGGED_IN);
-        return response;
-    }
-
-    if (req.file === undefined) {
-        response = generateERR(constants.STATUS_400, constants.ERR_MISSING_FILE);
-        return response;
-    }
-
-    const filename = req.file.originalname;
-    const content = req.file.buffer;
-    const mimetype = req.file.mimetype;
-
-    // get generated id from uploading media
-    let mediaId = null;
+async function addMedia(request) {
+    let req = request.body;
     try {
-        mediaId = await database.uploadMedia(filename, content, mimetype);
-    } catch(err) {
-        response = generateERR(constants.STATUS_400, err);
-        return response;
-    }
+        let response = {};
+        let user = req.session.user;
+    
+        if (user === undefined) {
+            response = generateERR(constants.STATUS_401, constants.ERR_NOT_LOGGED_IN);
+            request.reply(response);
+            request.ack();
+            return;
+        }
 
-    response = generateOK();
-    response.response[constants.ID_KEY] = mediaId;
-    return response;
+        if (req.file === undefined) {
+            response = generateERR(constants.STATUS_400, constants.ERR_MISSING_FILE);
+            request.reply(response);
+            request.ack();
+            return;
+        }
+
+        const filename = req.file.originalname;
+        const content = req.file.buffer;
+        const mimetype = req.file.mimetype;
+
+        // get generated id from uploading media
+        let mediaId = null;
+        try {
+            mediaId = await database.uploadMedia(filename, content, mimetype);
+        } catch(err) {
+            response = generateERR(constants.STATUS_400, err);
+            request.reply(response);
+            request.ack();
+            return;
+        }
+
+        response = generateOK();
+        response.response[constants.ID_KEY] = mediaId;
+        request.reply(response);
+        request.ack();
+        return;
+    } catch (err) {
+        console.log(`[Media] media err ${JSON.stringify(err)}`);
+        request.nack();
+    }
 }
 
 async function getMedia(req) {
