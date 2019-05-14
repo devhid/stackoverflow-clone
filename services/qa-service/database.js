@@ -68,7 +68,7 @@ function getPreparedList(arr){
 function associateFreeMediaBulkBody(qa_id, ids){
     // if no media, no need to do anything  
     if (ids == null || ids.length == 0){
-        return new DBResult(constants.DB_RES_SUCCESS, null);
+        return [];
     }
 
     // build the bulk request that will index a Media metadata document
@@ -468,7 +468,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // associate the free media IDs with the new Question
     let media_body = associateFreeMediaBulkBody(id, media);
     bulk_insert.body = bulk_insert.body.concat(media_body);
-    
+
     await client.bulk(bulk_insert);
     // let associateMediaResponse = await associateFreeMedia(response._id,media);
     // if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
@@ -476,7 +476,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     //     console.log(`[QA] associateFreeMedia err: ${associateMediaResponse.data}`);
     // }
 
-    return new DBResult(constants.DB_RES_SUCCESS, response._id);
+    return new DBResult(constants.DB_RES_SUCCESS, id);
 }
 
 /** GET /questions/:qid
