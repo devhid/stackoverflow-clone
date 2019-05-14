@@ -1178,7 +1178,7 @@ function updateReputation(username, qid, score_diff, amount){
         };
     }
     else {
-        inline_script = `ctx._source.user.reputation += parmams.${param_amount}; if (ctx._id == qid) { ctx._source.score += params.score_diff }`;
+        inline_script = `ctx._source.user.reputation += params.${param_amount}; if (ctx._id == qid) { ctx._source.score += params.score_diff }`;
         params = {
             [param_amount]: amount,
             score_diff: score_diff
