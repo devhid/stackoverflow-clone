@@ -123,18 +123,30 @@ async function addMedia(request) {
             return;
         }
 
-    const username = user._source.username;
-    const filename = req.file.originalname;
-    const content = req.file.buffer;
-    const mimetype = req.file.mimetype;
+        const username = user._source.username;
+        const filename = req.file.originalname;
+        const content = req.file.buffer;
+        const mimetype = req.file.mimetype;
 
-    // get generated id from uploading media
-    let mediaId = null;
-    try {
-        mediaId = await database.uploadMedia(username, filename, content, mimetype);
-    } catch(err) {
-        response = generateERR(constants.STATUS_400, err);
-        return response;
+        // get generated id from uploading media
+        let mediaId = null;
+        try {
+            mediaId = await database.uploadMedia(username, filename, content, mimetype);
+        } catch(err) {
+            response = generateERR(constants.STATUS_400, err);
+            request.reply(response);
+            request.ack();
+            return;
+        }
+
+        response = generateOK();
+        response.response[constants.ID_KEY] = mediaId;
+        request.reply(response);
+        request.ack();
+        return;
+    } catch (err) {
+        console.log(`[Media] media err ${JSON.stringify(err)}`);
+        request.nack();
     }
 }
 
