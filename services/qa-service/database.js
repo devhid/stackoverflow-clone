@@ -991,7 +991,7 @@ async function undoAllQuestionVotes(qid){
  * @param {boolean} upvote whether the user's vote is in upvotes or downvotes
  * @param {boolean} waived whether or not the user's downvote was waived (only valid if !upvote)
  */
-async function undoVote(qid, aid, username, upvote, waived){
+function undoVote(qid, aid, username, upvote, waived){
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1001,7 +1001,7 @@ async function undoVote(qid, aid, username, upvote, waived){
     }
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.${param_user}))`
-    const undoVoteResponse = await client.updateByQuery({
+    const undoVoteResponse = client.updateByQuery({
         index: which_index,
         type: "_doc",
         refresh: "true",
@@ -1020,10 +1020,29 @@ async function undoVote(qid, aid, username, upvote, waived){
             }
         }
     });
-    let success = (undoVoteResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] Failed undoVote(${qid}, ${aid}, ${username}, ${upvote})`);
-    }
+    // const undoVoteResponse = await client.updateByQuery({
+    //     index: which_index,
+    //     type: "_doc",
+    //     refresh: "true",
+    //     body: { 
+    //         query: { 
+    //             term: { 
+    //                 [which_id]: which_id_value
+    //             } 
+    //         }, 
+    //         script: {
+    //             lang: "painless",
+    //             inline: inline_script,
+    //             params: {
+    //                 [param_user]: username
+    //             }
+    //         }
+    //     }
+    // });
+    // let success = (undoVoteResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    // if (success !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] Failed undoVote(${qid}, ${aid}, ${username}, ${upvote})`);
+    // }
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
@@ -1035,7 +1054,7 @@ async function undoVote(qid, aid, username, upvote, waived){
  * @param {boolean} upvote whether the user's vote is to upvote or downvote
  * @param {boolean} waived whether the user's downvote should be waived
  */
-async function addVote(qid, aid, username, upvote, waived){
+function addVote(qid, aid, username, upvote, waived){
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1045,7 +1064,7 @@ async function addVote(qid, aid, username, upvote, waived){
     }
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.add(params.${param_user})`
-    const addVoteResponse = await client.updateByQuery({
+    const addVoteResponse = client.updateByQuery({
         index: which_index,
         type: "_doc",
         refresh: "true",
@@ -1064,10 +1083,29 @@ async function addVote(qid, aid, username, upvote, waived){
             }
         }
     });
-    let success = (addVoteResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] Failed addVote(${qid}, ${aid}, ${username}, ${upvote})`);
-    }
+    // const addVoteResponse = await client.updateByQuery({
+    //     index: which_index,
+    //     type: "_doc",
+    //     refresh: "true",
+    //     body: { 
+    //         query: { 
+    //             term: { 
+    //                 [which_id]: which_id_value
+    //             } 
+    //         }, 
+    //         script: {
+    //             lang: "painless",
+    //             inline: inline_script,
+    //             params: {
+    //                 [param_user]: username
+    //             }
+    //         }
+    //     }
+    // });
+    // let success = (addVoteResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    // if (success !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] Failed addVote(${qid}, ${aid}, ${username}, ${upvote})`);
+    // }
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
@@ -1077,12 +1115,12 @@ async function addVote(qid, aid, username, upvote, waived){
  * @param {string} aid the _id of the answer (if used for updating the score of an answer)
  * @param {integer} amount the amount by which to add to the current score of the question or answer
  */
-async function updateScore(qid, aid, amount){
+function updateScore(qid, aid, amount){
     let which_index = (aid == undefined) ? INDEX_QUESTIONS : INDEX_ANSWERS;
     let id_value = (aid == undefined) ? qid : aid;
     let param_amount = "amount";
     let inline_script = `ctx._source.score += params.${param_amount}`
-    const updateResponse = await client.updateByQuery({
+    const updateResponse = client.updateByQuery({
         index: which_index,
         type: "_doc",
         refresh: "true",
@@ -1101,10 +1139,29 @@ async function updateScore(qid, aid, amount){
             } 
         }
     });
-    let success = (updateResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] Failed updateScore(${qid}, ${aid}, ${amount})`);
-    }
+    // const updateResponse = await client.updateByQuery({
+    //     index: which_index,
+    //     type: "_doc",
+    //     refresh: "true",
+    //     body: { 
+    //         query: { 
+    //             term: { 
+    //                 _id: id_value
+    //             } 
+    //         }, 
+    //         script: { 
+    //             lang: "painless",
+    //             inline: inline_script,
+    //             params: {
+    //                 [param_amount]: amount
+    //             }
+    //         } 
+    //     }
+    // });
+    // let success = (updateResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    // if (success !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] Failed updateScore(${qid}, ${aid}, ${amount})`);
+    // }
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 
@@ -1115,13 +1172,13 @@ async function updateScore(qid, aid, amount){
  * @param {string} username username of the user
  * @param {int} amount amount by which to update the reputation
  */
-async function updateReputation(username, amount){
+function updateReputation(username, amount){
     if (amount == 0){
         return new DBResult(constants.DB_RES_SUCCESS, null);
     }
     let param_amount = "amount";
     let inline_script = `ctx._source.reputation += params.${param_amount}`;
-    const updateUserResponse = await client.updateByQuery({
+    const updateUserResponse = client.updateByQuery({
         index: INDEX_USERS,
         type: "_doc",
         refresh: "true",
@@ -1140,13 +1197,32 @@ async function updateReputation(username, amount){
             } 
         }
     });
-    let success = (updateUserResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] Failed updateUserReputation(${username}, ${amount})`);
-    }
+    // const updateUserResponse = await client.updateByQuery({
+    //     index: INDEX_USERS,
+    //     type: "_doc",
+    //     refresh: "true",
+    //     body: { 
+    //         query: { 
+    //             match: { 
+    //                 "username": username
+    //             } 
+    //         }, 
+    //         script: { 
+    //             lang: "painless",
+    //             inline: inline_script,
+    //             params: {
+    //                 [param_amount]: amount
+    //             }
+    //         } 
+    //     }
+    // });
+    // let success = (updateUserResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    // if (success !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] Failed updateUserReputation(${username}, ${amount})`);
+    // }
 
     inline_script = `ctx._source.user.reputation += params.${param_amount}`;
-    const updateQResponse = await client.updateByQuery({
+    const updateQResponse = client.updateByQuery({
         index: INDEX_QUESTIONS,
         size: 10000,
         type: "_doc",
@@ -1166,10 +1242,30 @@ async function updateReputation(username, amount){
             } 
         }
     });
-    let success2 = (updateQResponse.updated >= 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
-    if (success2 !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] Failed updateQReputation(${username}, ${amount})`);
-    }
+    // const updateQResponse = await client.updateByQuery({
+    //     index: INDEX_QUESTIONS,
+    //     size: 10000,
+    //     type: "_doc",
+    //     refresh: "true",
+    //     body: { 
+    //         query: { 
+    //             match: { 
+    //                 "user.username": username
+    //             } 
+    //         }, 
+    //         script: { 
+    //             lang: "painless",
+    //             inline: inline_script,
+    //             params: {
+    //                 [param_amount]: amount
+    //             }
+    //         } 
+    //     }
+    // });
+    // let success2 = (updateQResponse.updated >= 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
+    // if (success2 !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] Failed updateQReputation(${username}, ${amount})`);
+    // }
 
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }
@@ -1244,10 +1340,12 @@ async function upvoteQA(qid, aid, username, upvote){
         rep_diff = (waived) ? 0 : ((upvoted) ? -1 : 1);
         score_diff = (waived) ? 1 : ((upvoted) ? -1 : 1);
         // console.log(`[QA] undoing vote by ${poster}`);
-        let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
-        if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
-            console.log(`[QA] Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
-        }
+        
+        // let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
+        // if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
+        //     console.log(`[QA] Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+        // }
+        await undoVote(qid,aid,username,in_upvotes,waived);
     }
 
     let waive_vote = false;
@@ -1269,17 +1367,19 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // update the score of the question or answer
     // console.log(`[QA] updating score ${qid}, ${aid}, ${score_diff}`);
-    let updateScoreRes = await updateScore(qid, aid, score_diff);
-    if (updateScoreRes.status !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
-    }
+    // let updateScoreRes = await updateScore(qid, aid, score_diff);
+    // if (updateScoreRes.status !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+    // }
+    updateScore(qid, aid, score_diff);
 
     // update the reputation of the poster
     // console.log(`[QA] updating rep ${poster}, ${rep_diff}`);
-    let updateRepRes = await updateReputation(poster, rep_diff);
-    if (updateRepRes.status !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
-    }
+    // let updateRepRes = await updateReputation(poster, rep_diff);
+    // if (updateRepRes.status !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+    // }
+    updateReputation(poster, rep_diff);
 
     // if the user asked to perform the same operation, all we needed to do was undo the previous vote
     //      1) remove the vote from the corresponding vote array of the post
@@ -1291,10 +1391,11 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // add the vote to the post
     // console.log(`[QA] adding vote ${qid}, ${aid}, ${username}, ${upvote}, ${waive_vote}`);
-    let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
-    if (addVoteRes.status !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
-    }
+    // let addVoteRes = await addVote(qid, aid, username, upvote, waive_vote);
+    // if (addVoteRes.status !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
+    // }
+    addVote(qid, aid, username, upvote, waive_vote);
 
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }

@@ -321,7 +321,7 @@ async function generateResponse(key, endpoint, req, obj){
         else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
                 endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
             let user = req.session.user;
-            let which_id = (constants.ENDPOINTS.QA_UPVOTE_Q) ? req.params.qid : req.params.aid;
+            let which_id = (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q) ? req.params.qid : req.params.aid;
             let upvote = (req.body.upvote == undefined) ? true : req.body.upvote;
             let missingParams = missingElement([user, which_id, upvote]);
             if (missingParams === true){
@@ -406,7 +406,9 @@ async function generateResponse(key, endpoint, req, obj){
         }
     }
     else if (key === constants.SERVICES.REGISTER){
-        return undefined;
+        response.setERR("A user with that email or username already exists.");
+        status = constants.STATUS_409;
+        return {status: status, response: response.toOBJ(), queue: false};
     }
     else if (key === constants.SERVICES.SEARCH){
         return undefined;
@@ -523,7 +525,7 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
         else if (key === constants.SERVICES.EMAIL){
             let username = await getCachedObject("register:" + req.body.email);
             if (username != null){
-                await setCachedObject("verify:" + username);
+                await setCachedObject("verify:" + username, 1);
                 await removeCachedObject("register:" + req.body.email);
             }
             return;
