@@ -319,14 +319,16 @@ async function addQuestion(user, title, body, tags, media, id){
     if (id != undefined){
         question['id'] = id;
     }
-    let response = await client.index(question);
-    if (response.result !== "created"){
-        console.log(`[QA] Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
-        console.log(response);
-        return new DBResult(constants.DB_RES_ERROR, null);
-    }
+    let response = client.index(question);
+    // let response = await client.index(question);
+    // // if (response.result !== "created"){
+    // //     console.log(`[QA] Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
+    // //     console.log(response);
+    // //     return new DBResult(constants.DB_RES_ERROR, null);
+    // // }
+    
     // create the Question Views document in INDEX_VIEWS
-    let viewResponse = await client.index({
+    let viewResponse = client.index({
         index: INDEX_VIEWS,
         type: "_doc",
         refresh: "true",
@@ -336,13 +338,23 @@ async function addQuestion(user, title, body, tags, media, id){
             "unauthenticated": []
         }
     });
-    if (viewResponse.result !== "created"){
-        console.log(`[QA] Failed to create Question Views metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
-        console.log(viewResponse);
-    }
+    // let viewResponse = await client.index({
+    //     index: INDEX_VIEWS,
+    //     type: "_doc",
+    //     refresh: "true",
+    //     body: {
+    //         "qid": response._id,
+    //         "authenticated": [],
+    //         "unauthenticated": []
+    //     }
+    // });
+    // if (viewResponse.result !== "created"){
+    //     console.log(`[QA] Failed to create Question Views metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
+    //     console.log(viewResponse);
+    // }
 
     // create the Question Upvotes document in INDEX_Q_UPVOTES
-    let upvoteResponse = await client.index({
+    let upvoteResponse = client.index({
         index: INDEX_Q_UPVOTES,
         type: "_doc",
         refresh: "true",
@@ -353,21 +365,31 @@ async function addQuestion(user, title, body, tags, media, id){
             "waived_downvotes": []
         }
     });
-    if (upvoteResponse.result !== "created"){
-        console.log(`[QA] Failed to create Question Upvotes metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
-        console.log(upvoteResponse);
-    }
+    // let upvoteResponse = await client.index({
+    //     index: INDEX_Q_UPVOTES,
+    //     type: "_doc",
+    //     refresh: "true",
+    //     body: {
+    //         "qid": response._id,
+    //         "upvotes": [],
+    //         "downvotes": [],
+    //         "waived_downvotes": []
+    //     }
+    // });
+    // if (upvoteResponse.result !== "created"){
+    //     console.log(`[QA] Failed to create Question Upvotes metadata document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
+    //     console.log(upvoteResponse);
+    // }
+    
     // associate the free media IDs with the new Question
-    let associateMediaResponse = await associateFreeMedia(response._id,media);
-    if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
-        console.log(`[QA] associateFreeMedia err: ${associateMediaResponse.data}`);
-    }
+    associateFreeMedia(response._id,media);
+    // let associateMediaResponse = await associateFreeMedia(response._id,media);
+    // if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
+    //     console.log(`[QA] associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
+    //     console.log(`[QA] associateFreeMedia err: ${associateMediaResponse.data}`);
+    // }
 
-    if (response){
-        return new DBResult(constants.DB_RES_SUCCESS, response._id);
-    }
-    return new DBResult(constants.DB_RES_ERROR, null);
+    return new DBResult(constants.DB_RES_SUCCESS, response._id);
 }
 
 /** GET /questions/:qid
