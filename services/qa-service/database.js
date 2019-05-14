@@ -281,8 +281,9 @@ async function getReputation(username){
  * @param {string[]} tags the tags of the question
  * @param {id[]} media the ids of any attached media
  * @param {id} id the id to use if specified
+ * @param {int} timestamp UTC timestamp
  */
-async function addQuestion(user, title, body, tags, media, id){
+async function addQuestion(user, title, body, tags, media, id, timestamp){
     media = (media == undefined) ? [] : media;
 
     if (media.length > 0){
@@ -296,6 +297,7 @@ async function addQuestion(user, title, body, tags, media, id){
     }
 
     // create the Question document in INDEX_QUESTIONS
+    timetsamp = (timestamp == undefined) ? Date.now()/1000 : timestamp;
     let question = {
         index: INDEX_QUESTIONS,
         type: "_doc",
@@ -310,7 +312,7 @@ async function addQuestion(user, title, body, tags, media, id){
             "score": 0,
             "view_count": 0,
             "answer_count": 0,
-            "timestamp": Date.now()/1000,
+            "timestamp": timestamp,
             "media": media,
             "tags": tags,
             "accepted_answer_id": null

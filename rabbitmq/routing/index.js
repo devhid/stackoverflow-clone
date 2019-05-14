@@ -209,7 +209,8 @@ async function generateResponse(key, endpoint, req, obj){
                 id: uuidv4()
             };
             let merged = {...response.toOBJ(), ...data};
-            return {status: status, response: merged, queue: true};
+            let timestamp = Date.now()/1000
+            return {status: status, response: merged, timestamp: timestamp, queue: true};
         }
         else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
             let user = req.session.user;
@@ -552,27 +553,25 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                     }
                 }
                 // let created_id = rabbitRes.response.id;
-                // if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
-                //     let question = {
-                //         id: created_id,
-                //         user: {
-                //             username: req.session.user._source.username,
-                //             reputation: req.session.user._source.reputation
-                //         },
-                //         title: req.body.title,
-                //         body: req.body.body,
-                //         score: 0,
-                //         view_count: 0,
-                //         answer_count: 0,
-                //         timestamp: Date.now()/1000,
-                //         tags: req.body.tags,
-                //         accepted_answer_id: null
-                //     };
-                //     let status = constants.STATUS_200;
-                //     let question_resp = {status: 'OK', question: question};
-                //     setCachedObject("get:" + created_id, question_resp);
-                // }
-                
+                if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
+                    let question = {
+                        id: created_id,
+                        user: {
+                            username: req.session.user._source.username,
+                            reputation: req.session.user._source.reputation
+                        },
+                        title: req.body.title,
+                        body: req.body.body,
+                        score: 0,
+                        view_count: 0,
+                        answer_count: 0,
+                        timestamp: rabbitRes.response.timestamp,
+                        tags: req.body.tags,
+                        accepted_answer_id: null
+                    };
+                    let question_resp = {status: 'OK', question: question};
+                    setCachedObject("get:" + created_id, question_resp);
+                }
             }
             else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
                 let qid = req.params.qid;
@@ -863,6 +862,10 @@ async function wrapRequest(req, res, key, endpoint){
                 endpoint === constants.ENDPOINTS.QA_ADD_A || 
                 endpoint === constants.ENDPOINTS.MEDIA_ADD){
                 data['id'] = rabbitRes.response.id;
+            }
+            if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
+                endpoint === constants.ENDPOINTS.QA_ADD_A){
+                data['timestamp'] = rabbitRes.timestamp;        
             }
             // do NOT await here, just publish it
             routeRequest(key, endpoint, data);
