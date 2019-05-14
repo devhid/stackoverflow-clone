@@ -26,9 +26,10 @@ module.exports = {
     STATUS_409: 409,    // conflict
 
     CASSANDRA_OPTIONS: {
-        contactPoints: ["127.0.0.1"], 
+        contactPoints: ["192.168.122.38"], 
         localDataCenter: 'datacenter1', 
-        keyspace: "media_service" 
+        keyspace: "stackoverflow",
+        table: "media"
     },
     ELASTICSEARCH_OPTIONS: {
         host: "http://admin:ferdman123@130.245.169.86:92"

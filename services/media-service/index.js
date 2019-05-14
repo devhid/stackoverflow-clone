@@ -14,7 +14,7 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 8007;
+const PORT = 8003;
 
 /* redis */
 const sessionOptions = {
