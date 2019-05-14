@@ -93,8 +93,8 @@ app.get('/media/:id', async(req,res) => {
     res.status(dbRes.status);
     if (dbRes.content_type != undefined){
         res.set('Content-Type', dbRes.content_type);
-        if (dbRes.media != undefined && dbRes.media.type === "Buffer"){
-            return res.send(Buffer.from(dbRes.media.data));
+        if (dbRes.media != undefined){
+            return res.send(dbRes.media);
         }
     }
     return res.json(dbRes.response);
@@ -127,11 +127,12 @@ async function addMedia(request) {
         const filename = req.file.originalname;
         const content = req.file.buffer;
         const mimetype = req.file.mimetype;
+        const specified_id = req.id;
 
         // get generated id from uploading media
         let mediaId = null;
         try {
-            mediaId = await database.uploadMedia(username, filename, content, mimetype);
+            mediaId = await database.uploadMedia(username, filename, content, mimetype, specified_id);
         } catch(err) {
             response = generateERR(constants.STATUS_400, err);
             request.reply(response);
@@ -165,7 +166,8 @@ async function getMedia(req) {
 
     response = generateOK();
     response['content_type'] = image.mimetype;
-    return res.send(image.content);
+    response['media'] = image.content;
+    return response;
 }
 
 /* helper funcs */

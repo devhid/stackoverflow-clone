@@ -130,6 +130,15 @@ async function generateResponse(key, endpoint, req, obj){
         return {status: status, response: response, queue: needToQueue};
     }
     else if (key === constants.SERVICES.MEDIA){
+        if (endpoint === constants.ENDPOINTS.MEDIA_ADD){    
+            status = constants.STATUS_200;
+            response.setOK();
+            data = {
+                id: uuidv4()
+            };
+            let merged = {...response.toOBJ(), ...data};
+            return {status: status, response: merged, queue: true};
+        }
         return undefined;
     }
     else if (key === constants.SERVICES.QA){
@@ -502,9 +511,8 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
         }
         else if (key === constants.SERVICES.MEDIA){
             if (endpoint === constants.ENDPOINTS.MEDIA_ADD){
-                for (var media_id of rabbitRes.response.question.media){
-                    setCachedObject("media_poster:" + media_id, req.session.user._source.username);
-                }
+                let media_id = rabbitRes.response.id;
+                setCachedObject("media_poster:" + media_id, req.session.user._source.username);
             }
             return;
         }
@@ -685,6 +693,9 @@ async function needToWait(key, endpoint, req, obj){
         return true;
     }
     else if (key === constants.SERVICES.MEDIA){
+        if (req.session.user != undefined){
+            return false;
+        }
         return true;
     }
     else if (key === constants.SERVICES.QA){

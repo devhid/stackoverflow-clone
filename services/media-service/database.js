@@ -16,8 +16,8 @@ client.connect()
     .then(() => console.log(`[ Cassandra ] : Successfully established connection to keyspace, '${cassandraOptions.keyspace}'.`))
     .catch((error) => console.log(`[Cassandra] : Could not connect to keyspace, '${cassandraOptions.keyspace}'.`));
 
-async function uploadMedia(username, filename, content, mimetype) {
-    const uuid = Uuid.random();
+async function uploadMedia(username, filename, content, mimetype, id) {
+    const uuid = (id != undefined) ? id : Uuid.random();
     const query = `INSERT INTO ${cassandraOptions.keyspace}.${cassandraOptions.table} (id, content, filename, mimetype, qa_id, poster) VALUES (?, ?, ?, ?, ?, ?)`;
     
     return new Promise( (resolve, reject) => {
