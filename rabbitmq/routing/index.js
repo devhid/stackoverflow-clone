@@ -795,7 +795,8 @@ async function wrapRequest(req, res, key, endpoint){
         session: {user: ((req.session == undefined) ? undefined : req.session.user)},
         ip: req.headers['x-forwarded-for'] || req.connection.remoteAddress,
         params: req.params,
-        body: req.body
+        body: req.body,
+        file: req.file
     };
     // if (endpoint === constants.ENDPOINTS.QA_ADD_Q && req.body.answers != undefined){
     //     data.body = {};
