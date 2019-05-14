@@ -53,7 +53,7 @@ rabbot.configure(constants.RABBOT_SETTINGS)
 /* ------------------ ENDPOINTS ------------------ */
 
 async function login(request) {
-    let req = req.body;
+    let req = request.body;
     try {
         const username = req.body['username'];
         const password = req.body['password'];

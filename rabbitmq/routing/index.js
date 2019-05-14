@@ -660,6 +660,13 @@ async function needToWait(key, endpoint, req, obj){
                 req.body.media.length == 0){
                 return false;
             }
+            if (endpoint === constants.ENDPOINTS.QA_ADD_A){
+                let qid = req.params.qid;
+                let cachedQuestion = await getCachedObject("get:" + qid);
+                if (cachedQuestion == null){
+                    return true;
+                }
+            }
             let all_media_cached = true;
             for (var media_id of req.body.media){
                 touchCachedObject("media:" + media_id);
