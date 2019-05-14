@@ -103,19 +103,25 @@ app.get('/media/:id', async(req,res) => {
 
 /* ------------------ ENDPOINTS ------------------ */
 
-async function addMedia(req) {
-    let response = {};
-    let user = req.session.user;
+async function addMedia(request) {
+    let req = request.body;
+    try {
+        let response = {};
+        let user = req.session.user;
+    
+        if (user === undefined) {
+            response = generateERR(constants.STATUS_401, constants.ERR_NOT_LOGGED_IN);
+            request.reply(response);
+            request.ack();
+            return;
+        }
 
-    if (user === undefined) {
-        response = generateERR(constants.STATUS_401, constants.ERR_NOT_LOGGED_IN);
-        return response;
-    }
-
-    if (req.file === undefined) {
-        response = generateERR(constants.STATUS_400, constants.ERR_MISSING_FILE);
-        return response;
-    }
+        if (req.file === undefined) {
+            response = generateERR(constants.STATUS_400, constants.ERR_MISSING_FILE);
+            request.reply(response);
+            request.ack();
+            return;
+        }
 
     const username = user._source.username;
     const filename = req.file.originalname;
@@ -130,10 +136,6 @@ async function addMedia(req) {
         response = generateERR(constants.STATUS_400, err);
         return response;
     }
-
-    response = generateOK();
-    response.response[constants.ID_KEY] = mediaId;
-    return response;
 }
 
 async function getMedia(req) {
