@@ -33,6 +33,9 @@ app.use(session(sessionOptions));
 /* memcached */
 const memcached = new Memcached(constants.MEMCACHED_LOCATIONS);
 
+/* multer */
+const upload = multer();
+
 /* parse incoming requests data as json */
 app.use(express.json());
 
@@ -857,10 +860,10 @@ app.post('/verify', async(req,res) => {
 });
 
 /* media service */
-// app.post('/addmedia', upload.single('content'), async (req,res) => {
-//     let endpoint = constants.ENDPOINTS.MEDIA_ADD;
-//     return await wrapRequest(req, res, constants.SERVICES.MEDIA, endpoint);
-// });
+app.post('/addmedia', upload.single('content'), async (req,res) => {
+    let endpoint = constants.ENDPOINTS.MEDIA_ADD;
+    return await wrapRequest(req, res, constants.SERVICES.MEDIA, endpoint);
+});
 
 // app.get('/media/:id', async(req,res) => {
 //     let endpoint = constants.ENDPOINTS.MEDIA_GET;
