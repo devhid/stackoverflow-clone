@@ -16,12 +16,12 @@ client.connect()
     .then(() => console.log(`[ Cassandra ] : Successfully established connection to keyspace, '${cassandraOptions.keyspace}'.`))
     .catch((error) => console.log(`[Cassandra] : Could not connect to keyspace, '${cassandraOptions.keyspace}'.`));
 
-async function uploadMedia(filename, content, mimetype) {
+async function uploadMedia(username, filename, content, mimetype) {
     const uuid = Uuid.random();
-    const query = `INSERT INTO ${cassandraOptions.keyspace}.imgs (id, content, filename, mimetype, qa_id) VALUES (?, ?, ?, ?, ?)`;
+    const query = `INSERT INTO ${cassandraOptions.keyspace}.${cassandraOptions.table} (id, content, filename, mimetype, qa_id, poster) VALUES (?, ?, ?, ?, ?, ?)`;
     
     return new Promise( (resolve, reject) => {
-        client.execute(query, [uuid, content, filename, mimetype, ''], { prepare: true }, (error, result) => {
+        client.execute(query, [uuid, content, filename, mimetype, '', username], { prepare: true }, (error, result) => {
             if(error) {
                 reject(constants.ERR_MEDIA_TOO_LARGE);
             } else {
@@ -32,7 +32,7 @@ async function uploadMedia(filename, content, mimetype) {
 }
 
 async function getMedia(mediaId) {
-    const query = `SELECT id, filename, content, mimetype FROM ${cassandraOptions.keyspace}.imgs WHERE id=?`;
+    const query = `SELECT id, filename, content, mimetype FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id=?`;
     return new Promise( (resolve, reject) => {
         client.execute(query, [mediaId], { prepare: true}, (error, result) => {
             if(error) {

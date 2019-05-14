@@ -2,7 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { FormBuilder, FormGroup, FormControl, FormArray, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
 
-import { Observable } from 'rxjs';
+import { Observable } from 'rxjs/Observable';
 import { QAService } from '../services/qa.service';
 import { MediaService } from '../services/media.service';
 import { FileUploader, FileSelectDirective } from 'ng2-file-upload/ng2-file-upload';

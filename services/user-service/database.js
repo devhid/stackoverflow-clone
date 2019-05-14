@@ -76,4 +76,3 @@ module.exports = {
     getUserQuestions: getUserQuestions,
     getUserAnswers: getUserAnswers
 }
-

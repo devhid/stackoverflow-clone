@@ -36,6 +36,7 @@ const INDEX_MEDIA = "media";          // INDEX_MEDIA is where the media metadata
 /* media */
 
 function shutdown(){
+    client.close();
     cassandra_client.shutdown();
 }
 
@@ -48,16 +49,6 @@ function transformArrToCassandraList(arr, quotes){
     var list = `(`;
     for (var elem of arr){
         list += (quotes) ? `'${elem}',` : `${elem},`;
-    }
-    list = list.substring(0,list.length-1);
-    list += `)`;
-    return list;
-}
-
-function getPreparedList(arr){
-    var list = `(`;
-    for (var elem of arr){
-        list += '?,';
     }
     list = list.substring(0,list.length-1);
     list += `)`;
@@ -145,16 +136,14 @@ async function checkFreeMedia(ids, poster){
     }
 
     // grab the poster name for each media id
-    //let list_ids = transformArrToCassandraList(ids, false);
-    //let query = `SELECT poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id in ${list_ids}`;
-    let prepared_list = getPreparedList(ids);
-    let query = `SELECT poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id in ${prepared_list}`;
+    let list_ids = transformArrToCassandraList(ids, false);
+    let query = `SELECT poster FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id in ${list_ids}`;
     console.log(`[QA] checkFreeMedia query=${query}`);
 
     // await the cassandra query and check for the response
     let result = null;
     try {
-        result = await cassandra_client.execute(query, ids, {prepare: true});
+        result = await cassandra_client.execute(query, [], {prepare: true});
     } catch (err){
         console.log(`[QA] checkFreeMedia getting poster error ${err}`);
         return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
@@ -187,16 +176,14 @@ async function deleteArrOfMedia(ids){
     }
 
     // transform the array of media IDs to the expected format Cassandra wants them in ('id', 'id')
-    // var list_ids = transformArrToCassandraList(ids, false);
-    var prepared_list = getPreparedList(ids);
+    var list_ids = transformArrToCassandraList(ids, false);
 
     // prepare the query
-    // const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
-    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${prepared_list}`;
+    const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${list_ids}`;
     console.log(`[QA] deleteArrOfMedia query=${query}`);
 
     // we DON'T have to await this call... just hope Cassandra is up and reliable
-    let cassandraResp = cassandra_client.execute(query, ids, {prepare: true});
+    let cassandraResp = cassandra_client.execute(query, [], {prepare: true});
 
     // build the bulk request that will delete all Media metadata documents
     let bulk_query = { body : [] };
@@ -218,6 +205,22 @@ async function deleteArrOfMedia(ids){
         console.log(`[QA] Bulk response... ${JSON.stringify(bulkResponse)}`);
     }
 
+    // delete the associated metadata documents
+    // let elasticResp = await client.deleteByQuery({
+    //     index: INDEX_MEDIA,
+    //     type: "_doc",
+    //     body: { 
+    //         query: { 
+    //             term: { 
+    //                 "qa_id.keyword": qa_id
+    //             } 
+    //         }, 
+    //     }
+    // });
+    // if (elasticResp.deleted != ids.length){
+    //     console.log(`[QA] Failed to delete correct number of Media metadatad documents`);
+    //     console.log(response);
+    // }
     return new DBResult(constants.DB_RES_SUCCESS, bulkResponse);
 }
 
@@ -280,9 +283,8 @@ async function getReputation(username){
  * @param {string} body the body of the question
  * @param {string[]} tags the tags of the question
  * @param {id[]} media the ids of any attached media
- * @param {id} id the id to use if specified
  */
-async function addQuestion(user, title, body, tags, media, id){
+async function addQuestion(user, title, body, tags, media){
     media = (media == undefined) ? [] : media;
 
     if (media.length > 0){
@@ -296,7 +298,7 @@ async function addQuestion(user, title, body, tags, media, id){
     }
 
     // create the Question document in INDEX_QUESTIONS
-    let question = {
+    let response = await client.index({
         index: INDEX_QUESTIONS,
         type: "_doc",
         refresh: "true",
@@ -315,11 +317,7 @@ async function addQuestion(user, title, body, tags, media, id){
             "tags": tags,
             "accepted_answer_id": null
         }
-    };
-    if (id != undefined){
-        question['id'] = id;
-    }
-    let response = await client.index(question);
+    });
     if (response.result !== "created"){
         console.log(`[QA] Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
         console.log(response);
@@ -536,17 +534,7 @@ async function getQuestion(qid, username, ip, update){
         })).hits.hits[0];
     }
     if (question){
-        let question_views = (await client.search({
-            index: INDEX_VIEWS,
-            body: {
-                query: {
-                    term: {
-                        "qid.keyword": qid
-                    }
-                }
-            }
-        })).hits.hits[0];
-        return {status: constants.DB_RES_SUCCESS, data: question, views: question_views};
+        return new DBResult(constants.DB_RES_SUCCESS, question);
     }
     return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
 }
@@ -562,9 +550,8 @@ async function getQuestion(qid, username, ip, update){
  * @param {string} user the user object
  * @param {string} body the body of the answer
  * @param {id[]} media array of media IDs attached to the answer
- * @param {id} id the id to use if specified
  */
-async function addAnswer(qid, user, body, media, id){
+async function addAnswer(qid, user, body, media){
     let username = user._source.username;
     media = (media == undefined) ? [] : media;
     
@@ -597,7 +584,7 @@ async function addAnswer(qid, user, body, media, id){
     }
     
     // create the Answer document
-    let answer = {
+    let response = await client.index({
         index: INDEX_ANSWERS,
         type: "_doc",
         refresh: "true",
@@ -610,11 +597,7 @@ async function addAnswer(qid, user, body, media, id){
             "timestamp": Date.now()/1000,
             "media": media
         }
-    };
-    if (id != undefined){
-        answer['id'] = id;
-    }
-    let response = await client.index(answer);
+    });
     if (!response || response.result !== "created"){
         console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
         console.log(response);
@@ -830,7 +813,7 @@ async function deleteQuestion(qid, username){
         try {
             let answerMedia = await getAnswerMedia(qid);
             console.log(`>>>>>> [ANSWER MEDIA]: ${answerMedia}`);
-            for (let answerId of answerMedia) {
+            for(let answerId of answerMedia) {
                 media_ids.push(answerId);
             }
             response = await deleteArrOfMedia(media_ids);
@@ -1453,17 +1436,25 @@ async function acceptAnswer(aid, username){
 }
 
 async function getAnswerMedia(qid) {
+    // const questionMedia = (await client.get({
+    //     index: INDEX_QUESTIONS,
+    //     type: "_doc",
+    //     id: qid,
+    //     _source: ['media']
+    // }))._source.media;
+
     const answers = (await getAnswers(qid)).data;
     let answerMedia = [];
 
-    for (let answer of answers) {
+    for(let answer of answers) {
         let mediaIds = answer._source.media;
-        for (let mediaId of mediaIds) {
+        for(mediaId of mediaIds) {
             answerMedia.push(mediaId);
         }
     }
 
     return answerMedia;
+    // return questionMedia.concat(answerMedia);
 }
 
 
