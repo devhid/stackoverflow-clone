@@ -554,6 +554,7 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                 }
                 // let created_id = rabbitRes.response.id;
                 if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
+                    let created_id = rabbitRes.response.id;
                     let question = {
                         id: created_id,
                         user: {
@@ -569,8 +570,13 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                         tags: req.body.tags,
                         accepted_answer_id: null
                     };
-                    let question_resp = {status: 'OK', question: question};
-                    setCachedObject("get:" + created_id, question_resp);
+                    let views = {
+                        authenticated: [],
+                        unauthenticated: [],
+                        qid: created_id
+                    };
+                    let question_resp = {status: 'OK', response: {status: 'OK', question: question}, views: views};
+                    await setCachedObject("get:" + created_id, question_resp);
                 }
             }
             else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){

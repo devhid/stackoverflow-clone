@@ -321,7 +321,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     if (id != undefined){
         question['id'] = id;
     }
-    let response = client.index(question);
+    let response = await client.index(question);
     // let response = await client.index(question);
     // // if (response.result !== "created"){
     // //     console.log(`[QA] Failed to create Question document with ${user}, ${title}, ${body}, ${tags}, ${media}`);
@@ -487,7 +487,7 @@ async function updateViewCount(qid, username, ip){
     }
 
     // perform the update if necessary
-    if (update){
+    if (update === true){
         const updateResponse = await client.updateByQuery({
             index: INDEX_QUESTIONS,
             type: "_doc",
@@ -510,19 +510,17 @@ async function updateViewCount(qid, username, ip){
     }
     
     // return the question
-    let question = (await client.search({
-        index: INDEX_QUESTIONS,
-        type: "_doc",
-        body: {
-            query: {
-                term: {
-                    _id: qid
-                }
-            }
-        }
-    })).hits.hits[0];
-    if (question){
+    let question = null;
+    try {
+        question = await client.get({
+            id: qid,
+            index: INDEX_QUESTIONS,
+            type: "_doc",
+            refresh: "true"
+        });
         return new DBResult(constants.DB_RES_SUCCESS, question);
+    } catch(err){
+        console.log(`[QA] getQuestion ${qid} not found.`);
     }
     return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
 }
@@ -547,19 +545,18 @@ async function getQuestion(qid, username, ip, update){
     //  else:
     //      try searching for the question
     if (question === undefined){
-        question = (await client.search({
-            index: INDEX_QUESTIONS,
-            type: "_doc",
-            body: {
-                query: {
-                    term: {
-                        _id: qid
-                    }
-                }
-            }
-        })).hits.hits[0];
+        try {
+            question = await client.get({
+                id: qid,
+                index: INDEX_QUESTIONS,
+                type: "_doc",
+                refresh: "true"
+            });
+        } catch(err){
+            console.log(`[QA] getQuestion ${qid} not found.`);
+        }
     }
-    if (question){
+    if (question != null){
         let question_views = (await client.search({
             index: INDEX_VIEWS,
             body: {
