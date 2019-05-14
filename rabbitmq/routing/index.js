@@ -411,7 +411,9 @@ async function generateResponse(key, endpoint, req, obj){
         return undefined;
     }
     else if (key === constants.SERVICES.USER){
-        return undefined;
+        let response = obj;
+        response['queue'] = false;
+        return response;
     }
 
     // should never be reached
@@ -496,7 +498,15 @@ async function getRelevantObj(key, endpoint, req){
         return null;
     }
     else if (key === constants.SERVICES.USER){
-        return null;
+        if (endpoint === constants.ENDPOINTS.USER_GET){
+            return await setCachedObject("user_profile:" + req.params.username, rabbitRes);
+        }
+        else if (endpoint === constants.ENDPOINTS.USER_Q){
+            return await setCachedObject("user_questions:" + req.params.username, rabbitRes);
+        }
+        else if (endpoint === constants.ENDPOINTS.USER_A){
+            return await setCachedObject("user_answers:" + req.params.username, rabbitRes);
+        }
     }
 
     // should never be reached
@@ -776,19 +786,20 @@ async function needToWait(key, endpoint, req, obj){
         return true;
     }
     else if (key === constants.SERVICES.USER){
-        if (endpoint === constants.ENDPOINTS.USER_GET){
-            let user_get = await getCachedObject("user_profile:" + req.params.username);
-            return user_get != null;
-        }
-        else if (endpoint === constants.ENDPOINTS.USER_Q){
-            let user_questions = await getCachedObject("user_questions:" + req.params.username);
-            return user_questions != null;
-        }
-        else if (endpoint === constants.ENDPOINTS.USER_A){
-            let user_answers = await getCachedObject("user_answers:" + req.params.username);
-            return user_answers != null;
-        }
-        return true;
+        return obj != null;
+        // if (endpoint === constants.ENDPOINTS.USER_GET){
+        //     let user_get = await getCachedObject("user_profile:" + req.params.username);
+        //     return user_get != null;
+        // }
+        // else if (endpoint === constants.ENDPOINTS.USER_Q){
+        //     let user_questions = await getCachedObject("user_questions:" + req.params.username);
+        //     return user_questions != null;
+        // }
+        // else if (endpoint === constants.ENDPOINTS.USER_A){
+        //     let user_answers = await getCachedObject("user_answers:" + req.params.username);
+        //     return user_answers != null;
+        // }
+        // return true;
     }
 
     // should never be reached
