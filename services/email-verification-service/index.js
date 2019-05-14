@@ -113,7 +113,7 @@ async function verify(request) {
             return;
         }
 
-        database.updateVerified(email);
+        await database.updateVerified(email);
 
         response = { 
             "status": constants.STATUS_200,

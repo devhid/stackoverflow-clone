@@ -1026,7 +1026,7 @@ async function undoVote(qid, aid, username, upvote, waived){
         index: which_index,
         type: "_doc",
         refresh: "true",
-        conflict: "proceed",
+        conflicts: "proceed",
         body: { 
             query: { 
                 term: { 
@@ -1346,7 +1346,7 @@ async function upvoteQA(qid, aid, username, upvote){
     let poster = await getUserRByPost(qid,aid);
     let poster_rep = await getReputation(poster);
     let promises = [];
-
+    
     // if the user already voted, undo the vote
     //      calculate the difference to the poster's reputation and score of the post
     if (upvoted || downvoted || waived){
@@ -1359,7 +1359,6 @@ async function upvoteQA(qid, aid, username, upvote){
         rep_diff = (waived) ? 0 : ((upvoted) ? -1 : 1);
         score_diff = (waived) ? 1 : ((upvoted) ? -1 : 1);
         // console.log(`[QA] undoing vote by ${poster}`);
-        
         promises.push(undoVote(qid,aid,username,in_upvotes,waived));
     }
 
