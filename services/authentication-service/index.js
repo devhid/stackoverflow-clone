@@ -18,7 +18,8 @@ app.use(express.json());
 
 /* enable CORS */
 app.use(function(req, res, next) {
-  res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
+  //res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
+  res.set('Access-Control-Allow-Origin', 'http://kellogs.cse356.compas.cs.stonybrook.edu');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   res.set('Access-Control-Allow-Credentials', 'true'); 
