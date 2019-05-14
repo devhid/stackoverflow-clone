@@ -14,6 +14,7 @@ const EXCHANGE = {
 };
 
 module.exports = {
+    STATUS_KEY: 'status',
     STATUS_OK: 'OK',
     STATUS_ERR: 'error',
 

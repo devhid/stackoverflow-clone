@@ -90,7 +90,9 @@ async function getUser(request){
         response[constants.USER_KEY] = user;
     
         status = constants.STATUS_200;
-        request.reply({status: status, response: response});
+        let reply = {status: status, response: response};
+        console.log(reply);
+        request.reply(reply);
         request.ack();
     } catch (err){
         console.log(`[User] getUser err ${JSON.stringify(err)}`);
