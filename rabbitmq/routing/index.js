@@ -195,14 +195,6 @@ async function generateResponse(key, endpoint, req, obj){
                 }  
             }
 
-            // invalidate the user's questions or answers
-            if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
-                await removeCachedObject("user_questions:" + user._source.username);
-            }
-            else if (endpoint === constants.ENDPOINTS.QA_ADD_A){
-                await removeCachedObject("user_answers:" + user._source.username);
-            }
-
             status = constants.STATUS_200;
             response.setOK();
             data = {
@@ -543,33 +535,23 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
         else if (key === constants.SERVICES.QA){
             if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
                 endpoint === constants.ENDPOINTS.QA_ADD_A){
-                let which_id = (endpoint === constants.ENDPOINTS.QA_ADD_Q) ? req.params.qid : req.params.aid;
-                if (endpoint === constants.ENDPOINTS.QA_ADD_A){
-                    await removeCachedObject("question_answers:" + which_id);
-                }
-                let media = req.body.media;
-                if (media != undefined){
-                    for (var media_id of media){
-                        await setCachedObject("media:" + media_id, true);
-                        await removeCachedObject("media_poster:" + media_id);
-                    }
-                }
-                // let created_id = rabbitRes.response.id;
+                let created_id = rabbitRes.response.id;
+                let media = (req.body.media == undefined) ? [] : req.body.media;
+                let user = req.session.user._source;
                 if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
-                    let created_id = rabbitRes.response.id;
                     let question = {
                         id: created_id,
                         user: {
-                            username: req.session.user._source.username,
-                            reputation: req.session.user._source.reputation
+                            username: user.username,
+                            reputation: user.reputation
                         },
                         title: req.body.title,
                         body: req.body.body,
                         score: 0,
                         view_count: 0,
                         answer_count: 0,
-                        timestamp: rabbitRes.response.timestamp,
-                        media: req.body.media,
+                        timestamp: rabbitRes.timestamp,
+                        media: media,
                         tags: req.body.tags,
                         accepted_answer_id: null
                     };
@@ -578,8 +560,64 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                         unauthenticated: [],
                         qid: created_id
                     };
-                    let question_resp = {status: 'OK', response: {status: 'OK', question: question}, views: views};
+
+                    // update the GET question
+                    let question_resp = {status: constants.STATUS_200, response: {status: 'OK', question: question}, views: views};
                     await setCachedObject("get:" + created_id, question_resp);
+                    console.log(`${endpoint} caching get resp for ${created_id}`);
+
+                    // update the GET question answers
+                    let answers_resp = {status: constants.STATUS_200, response: {status: 'OK', answers: []}};
+                    await setCachedObject("question_answers:" + created_id, answers_resp);
+                    console.log(`${endpoint} caching get answers resp for ${created_id}`);
+
+                    // update the GET user questions
+                    let user_questions = {status: constants.STATUS_200, response: {status: 'OK', questions: [created_id]}};
+                    await setCachedObject("user_questions:" + user.username, user_questions);
+                    console.log(`${endpoint} caching get user questions for ${user.username}`);
+                }
+                else if (endpoint === constants.ENDPOINTS.QA_ADD_A){
+                    let qid = req.params.qid;
+                    let new_answer = {
+                        id: created_id,
+                        user: user.username,
+                        body: req.body.body,
+                        score: 0,
+                        is_accepted: false,
+                        timestamp: rabbitRes.timestamp,
+                        media: media
+                    };
+
+                    // update the question count;
+                    let question_resp = await getCachedObject("get:" + qid);
+                    if (question_resp != null){
+                        console.log(`${endpoint} updating answer count for ${qid}`)
+                        question_resp.response.question.answer_count += 1;
+                        await setCachedObject("get:" + qid, question_resp);
+                    }
+
+                    // update the GET question answers
+                    let question_answers = await getCachedObject("question_answers:" + qid);
+                    if (question_answers != null){
+                        console.log(`${endpoint} adding new answer ${created_id}`);
+                        question_answers.response.answers.push(new_answer)
+                        await setCachedObject("question_answers:" + qid, question_answers);
+                    }
+                    
+                    // update the GET user answers
+                    let user_answers = await getCachedObject("user_answers:" + user.username);
+                    if (user_answers != null){
+                        console.log(`${endpoint} updating user answers for ${user.username}`);
+                        user_answers.response.answers.push(created_id);
+                        await setCachedObject("user_answers:" + user.username, user_answers);   
+                    }
+                }
+
+                if (media != undefined){
+                    for (var media_id of media){
+                        await setCachedObject("media:" + media_id, true);
+                        await removeCachedObject("media_poster:" + media_id);
+                    }
                 }
             }
             else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
@@ -751,7 +789,7 @@ async function needToWait(key, endpoint, req, obj){
             }
             if (endpoint === constants.ENDPOINTS.QA_ADD_A){
                 let qid = req.params.qid;
-                let cachedQuestion = await getCachedObject("get:" + qid);
+                let cachedQuestion = await getCachedObject("question_answers:" + qid);
                 if (cachedQuestion == null){
                     return true;
                 }
@@ -888,6 +926,8 @@ async function wrapRequest(req, res, key, endpoint){
             routeRequest(key, endpoint, data);
         }
     }
+    console.log(`${endpoint}, should_wait=${should_wait}, status=${rabbitRes.status}, queue=${rabbitRes.queue}`);
+
     // update relevant cached objects
     await updateRelevantObj(key, endpoint, data, rabbitRes);
 
