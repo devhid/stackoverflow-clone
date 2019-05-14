@@ -69,8 +69,10 @@ async function verify(request) {
             return;
         }
 
-        let emailExists = await database.emailExists(email);
-        if(!emailExists) {
+        let user = await database.getUser(email);
+
+        // let emailExists = await database.emailExists(email);
+        if(user === null) {
             response = { 
                 "status": constants.STATUS_400,
                 "response": {
@@ -83,7 +85,7 @@ async function verify(request) {
             return;
         }
 
-        let verified = await database.isVerified(email);
+        let verified = database.isVerified(user);
         if(verified) {
             response = { 
                 "status": constants.STATUS_400,
@@ -97,8 +99,8 @@ async function verify(request) {
             return;
         }
 
-        let success = await database.verifyEmail(email, key);
-        if(!success) {
+        let matchesKey = database.matchesKey(user, key);
+        if(!matchesKey) {
             response = { 
                 "status": constants.STATUS_400,
                 "response": {
@@ -110,6 +112,8 @@ async function verify(request) {
             request.ack();
             return;
         }
+
+        database.updateVerified(email);
 
         response = { 
             "status": constants.STATUS_200,
