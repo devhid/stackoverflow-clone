@@ -379,10 +379,7 @@ async function generateResponse(key, endpoint, req, obj){
                 }
             }
             if (viewed === false){
-                // setCachedObject("views:" + qid, question_views);
                 question.view_count += 1;
-                // setCachedObject("source:" + qid, question);
-                question_resp.response.question.view_count += 1;
                 await setCachedObject("get:" + qid, question_resp);
             }
             question_resp['queue'] = true;
@@ -762,15 +759,15 @@ async function needToWait(key, endpoint, req, obj){
         return true;
     }
     else if (key === constants.SERVICES.EMAIL){
-        let verified = await getCachedObject("verify:" + req.body.email);
-        if (verified != null){
-            return false;
-        }
+        // let verified = await getCachedObject("verify:" + req.body.email);
+        // if (verified != null){
+        //     return false;
+        // }
 
-        let registered = obj;
-        if (registered != null && req.body.key === constants.VERIFY_BACKDOOR){
-            return false;
-        }
+        // let registered = obj;
+        // if (registered != null && req.body.key === constants.VERIFY_BACKDOOR){
+        //     return false;
+        // }
         return true;
     }
     else if (key === constants.SERVICES.MEDIA){
@@ -783,46 +780,48 @@ async function needToWait(key, endpoint, req, obj){
         let user = req.session.user;
         if (endpoint === constants.ENDPOINTS.QA_ADD_Q ||
             endpoint === constants.ENDPOINTS.QA_ADD_A){
-            if (user == undefined ||
-                req.body.media == undefined || 
-                req.body.media.length == 0){
-                return false;
-            }
-            if (endpoint === constants.ENDPOINTS.QA_ADD_A){
-                let qid = req.params.qid;
-                let cachedQuestion = await getCachedObject("question_answers:" + qid);
-                if (cachedQuestion == null){
-                    return true;
-                }
-            }
-            let all_media_cached = true;
-            for (var media_id of req.body.media){
-                await touchCachedObject("media:" + media_id);
-                let media_in_use = await getCachedObject("media:" + media_id);
-                if (media_in_use != null){
-                    return false;
-                }
-                await touchCachedObject("media_poster:" + media_id);
-                let media_poster = await getCachedObject("media_poster:" + media_id);
-                if (media_poster == null){
-                    all_media_cached = false;
-                }
-            }
-            return !all_media_cached;
+            // if (user == undefined ||
+            //     req.body.media == undefined || 
+            //     req.body.media.length == 0){
+            //     return false;
+            // }
+            // if (endpoint === constants.ENDPOINTS.QA_ADD_A){
+            //     let qid = req.params.qid;
+            //     let cachedQuestion = await getCachedObject("question_answers:" + qid);
+            //     if (cachedQuestion == null){
+            //         return true;
+            //     }
+            // }
+            // let all_media_cached = true;
+            // for (var media_id of req.body.media){
+            //     await touchCachedObject("media:" + media_id);
+            //     let media_in_use = await getCachedObject("media:" + media_id);
+            //     if (media_in_use != null){
+            //         return false;
+            //     }
+            //     await touchCachedObject("media_poster:" + media_id);
+            //     let media_poster = await getCachedObject("media_poster:" + media_id);
+            //     if (media_poster == null){
+            //         all_media_cached = false;
+            //     }
+            // }
+            // return !all_media_cached;
+            return true;
         }
         else if (endpoint === constants.ENDPOINTS.QA_DEL_Q){
             // if the cached object is null, we need to go to the backend
-            return (obj == null) || (user == undefined);
+            // return (obj == null) || (user == undefined);
+            return true;
         }
         else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
             // if the cached object is null, we need to go to the backend
-            return (obj == null) || (user == undefined);
+            // return (obj == null) || (user == undefined);
+            return true;
         }
         else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
                 endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
             // generate the response without asking the backend
             // return false
-            
             return true;
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_Q || 
