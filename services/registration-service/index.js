@@ -11,15 +11,15 @@ const app = express();
 require('express-async-errors');
 
 /* the port the server will listen on */
-const PORT = 2000;
+const PORT = 8005;
 
 /* connect to the email server */
 const emailjs = require('emailjs')
 const mail_server = emailjs.server.connect({
     user: "ubuntu",
     password: "",
-    //host: "192.168.122.34",
-    host: "192.168.122.13",
+    host: "192.168.122.25",
+    //host: "192.168.122.13",
     ssl: false
 });
 
@@ -81,7 +81,7 @@ async function addUser(request){
         let response = {};
 
         if (!notEmpty([email, username, password])) {
-        console.log('empty fields');
+            console.log('empty fields');
             status = constants.STATUS_400;
             response = {"status": "error", "error": "One or more fields are empty."};
             request.reply({status: status, response: response});
@@ -91,7 +91,7 @@ async function addUser(request){
         let userExists = await database.userExists(email, username);
 
         if (userExists) {
-        console.log('user exists');
+            console.log('user exists');
             status = constants.STATUS_409;
             response = {"status": "error", "error": "A user with that email or username already exists."};
             request.reply({status: status, response: response});
@@ -128,7 +128,7 @@ async function addUser(request){
             }
         );
     } catch (err){
-        console.log(`[Register] addUser err ${JSON.stringify(err)}`);
+        console.log(`[Register] addUser err ${err}`);
         request.nack();
     }
 
