@@ -331,7 +331,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // // }
     
     // create the Question Views document in INDEX_VIEWS
-    let viewResponse = client.index({
+    let viewResponse = await client.index({
         index: INDEX_VIEWS,
         type: "_doc",
         // refresh: "true",
@@ -357,7 +357,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // }
 
     // create the Question Upvotes document in INDEX_Q_UPVOTES
-    let upvoteResponse = client.index({
+    let upvoteResponse = await client.index({
         index: INDEX_Q_UPVOTES,
         type: "_doc",
         // refresh: "true",
@@ -385,7 +385,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     // }
     
     // associate the free media IDs with the new Question
-    associateFreeMedia(response._id,media);
+    await associateFreeMedia(response._id,media);
     // let associateMediaResponse = await associateFreeMedia(response._id,media);
     // if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
     //     console.log(`[QA] associateFreeMedia failed with qa_id=${response._id}, media=${media}`);
@@ -1146,7 +1146,9 @@ function updateReputation(username, qid, score_diff, amount){
         amount : amount
     };
     let inline_script = `ctx._source.reputation += params.amount`;
-    client.updateByQuery({
+    let promises = [];
+    
+    let update_user_promise = client.updateByQuery({
         index: INDEX_USERS,
         type: "_doc",
         // refresh: "true",
@@ -1164,6 +1166,8 @@ function updateReputation(username, qid, score_diff, amount){
             } 
         }
     });
+    promises.push(update_user_promise);
+    
     // let success = (updateUserResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     // if (success !== constants.DB_RES_SUCCESS){
     //     console.log(`[QA] Failed updateUserReputation(${username}, ${amount})`);
@@ -1183,7 +1187,7 @@ function updateReputation(username, qid, score_diff, amount){
         }
     }
     
-    return client.updateByQuery({
+    let update_question_promise = client.updateByQuery({
         index: INDEX_QUESTIONS,
         size: 10000,
         type: "_doc",
@@ -1202,6 +1206,8 @@ function updateReputation(username, qid, score_diff, amount){
             } 
         }
     });
+
+    return Promise.all(promises);
     // let success2 = (updateQResponse.updated >= 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     // if (success2 !== constants.DB_RES_SUCCESS){
     //     console.log(`[QA] Failed updateQReputation(${username}, ${amount})`);
@@ -1217,7 +1223,6 @@ function handleVote(qid, aid, username, in_upvotes, waived, upvote, waive_vote, 
         return addVote(qid, aid, username, upvote, waive_vote);
     }
     else if (undo_vote === true && add_vote === true){
-        undoVote(qid, aid, username, in_upvotes, waived)
         let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
         let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
         let which_id_value = (aid == undefined) ? qid : aid;

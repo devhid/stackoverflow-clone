@@ -175,8 +175,9 @@ async function generateResponse(key, endpoint, req, obj){
             //  at least one of the specified media IDs is in use
             if (req.body.media != undefined && req.body.media.length > 0){
                 let media_invalid = false;
+                let media = (req.body.media == undefined) ? [] : req.body.media;
                 // check if any media are in use
-                for (var media_id of req.body.media){
+                for (var media_id of media){
                     let media_in_use = await getCachedObject("media:" + media_id);
                     if (media_in_use != null){
                         media_invalid = true;
@@ -820,7 +821,9 @@ async function needToWait(key, endpoint, req, obj){
         else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
                 endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
             // generate the response without asking the backend
-            return false;
+            // return false
+            
+            return true;
         }
         else if (endpoint === constants.ENDPOINTS.QA_GET_Q || 
                 endpoint === constants.ENDPOINTS.QA_GET_A){
