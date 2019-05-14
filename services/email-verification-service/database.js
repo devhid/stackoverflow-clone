@@ -78,7 +78,7 @@ async function getUser(email) {
         body: { query: { match: { "email": email } } }
     }))['hits']['hits'];
 
-    return users[0] ? users.length != 0 : null;
+    return (users.length == 0) ? null : users[0];
 }
 
 module.exports = {

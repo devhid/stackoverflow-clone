@@ -1012,7 +1012,7 @@ async function undoAllQuestionVotes(qid){
  * @param {boolean} upvote whether the user's vote is in upvotes or downvotes
  * @param {boolean} waived whether or not the user's downvote was waived (only valid if !upvote)
  */
-function undoVote(qid, aid, username, upvote, waived){
+async function undoVote(qid, aid, username, upvote, waived){
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1022,7 +1022,7 @@ function undoVote(qid, aid, username, upvote, waived){
     }
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.${param_user}))`
-    const undoVoteResponse = client.updateByQuery({
+    const undoVoteResponse = await client.updateByQuery({
         index: which_index,
         type: "_doc",
         refresh: "true",
@@ -1075,7 +1075,7 @@ function undoVote(qid, aid, username, upvote, waived){
  * @param {boolean} upvote whether the user's vote is to upvote or downvote
  * @param {boolean} waived whether the user's downvote should be waived
  */
-function addVote(qid, aid, username, upvote, waived){
+async function addVote(qid, aid, username, upvote, waived){
     let which_index = (aid == undefined) ? INDEX_Q_UPVOTES : INDEX_A_UPVOTES;
     let which_id = (aid == undefined) ? "qid.keyword" : "aid.keyword";
     let which_id_value = (aid == undefined) ? qid : aid;
@@ -1085,7 +1085,7 @@ function addVote(qid, aid, username, upvote, waived){
     }
     let param_user = "user";
     let inline_script = `ctx._source.${arr}.add(params.${param_user})`
-    const addVoteResponse = client.updateByQuery({
+    const addVoteResponse = await client.updateByQuery({
         index: which_index,
         type: "_doc",
         refresh: "true",
@@ -1136,12 +1136,12 @@ function addVote(qid, aid, username, upvote, waived){
  * @param {string} aid the _id of the answer (if used for updating the score of an answer)
  * @param {integer} amount the amount by which to add to the current score of the question or answer
  */
-function updateScore(qid, aid, amount){
+async function updateScore(qid, aid, amount){
     let which_index = (aid == undefined) ? INDEX_QUESTIONS : INDEX_ANSWERS;
     let id_value = (aid == undefined) ? qid : aid;
     let param_amount = "amount";
     let inline_script = `ctx._source.score += params.${param_amount}`
-    const updateResponse = client.updateByQuery({
+    const updateResponse = await client.updateByQuery({
         index: which_index,
         type: "_doc",
         refresh: "true",
@@ -1193,13 +1193,13 @@ function updateScore(qid, aid, amount){
  * @param {string} username username of the user
  * @param {int} amount amount by which to update the reputation
  */
-function updateReputation(username, amount){
+async function updateReputation(username, amount){
     if (amount == 0){
         return new DBResult(constants.DB_RES_SUCCESS, null);
     }
     let param_amount = "amount";
     let inline_script = `ctx._source.reputation += params.${param_amount}`;
-    const updateUserResponse = client.updateByQuery({
+    const updateUserResponse = await client.updateByQuery({
         index: INDEX_USERS,
         type: "_doc",
         refresh: "true",
@@ -1243,7 +1243,7 @@ function updateReputation(username, amount){
     // }
 
     inline_script = `ctx._source.user.reputation += params.${param_amount}`;
-    const updateQResponse = client.updateByQuery({
+    const updateQResponse = await client.updateByQuery({
         index: INDEX_QUESTIONS,
         size: 10000,
         type: "_doc",
@@ -1366,7 +1366,7 @@ async function upvoteQA(qid, aid, username, upvote){
         // if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
         //     console.log(`[QA] Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
         // }
-        await undoVote(qid,aid,username,in_upvotes,waived);
+        undoVote(qid,aid,username,in_upvotes,waived);
     }
 
     let waive_vote = false;
