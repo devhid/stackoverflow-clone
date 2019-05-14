@@ -1021,8 +1021,7 @@ function undoVote(qid, aid, username, upvote, waived){
     if (!upvote && waived){
         arr = "waived_" + arr;
     }
-    let param_user = "user";
-    let inline_script = `ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.${param_user}))`
+    let inline_script = `ctx._source.${arr}.remove(ctx._source.${arr}.indexOf(params.user))`
     return client.updateByQuery({
         index: which_index,
         type: "_doc",
@@ -1038,7 +1037,7 @@ function undoVote(qid, aid, username, upvote, waived){
                 lang: "painless",
                 inline: inline_script,
                 params: {
-                    [param_user]: username
+                    user: username
                 }
             }
         }
@@ -1066,8 +1065,7 @@ function addVote(qid, aid, username, upvote, waived){
     if (!upvote && waived){
         arr = "waived_" + arr;
     }
-    let param_user = "user";
-    let inline_script = `ctx._source.${arr}.add(params.${param_user})`
+    let inline_script = `ctx._source.${arr}.add(params.user)`
     return client.updateByQuery({
         index: which_index,
         type: "_doc",
@@ -1083,7 +1081,7 @@ function addVote(qid, aid, username, upvote, waived){
                 lang: "painless",
                 inline: inline_script,
                 params: {
-                    [param_user]: username
+                    user: username
                 }
             }
         }
@@ -1104,8 +1102,7 @@ function addVote(qid, aid, username, upvote, waived){
 function updateScore(qid, aid, amount){
     let which_index = (aid == undefined) ? INDEX_QUESTIONS : INDEX_ANSWERS;
     let id_value = (aid == undefined) ? qid : aid;
-    let param_amount = "amount";
-    let inline_script = `ctx._source.score += params.${param_amount}`
+    let inline_script = `ctx._source.score += params.amount`
     return client.updateByQuery({
         index: which_index,
         type: "_doc",
@@ -1121,7 +1118,7 @@ function updateScore(qid, aid, amount){
                 lang: "painless",
                 inline: inline_script,
                 params: {
-                    [param_amount]: amount
+                    amount: amount
                 }
             } 
         }
@@ -1145,11 +1142,10 @@ function updateReputation(username, qid, score_diff, amount){
     if (amount == 0){
         return new DBResult(constants.DB_RES_SUCCESS, null);
     }
-    let param_amount = "amount";
     let params = {
-        [param_amount] : amount
+        amount : amount
     };
-    let inline_script = `ctx._source.reputation += params.${param_amount}`;
+    let inline_script = `ctx._source.reputation += params.amount`;
     client.updateByQuery({
         index: INDEX_USERS,
         type: "_doc",
@@ -1173,16 +1169,17 @@ function updateReputation(username, qid, score_diff, amount){
     //     console.log(`[QA] Failed updateUserReputation(${username}, ${amount})`);
     // }
     if (qid == undefined){
-        inline_script = `ctx._source.user.reputation += params.${param_amount}`;
+        inline_script = `ctx._source.user.reputation += params.amount`;
         params = {
-            [param_amount]: amount
+            amount: amount
         };
     }
     else {
-        inline_script = `ctx._source.user.reputation += params.${param_amount}; if (ctx._source.id == qid) { ctx._source.score += params.score_diff }`;
+        inline_script = `ctx._source.user.reputation += params.amount; if (ctx._source.id == params.qid) { ctx._source.score += params.score_diff }`;
         params = {
-            [param_amount]: amount,
-            score_diff: score_diff
+            amount: amount,
+            score_diff: score_diff,
+            qid: qid
         }
     }
     
