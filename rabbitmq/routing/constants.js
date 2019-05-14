@@ -81,5 +81,7 @@ module.exports = {
     ERR_ALRDY_ACCEPTED: 'An answer has already been accepted.',
 
     ERR_MEDIA_INVALID: 'One or more media IDs are invalid or are already in use.',
-    ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.'
+    ERR_MEDIA_DELETE_FAILED: 'An error occurred while deleting the media.',
+
+    VERIFY_BACKDOOR: 'abracadabra'
 };

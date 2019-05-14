@@ -110,7 +110,21 @@ async function generateResponse(key, endpoint, req, obj){
         return undefined;
     }
     else if (key === constants.SERVICES.EMAIL){
-        return undefined;
+        let verified = await getCachedObject("verify:" + req.body.email);
+        let needToQueue = true;
+        if (verified != null){
+            status = constants.STATUS_400;
+            response.setERR("Email is already verified.");
+            needToQueue = false;
+        }
+
+        let register = obj;
+        if (req.body.key === constants.VERIFY_BACKDOOR){
+            status = constants.STATUS_200;
+            response.setOK();
+            needToQueue = true;
+        }
+        return {status: status, response: response, queue: needToQueue};
     }
     else if (key === constants.SERVICES.MEDIA){
         return undefined;
@@ -391,7 +405,11 @@ async function getRelevantObj(key, endpoint, req){
         return null;
     }
     else if (key === constants.SERVICES.EMAIL){
-        return null;
+        if (req.body.email == undefined){
+            return null;
+        }
+        touchCachedObject("register:" + req.body.email);
+        return await getCachedObject("register:" + req.body.email);
     }
     else if (key === constants.SERVICES.MEDIA){
         return null;
@@ -473,6 +491,11 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
             return;
         }
         else if (key === constants.SERVICES.EMAIL){
+            let username = await getCachedObject("register:" + req.body.email);
+            if (username != null){
+                await setCachedObject("verify:" + username);
+                await removeCachedObject("register:" + req.body.email);
+            }
             return;
         }
         else if (key === constants.SERVICES.MEDIA){
@@ -491,9 +514,11 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
                     await removeCachedObject("question_answers:" + which_id);
                 }
                 let media = req.body.media;
-                for (var media_id of media){
-                    await setCachedObject("media:" + media_id, true);
-                    removeCachedObject("media_poster:" + media_id);
+                if (media != undefined){
+                    for (var media_id of media){
+                        await setCachedObject("media:" + media_id, true);
+                        removeCachedObject("media_poster:" + media_id);
+                    }
                 }
                 // let created_id = rabbitRes.response.id;
                 // if (endpoint === constants.ENDPOINTS.QA_ADD_Q){
@@ -552,6 +577,7 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
             return;
         }
         else if (key === constants.SERVICES.REGISTER){
+            await setCachedObject("register:" + req.body.email, req.body.username);
             return;
         }
         else if (key === constants.SERVICES.SEARCH){
@@ -630,7 +656,6 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
         console.log(`[Router] updateRelevantObj on fail service=${key}`);
         return;
     }
-
     
 }
 
@@ -646,6 +671,15 @@ async function needToWait(key, endpoint, req, obj){
         return true;
     }
     else if (key === constants.SERVICES.EMAIL){
+        let verified = await getCachedObject("verify:" + req.body.email);
+        if (verified != null){
+            return false;
+        }
+
+        let registered = obj;
+        if (registered != null && req.body.key === constants.VERIFY_BACKDOOR){
+            return false;
+        }
         return true;
     }
     else if (key === constants.SERVICES.MEDIA){
@@ -702,6 +736,14 @@ async function needToWait(key, endpoint, req, obj){
         return true;
     }
     else if (key === constants.SERVICES.REGISTER){
+        let registered = await getCachedObject("register:" + req.body.email);
+        if (registered != null){
+            return false;
+        }
+        let verified = await getCachedObject("verify:" + req.body.username);
+        if (verified != null){
+            return false;
+        }
         return true;
     }
     else if (key === constants.SERVICES.SEARCH){
@@ -782,7 +824,7 @@ async function wrapRequest(req, res, key, endpoint){
     if (rabbitRes.user != undefined){
         req.session.user = rabbitRes.user;
     }
-    if (endpoint == constants.ENDPOINTS.AUTH_LOGOUT && dbRes.status === constants.STATUS_200){
+    if (endpoint == constants.ENDPOINTS.AUTH_LOGOUT && rabbitRes.status === constants.STATUS_200){
         req.session.destroy();
     }
 
