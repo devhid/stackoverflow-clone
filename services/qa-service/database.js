@@ -1026,6 +1026,7 @@ async function undoVote(qid, aid, username, upvote, waived){
         index: which_index,
         type: "_doc",
         refresh: "true",
+        conflict: "proceed",
         body: { 
             query: { 
                 term: { 
@@ -1089,6 +1090,7 @@ async function addVote(qid, aid, username, upvote, waived){
         index: which_index,
         type: "_doc",
         refresh: "true",
+        conflicts: "proceed",
         body: { 
             query: { 
                 term: { 
@@ -1145,6 +1147,7 @@ async function updateScore(qid, aid, amount){
         index: which_index,
         type: "_doc",
         refresh: "true",
+        conflicts: "proceed",
         body: { 
             query: { 
                 term: { 
@@ -1203,6 +1206,7 @@ async function updateReputation(username, amount){
         index: INDEX_USERS,
         type: "_doc",
         refresh: "true",
+        conflicts: "proceed",
         body: { 
             query: { 
                 match: { 
@@ -1248,6 +1252,7 @@ async function updateReputation(username, amount){
         size: 10000,
         type: "_doc",
         refresh: "true",
+        conflicts: "proceed",
         body: { 
             query: { 
                 match: { 
@@ -1331,23 +1336,16 @@ async function upvoteQA(qid, aid, username, upvote){
     let upvotes = (qa_votes._source.upvotes == undefined) ? [] : qa_votes._source.upvotes;
     let downvotes = (qa_votes._source.downvotes == undefined) ? [] : qa_votes._source.downvotes;
     let waived_downvotes = (qa_votes._source.waived_downvotes == undefined) ? [] : qa_votes._source.waived_downvotes;
-    // console.log(`[QA] upvotes = ${upvotes}`);
-    // console.log(`[QA] downvotes = ${downvotes}`);
-    // console.log(`[QA] waived_downvotes = ${waived_downvotes}`);
-
+    
     // check if the user downvoted or upvoted the question
     let score_diff = 0;     // the difference in the "score" of a question
     let rep_diff = 0;       // the difference in the "reputation" of a user which must be >= 1
     let upvoted = upvotes.includes(username);
     let downvoted  = downvotes.includes(username);
     let waived = waived_downvotes.includes(username);
-    let poster = await getUserByPost(qid,aid);
+    let poster = await getUserRByPost(qid,aid);
     let poster_rep = await getReputation(poster);
-    // console.log(`[QA] poster = ${poster}`);
-    // console.log(`[QA] poster_rep = ${poster_rep}`);
-    // console.log(`[QA] upvoted = ${upvoted}`);
-    // console.log(`[QA] downvoted = ${downvoted}`);
-    // console.log(`[QA] waived = ${waived}`);
+    let promises = [];
 
     // if the user already voted, undo the vote
     //      calculate the difference to the poster's reputation and score of the post
@@ -1362,11 +1360,7 @@ async function upvoteQA(qid, aid, username, upvote){
         score_diff = (waived) ? 1 : ((upvoted) ? -1 : 1);
         // console.log(`[QA] undoing vote by ${poster}`);
         
-        // let undoVoteRes = await undoVote(qid, aid, username, in_upvotes, waived);
-        // if (undoVoteRes.status !== constants.DB_RES_SUCCESS){
-        //     console.log(`[QA] Failed undoVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
-        // }
-        undoVote(qid,aid,username,in_upvotes,waived);
+        promises.push(undoVote(qid,aid,username,in_upvotes,waived));
     }
 
     let waive_vote = false;
@@ -1387,26 +1381,17 @@ async function upvoteQA(qid, aid, username, upvote){
     } 
 
     // update the score of the question or answer
-    // console.log(`[QA] updating score ${qid}, ${aid}, ${score_diff}`);
-    // let updateScoreRes = await updateScore(qid, aid, score_diff);
-    // if (updateScoreRes.status !== constants.DB_RES_SUCCESS){
-    //     console.log(`[QA] Failed updateScore in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
-    // }
-    updateScore(qid, aid, score_diff);
+    promises.push(updateScore(qid, aid, score_diff));
 
     // update the reputation of the poster
-    // console.log(`[QA] updating rep ${poster}, ${rep_diff}`);
-    // let updateRepRes = await updateReputation(poster, rep_diff);
-    // if (updateRepRes.status !== constants.DB_RES_SUCCESS){
-    //     console.log(`[QA] Failed updateReputation in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
-    // }
-    updateReputation(poster, rep_diff);
+    promises.push(updateReputation(poster, rep_diff));
 
     // if the user asked to perform the same operation, all we needed to do was undo the previous vote
     //      1) remove the vote from the corresponding vote array of the post
     //      2) update the score
     //      3) update the reputation
     if ((upvote && upvoted) || (!upvote && downvoted)){
+        await Promise.all(promises);
         return new DBResult(constants.DB_RES_SUCCESS, null);
     }
 
@@ -1416,8 +1401,9 @@ async function upvoteQA(qid, aid, username, upvote){
     // if (addVoteRes.status !== constants.DB_RES_SUCCESS){
     //     console.log(`[QA] Failed addVote in upvoteQA(${qid}, ${aid}, ${username}, ${upvote})`);
     // }
-    addVote(qid, aid, username, upvote, waive_vote);
-
+    // await addVote(qid, aid, username, upvote, waive_vote);
+    promises.push(addVote(qid, aid, username, upvote, waive_vote));
+    await Promise.all(promises);
     return new DBResult(constants.DB_RES_SUCCESS, null);
 }
 

@@ -604,7 +604,12 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
             }
             else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
                     endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
-                return;
+                if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q){
+                    await removeCachedObject("get:" + req.params.qid);
+                }
+                else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_A){
+                    await removeCachedObject("question_answers:" + req.params.aid);
+                }
             }
             else if (endpoint === constants.ENDPOINTS.QA_GET_Q){
                 let qid = req.params.qid;
