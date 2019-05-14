@@ -284,7 +284,7 @@ async function generateResponse(key, endpoint, req, obj){
                     acceptQuestionResp.setOK();
                     let merged = {...response.toOBJ(), ...newQuestionSource};
                     let newCachedResp = {status: constants.STATUS_200, response: merged};
-                    setCachedObject("get:" + question.id, newCachedResp);
+                    await setCachedObject("get:" + question.id, newCachedResp);
 
                     // update cached answer
                     let answer_resp = await getCachedObject("get:" + aid);
@@ -297,7 +297,7 @@ async function generateResponse(key, endpoint, req, obj){
                         acceptQuestionResp.setOK();
                         merged = {...response.toOBJ(), ...newAnswerSource};
                         newCachedResp = {status: constants.STATUS_200, response: merged};
-                        setCachedObject("get:" + aid, newCachedResp);
+                        await setCachedObject("get:" + aid, newCachedResp);
                     }
                     
                     status = constants.STATUS_200;
@@ -387,7 +387,7 @@ async function generateResponse(key, endpoint, req, obj){
                 question.view_count += 1;
                 // setCachedObject("source:" + qid, question);
                 question_resp.response.question.view_count += 1;
-                setCachedObject("get:" + qid, question_resp);
+                await setCachedObject("get:" + qid, question_resp);
             }
             question_resp['queue'] = true;
             return question_resp;
@@ -430,7 +430,7 @@ async function getRelevantObj(key, endpoint, req){
         if (req.body.email == undefined){
             return null;
         }
-        touchCachedObject("register:" + req.body.email);
+        await touchCachedObject("register:" + req.body.email);
         return await getCachedObject("register:" + req.body.email);
     }
     else if (key === constants.SERVICES.MEDIA){
@@ -446,7 +446,7 @@ async function getRelevantObj(key, endpoint, req){
             if (req.params.qid == undefined){
                 return null;
             }
-            touchCachedObject("get:" + req.params.qid);
+            await touchCachedObject("get:" + req.params.qid);
             return await getCachedObject("get:" + req.params.qid);
         }
         else if (endpoint === constants.ENDPOINTS.QA_ACCEPT){
@@ -454,12 +454,12 @@ async function getRelevantObj(key, endpoint, req){
             if (req.params.aid == undefined){
                 return null;
             }
-            touchCachedObject("get:" + req.params.aid);
+            await touchCachedObject("get:" + req.params.aid);
             let answer = await getCachedObject("get:" + req.params.aid);
             if (answer == null){
                 return null;
             }
-            touchCachedObject("get:" + answer._source.qid);
+            await touchCachedObject("get:" + answer._source.qid);
             return await getCachedObject("get:" + answer._source.qid);
         }
         else if (endpoint === constants.ENDPOINTS.QA_UPVOTE_Q ||
@@ -476,7 +476,7 @@ async function getRelevantObj(key, endpoint, req){
             // if (question_views == null){
             //     return null;
             // }
-            touchCachedObject("get:" + qid);
+            await touchCachedObject("get:" + qid);
             let question_resp = await getCachedObject("get:" + qid);
             if (question_resp == null || question_resp.views == null){
                 return null;
@@ -488,7 +488,7 @@ async function getRelevantObj(key, endpoint, req){
             if (qid == undefined){
                 return null;
             }
-            touchCachedObject("question_answers:" + qid);
+            await touchCachedObject("question_answers:" + qid);
             return await getCachedObject("question_answers:" + qid);
         }
     }
@@ -740,12 +740,12 @@ async function needToWait(key, endpoint, req, obj){
             }
             let all_media_cached = true;
             for (var media_id of req.body.media){
-                touchCachedObject("media:" + media_id);
+                await touchCachedObject("media:" + media_id);
                 let media_in_use = await getCachedObject("media:" + media_id);
                 if (media_in_use != null){
                     return false;
                 }
-                touchCachedObject("media_poster:" + media_id);
+                await touchCachedObject("media_poster:" + media_id);
                 let media_poster = await getCachedObject("media_poster:" + media_id);
                 if (media_poster == null){
                     all_media_cached = false;
