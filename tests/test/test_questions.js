@@ -94,32 +94,32 @@ describe("Questions", function() {
         return chakram.wait();
     });
 
-    // describe("Stress Test for Adding Questions", function() {
-    //     const contents = fs.readFileSync('/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/tests/data/questions.json', 'utf8');
-    //     const lines = contents.toString().split("\n");
+    describe("Stress Test for Adding Questions", function() {
+        const contents = fs.readFileSync('/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/tests/data/questions.json', 'utf8');
+        const lines = contents.toString().split("\n");
 
-    //     for(let line of lines) {     
-    //         let json = null;       
-    //         try {
-    //             json = JSON.parse(line);
-    //         } catch(err) { continue; }
+        for(let line of lines) {     
+            let json = null;       
+            try {
+                json = JSON.parse(line);
+            } catch(err) { continue; }
 
-    //         question = {
-    //             "title": json['title'],
-    //             "body": json['body'],
-    //             "tags": json['tags'].split('|')
-    //         }
+            question = {
+                "title": json['title'],
+                "body": json['body'],
+                "tags": json['tags'].split('|')
+            }
 
-    //         it('/questions/add should create a new question', function() {  
-    //             endpoint.setEndpoint(constants.ENDPOINTS.QA_ADD_Q);    
-    //             let response = chakram.post(endpoint.getUrl(), question);
+            it('/questions/add should create a new question', function() {  
+                endpoint.setEndpoint(constants.ENDPOINTS.QA_ADD_Q);    
+                let response = chakram.post(endpoint.getUrl(), question);
 
-    //             expect(response).to.have.cookie('soc_login');
-    //             expect(response).to.have.status(200);
-    //             expect(response).to.have.json('status', 'OK');
+                expect(response).to.have.cookie('soc_login');
+                expect(response).to.have.status(200);
+                expect(response).to.have.json('status', 'OK');
 
-    //             return chakram.wait();
-    //         });
-    //     }
-    // });
+                return chakram.wait();
+            });
+        }
+    });
 });

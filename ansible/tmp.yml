@@ -1,0 +1,9 @@
+---
+
+
+- hosts: routing
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  roles:
+  - { role: nodejs }
