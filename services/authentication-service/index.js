@@ -87,8 +87,8 @@ async function login(request) {
             return;
         }
 
-        const userExists = await database.userExists(username);
-        if(!userExists) {
+        let user = await database.getUser(username);
+        if (user == null){
             response = { 
                 "status": constants.STATUS_400,
                 "response": {
@@ -100,9 +100,7 @@ async function login(request) {
             request.ack();
             return;
         }
-
-        const canLogin = await database.canLogin(username);
-        if(!canLogin) {
+        if (user._source.email_verified !== true){
             response = { 
                 "status": constants.STATUS_401,
                 "response": {
@@ -114,8 +112,7 @@ async function login(request) {
             request.ack();
             return;
         }
-
-        const success = await database.authenticate(username, password);
+        let success = database.authenticate_user(user, password);
         if(!success) {
             response = { 
                 "status": constants.STATUS_401,
@@ -128,8 +125,6 @@ async function login(request) {
             request.ack();
             return;
         }
-
-        let user = await database.getUser(username);
 
         response = { 
             "status": constants.STATUS_200,

@@ -36,6 +36,10 @@ async function canLogin(username) {
     return user._source.email_verified;
 }
 
+function authenticate_user(user, password){
+    return bcrypt.compareSync(password, user._source.password);
+}
+
 async function authenticate(username, password) {
     const user = (await client.search({
         index: INDEX,
@@ -49,5 +53,6 @@ module.exports = {
     getUser: getUser,
     userExists: userExists,
     canLogin: canLogin,
-    authenticate, authenticate
+    authenticate: authenticate,
+    authenticate_user: authenticate_user
 }
