@@ -207,7 +207,7 @@ async function checkFreeMedia(ids, poster){
  * 
  * TODO: check if Cassandra actually deleted the media
  */
-async function deleteArrOfMedia(ids){
+function deleteArrOfMedia(ids){
     console.log(`[QA] deleteArrOfMedia ids=${ids}`);
     // if no media, no need to do anything
     if (ids == null || ids.length == 0){
@@ -223,8 +223,9 @@ async function deleteArrOfMedia(ids){
     const query = `DELETE FROM ${cassandraOptions.keyspace}.${cassandraOptions.table} WHERE id IN ${prepared_list}`;
     console.log(`[QA] deleteArrOfMedia query=${query}`);
 
-    // we DON'T have to await this call... just hope Cassandra is up and reliable
+    let promises = [];
     let cassandraResp = cassandra_client.execute(query, ids, {prepare: true});
+    promises.push(cassandraResp);
 
     // build the bulk request that will delete all Media metadata documents
     let bulk_query = { body : [] };
@@ -241,12 +242,11 @@ async function deleteArrOfMedia(ids){
     }
     let bulkResponse = null;
     if (bulk_query.body.length > 0){
-        bulkResponse = await client.bulk(bulk_query);
-        console.log(`[QA] Bulk performed... ${JSON.stringify(bulk_query.body)}`);
-        console.log(`[QA] Bulk response... ${JSON.stringify(bulkResponse)}`);
+        bulkResponse = client.bulk(bulk_query);
+        promises.push(bulkResponse);
     }
 
-    return new DBResult(constants.DB_RES_SUCCESS, bulkResponse);
+    return Promise.all(promises);
 }
 
 /* helpers */
@@ -847,9 +847,10 @@ async function deleteQuestion(qid, username){
 
     // If the DELETE operation was specified by the original asker, then delete
     if (username == question._source.user.username){
+        let promises = [];
 
         // 2) DELETE from INDEX_VIEWS the Question Views metadata document
-        response = await client.deleteByQuery({
+        let delete_views_response = client.deleteByQuery({
             index: INDEX_VIEWS,
             type: "_doc",
             body: { 
@@ -860,10 +861,7 @@ async function deleteQuestion(qid, username){
                 }, 
             }
         });
-        if (response.deleted != 1){
-            console.log(`[QA] Failed to delete question views ${qid} from ${INDEX_VIEWS}`);
-            console.log(response);
-        }
+        promises.push(delete_views_response);
 
         // 3) DELETE from INDEX_Q_UPVOTES the Question Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the asker
@@ -873,7 +871,7 @@ async function deleteQuestion(qid, username){
         //     undoQuestionVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
         //     console.log(`[QA] Failed to undo all question votes`);
         // }
-        response = await client.deleteByQuery({
+        let delete_upvotes_response = client.deleteByQuery({
             index: INDEX_Q_UPVOTES,
             type: "_doc",
             body: { 
@@ -884,26 +882,7 @@ async function deleteQuestion(qid, username){
                 }, 
             }
         });
-        if (response.deleted != 1){
-            console.log(`[QA] Failed to delete question upvotes ${qid} from ${INDEX_Q_UPVOTES}`);
-            console.log(response);
-        }
-
-        // 4) DELETE from INDEX_ANSWERS any associated Answer documents
-        response = await client.deleteByQuery({
-            index: INDEX_ANSWERS,
-            type: "_doc",
-            body: {
-                query: {
-                    term: {
-                        "qid.keyword": qid
-                    }
-                }
-            }
-        });
-        let num_deleted_answers = response.deleted;
-        console.log(`[QA] Deleted ${num_deleted_answers} Answers for Question ${qid}`);
-        // console.log(response);
+        promises.push(delete_upvotes_response);
 
         // 5) DELETE from INDEX_A_UPVOTES the Answer Upvotes metadata document
         //      but first, undo the effect of all votes on reputation of the answerers
@@ -913,7 +892,7 @@ async function deleteQuestion(qid, username){
         //     undoAnswerVotesResp.status !== constants.DB_RES_Q_NOTFOUND){
         //     console.log(`[QA] Failed to undo all answer votes`);
         // }
-        response = await client.deleteByQuery({
+        let delete_answer_upvotes_response = client.deleteByQuery({
             index: INDEX_A_UPVOTES,
             type: "_doc",
             body: {
@@ -924,30 +903,36 @@ async function deleteQuestion(qid, username){
                 }
             }
         });
-        if (response.deleted != num_deleted_answers){
-            console.log(`[QA] Deleted ${response.deleted} answer upvotes / ${num_deleted_answers} answers`);
-            console.log(`[QA] QID=${qid}`);
-            console.log(response);
-        }
+        promises.push(delete_answer_upvotes_response);
 
         // 6) DELETE any associated media documents
         //      it suffices to delete all media associated with QID as all media associated to its Answers
         //      have their associated ID field set to QID instead of AID to optimize deletion
-        try {
-            let answerMedia = await getAnswerMedia(qid);
-            console.log(`>>>>>> [ANSWER MEDIA]: ${answerMedia}`);
-            for (let answerId of answerMedia) {
-                media_ids.push(answerId);
+        let answerMedia = await getAnswerMedia(qid);    // this needs to be awaited
+        console.log(`>>>>>> [ANSWER MEDIA]: ${answerMedia}`);
+        for (let answerId of answerMedia) {
+            media_ids.push(answerId);
+        }
+        let delete_media_response = deleteArrOfMedia(media_ids);
+        promises.push(delete_media_response);
+        
+
+        // 4) DELETE from INDEX_ANSWERS any associated Answer documents
+        let delete_answers_response = client.deleteByQuery({
+            index: INDEX_ANSWERS,
+            type: "_doc",
+            body: {
+                query: {
+                    term: {
+                        "qid.keyword": qid
+                    }
+                }
             }
-            response = await deleteArrOfMedia(media_ids);
-            console.log(`[QA] DeleteQuestion deleteArrOfMediaResp = ${JSON.stringify(response.data)}`);
-        }
-        catch(err){
-            console.log(`[QA] DeleteQuestion failed to delete media items ${media_ids}, error ${err.data}`);
-        }
+        });
+        promises.push(delete_answers_response);
 
         // 1) DELETE from INDEX_QUESTIONS the Question document
-        response = await client.deleteByQuery({
+        let delete_question_response = client.deleteByQuery({
             index: INDEX_QUESTIONS,
             type: "_doc",
             body: {
@@ -958,10 +943,8 @@ async function deleteQuestion(qid, username){
                 }
             }
         });
-        if (response.deleted != 1){
-            console.log(`[QA] Failed to delete question ${qid} from ${INDEX_QUESTIONS}`);
-            console.log(response);
-        }
+        promises.push(delete_question_response);
+        await Promise.all(promises);
         console.log(`[QA] deleted question ${qid}`);
         return new DBResult(constants.DB_RES_SUCCESS, null);
     }
