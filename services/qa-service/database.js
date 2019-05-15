@@ -799,16 +799,13 @@ async function addAnswer(qid, user, body, media, id, timestamp){
     promises.push(bulk_response);
 
     // modify the Question document
-    let update_question_response = client.updateByQuery({
+    let update_question_response = client.update({
         index: INDEX_QUESTIONS,
         type: "_doc",
+        id: qid,
+        retryOnConflict: 3,
         // refresh: "true",
         body: { 
-            query: { 
-                term: { 
-                    _id: qid
-                } 
-            }, 
             script: {
                 lang: "painless",
                 inline: "ctx._source.answer_count += 1"
@@ -1595,16 +1592,13 @@ async function acceptAnswer(aid, username){
         // }
 
         // update the Question document's "accepted_answer_id" field
-        const updateQuestionResponse = await client.updateByQuery({
+        const updateQuestionResponse = await client.update({
             index: INDEX_QUESTIONS,
             type: "_doc",
+            id: qid,
+            retryOnConflict: 3,
             // refresh: "true",
             body: {
-                query: {
-                    term: {
-                        _id: qid
-                    }
-                },
                 script: {
                     lang: "painless",
                     inline: "ctx._source.accepted_answer_id = params.answerID",
@@ -1623,13 +1617,10 @@ async function acceptAnswer(aid, username){
         const updateAnswerResponse = await client.updateByQuery({
             index: INDEX_ANSWERS,
             type: "_doc",
+            id: qid,
+            retryOnConflict: 3,
             // refresh: "true",
             body: {
-                query: {
-                    term: {
-                        _id: aid
-                    }
-                },
                 script: {
                     lang: "painless",
                     inline: "ctx._source.is_accepted = true"
