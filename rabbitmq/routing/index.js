@@ -771,9 +771,10 @@ async function needToWait(key, endpoint, req, obj){
         return true;
     }
     else if (key === constants.SERVICES.MEDIA){
-        if (req.session.user != undefined){
-            return false;
-        }
+        // race condition between adding media and checking if it exists in Cassandra
+        // if (req.session.user != undefined){
+        //     return false;
+        // }
         return true;
     }
     else if (key === constants.SERVICES.QA){
