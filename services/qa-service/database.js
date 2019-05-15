@@ -72,7 +72,7 @@ function associateFreeMediaBulkBody(qa_id, ids){
     }
 
     // build the bulk request that will index a Media metadata document
-    let bulk_query = { body : [] };
+    let bulk_query_body = [];
     let action_doc = undefined;
     let partial_doc = undefined;
     for (var id of ids){
@@ -86,10 +86,10 @@ function associateFreeMediaBulkBody(qa_id, ids){
         partial_doc = {
             "qa_id": qa_id
         };
-        bulk_query.body.push(action_doc);
-        bulk_query.body.push(partial_doc);
+        bulk_query_body.push(action_doc);
+        bulk_query_body.push(partial_doc);
     }
-    return bulk_query.body;
+    return bulk_query_body;
 }
 
 /**
@@ -228,7 +228,7 @@ function deleteArrOfMedia(ids){
     promises.push(cassandraResp);
 
     // build the bulk request that will delete all Media metadata documents
-    let bulk_query = { body : [] };
+    let bulk_query = { refresh: "true", body : [] };
     let action_doc = null;
     for (var id of ids){
         action_doc = {
@@ -349,7 +349,7 @@ async function addQuestion(user, title, body, tags, media, id, timestamp){
     //         "accepted_answer_id": null
     //     }
     // };
-    let bulk_insert = { body: [] };
+    let bulk_insert = { refresh: "true", body: [] };
     let action_doc = undefined;
     let partial_doc = undefined;
     action_doc = {
@@ -703,7 +703,7 @@ async function addAnswer(qid, user, body, media, id, timestamp){
     }
 
     let promises = [];
-    let bulk_insert = { body: [] };
+    let bulk_insert = { refresh: "true", body: [] };
     let action_doc = undefined;
     let partial_doc = undefined;
     
@@ -779,7 +779,7 @@ async function addAnswer(qid, user, body, media, id, timestamp){
     };
     partial_doc = {
         "qid": qid,
-        "aid": response._id,
+        "aid": id,
         "user_id": user_id,   // needed to make DELETE easier
         "upvotes": [],
         "downvotes": [],
@@ -816,7 +816,7 @@ async function addAnswer(qid, user, body, media, id, timestamp){
     promises.push(update_question_response);
     await Promise.all(promises);
 
-    return new DBResult(constants.DB_RES_SUCCESS, response._id);
+    return new DBResult(constants.DB_RES_SUCCESS, id);
 }
 
 /** GET /questions/:qid/answers
@@ -947,7 +947,7 @@ async function deleteQuestion(qid, username){
         //      it suffices to delete all media associated with QID as all media associated to its Answers
         //      have their associated ID field set to QID instead of AID to optimize deletion
         let answerMedia = await getAnswerMedia(qid);    // this needs to be awaited
-        console.log(`>>>>>> [ANSWER MEDIA]: ${answerMedia}`);
+        // console.log(`>>>>>> [ANSWER MEDIA]: ${answerMedia}`);
         for (let answerId of answerMedia) {
             media_ids.push(answerId);
         }
