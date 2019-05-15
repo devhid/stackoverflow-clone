@@ -573,16 +573,18 @@ async function updateViewCount(qid, username, ip){
 
     // perform the update if necessary
     if (update === true){
-        const updateResponse = await client.updateByQuery({
+        const updateResponse = await client.update({
             index: INDEX_QUESTIONS,
             type: "_doc",
+            id: qid,
             // refresh: "true",
+            retryOnConflict: 3,
             body: { 
-                query: { 
-                    term: { 
-                        "_id": qid
-                    } 
-                }, 
+                // query: { 
+                //     term: { 
+                //         "_id": qid
+                //     } 
+                // }, 
                 script: { 
                     inline: "ctx._source.view_count += 1" 
                 } 
