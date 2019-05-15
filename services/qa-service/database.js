@@ -1223,12 +1223,9 @@ function updateScore(qid, aid, amount){
  * @param {int} amount amount by which to update the reputation
  */
 async function updateReputation(username, qid, score_diff, amount){
-    if (amount == 0){
-        return new DBResult(constants.DB_RES_SUCCESS, null);
+    if (score_diff == 0 && amount == 0){
+        return false;
     }
-    let params = {
-        amount : amount
-    };
     let inline_script = `ctx._source.reputation += params.amount`;
     let promises = [];
     
@@ -1239,26 +1236,30 @@ async function updateReputation(username, qid, score_diff, amount){
         // later we do poster_rep + (rep_diff) = poster_rep + (1 - poster_rep) = 1
         amount = 1 - poster_rep;
     }
-    
-    let update_user_promise = client.updateByQuery({
-        index: INDEX_USERS,
-        type: "_doc",
-        // refresh: "true",
-        conflicts: "proceed",
-        body: { 
-            query: { 
-                match: { 
-                    "username": username
+    let params = {
+        amount : amount
+    };
+    if (amount != 0){
+        let update_user_promise = client.updateByQuery({
+            index: INDEX_USERS,
+            type: "_doc",
+            // refresh: "true",
+            conflicts: "proceed",
+            body: { 
+                query: { 
+                    match: { 
+                        "username": username
+                    } 
+                }, 
+                script: { 
+                    lang: "painless",
+                    inline: inline_script,
+                    params: params
                 } 
-            }, 
-            script: { 
-                lang: "painless",
-                inline: inline_script,
-                params: params
-            } 
-        }
-    });
-    promises.push(update_user_promise);
+            }
+        });
+        promises.push(update_user_promise);
+    }
     
     // let success = (updateUserResponse.updated == 1) ? constants.DB_RES_SUCCESS : constants.DB_RES_ERROR;
     // if (success !== constants.DB_RES_SUCCESS){
@@ -1431,7 +1432,7 @@ async function upvoteQA(qid, aid, username, upvote){
 
     // if it's NOT just undoing a previous action, we have to calculate the effect of the new vote
     //      on the poster's reputation and the score of the post
-    if (!((upvote && upvoted) || (!upvote && downvoted))){
+    if (!((upvote && upvoted) || (!upvote && downvoted) || (!upvote && waived))){
         // add the vote's effect onto rep_diff and score_diff
         rep_diff = (upvote) ? rep_diff + 1 : rep_diff - 1;
         score_diff = (upvote) ? score_diff + 1 : score_diff - 1;
@@ -1442,7 +1443,7 @@ async function upvoteQA(qid, aid, username, upvote){
     if (qid == undefined){
         // update the score of the question or answer
         promises.push(updateScore(qid, aid, score_diff));
-    }       
+    }
     // update the reputation of the poster
     let waive_vote = updateReputation(poster, qid, score_diff, rep_diff);
 

@@ -284,8 +284,8 @@ async function generateResponse(key, endpoint, req, obj){
 
                     // update cached answer
                     let answer_resp = await getCachedObject("get:" + aid);
-                    let answer = answer_resp.response.answers;
-                    if (answer != null){
+                    if (answer_resp != null){
+                        let answer = answer_resp.response.answers;
                         let newAnswerSource = answer;
                         newAnswerSource.is_accepted = true;
                         // setCachedObject("source:" + aid);
@@ -623,7 +623,7 @@ async function updateRelevantObj(key, endpoint, req, rabbitRes){
 
                 // delete cached records of used media
                 let old_question_resp = await getCachedObject("get:" + qid);
-                if (old_question_resp.status === constants.STATUS_400){
+                if (old_question_resp != null && old_question_resp.status === constants.STATUS_400){
                     return;
                 }
                 if (old_question_resp != null){
