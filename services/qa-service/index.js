@@ -238,6 +238,7 @@ async function addAnswer(request){
         let user = req.session.user;
         let username = (user == undefined) ? user : user._source.username;
         let id = req.id;
+        let timestamp = req.timestamp;
 
         // check if any mandatory parameters are undefined
         if (qid == undefined || body == undefined || user == undefined){
@@ -254,7 +255,7 @@ async function addAnswer(request){
         }
 
         // perform database operations
-        let addRes = await database.addAnswer(qid, user, body, media, id);
+        let addRes = await database.addAnswer(qid, user, body, media, id, timestamp);
         
         // check response result
         if (addRes.status === constants.DB_RES_Q_NOTFOUND){

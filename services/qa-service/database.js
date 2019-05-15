@@ -670,7 +670,7 @@ async function getQuestion(qid, username, ip, update){
  * @param {id[]} media array of media IDs attached to the answer
  * @param {id} id the id to use if specified
  */
-async function addAnswer(qid, user, body, media, id){
+async function addAnswer(qid, user, body, media, id, timestamp){
     let username = user._source.username;
     media = (media == undefined) ? [] : media;
     
@@ -701,55 +701,103 @@ async function addAnswer(qid, user, body, media, id){
     if (!question){
         return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
     }
+
+    let promises = [];
+    let bulk_insert = { body: [] };
+    let action_doc = undefined;
+    let partial_doc = undefined;
     
     // create the Answer document
     id = (id == undefined) ? uuidv4() : id;
-    let answer = {
-        index: INDEX_ANSWERS,
-        type: "_doc",
-        id: id,
-        // refresh: "true",
-        body: {
-            "id": id,
-            "qid": qid,
-            "user": username,
-            "body": body,
-            "score": 0,
-            "is_accepted": false,
-            "timestamp": Date.now()/1000,
-            "media": media
+    // let answer = {
+    //     index: INDEX_ANSWERS,
+    //     type: "_doc",
+    //     id: id,
+    //     // refresh: "true",
+    //     body: {
+    //         "id": id,
+    //         "qid": qid,
+    //         "user": username,
+    //         "body": body,
+    //         "score": 0,
+    //         "is_accepted": false,
+    //         "timestamp": timestamp,
+    //         "media": media
+    //     }
+    // };
+    // let response = await client.index(answer);
+    // if (!response || response.result !== "created"){
+    //     console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
+    //     console.log(response);
+    //     return new DBResult(constants.DB_RES_ERROR, response);
+    // }
+    action_doc = {
+        index: {
+            _index: INDEX_ANSWERS,
+            _type: "_doc",
+            _id: id
         }
     };
-    let response = await client.index(answer);
-    if (!response || response.result !== "created"){
-        console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
-        console.log(response);
-        return new DBResult(constants.DB_RES_ERROR, response);
-    }
+    partial_doc = {
+        "id": id,
+        "qid": qid,
+        "user": username,
+        "body": body,
+        "score": 0,
+        "is_accepted": false,
+        "timestamp": timestamp,
+        "media": media
+    };
+    bulk_insert.body.push(action_doc);
+    bulk_insert.body.push(partial_doc);
 
     // create the Answer Upvote metadata document
     // let user_id = await getUserIDByName(username);
     let user_id = user._id;
-    let upvoteResponse = await client.index({
-        index: INDEX_A_UPVOTES,
-        type: "_doc",
-        // refresh: "true",
-        body: {
-            "qid": qid,
-            "aid": response._id,
-            "user_id": user_id,   // needed to make DELETE easier
-            "upvotes": [],
-            "downvotes": [],
-            "waived_downvotes": []
+    // let upvoteResponse = await client.index({
+    //     index: INDEX_A_UPVOTES,
+    //     type: "_doc",
+    //     // refresh: "true",
+    //     body: {
+    //         "qid": qid,
+    //         "aid": response._id,
+    //         "user_id": user_id,   // needed to make DELETE easier
+    //         "upvotes": [],
+    //         "downvotes": [],
+    //         "waived_downvotes": []
+    //     }
+    // });
+    // if (upvoteResponse.result !== "created"){
+    //     console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
+    //     console.log(upvoteResponse);
+    // }
+    action_doc = {
+        index: {
+            _index: INDEX_A_UPVOTES,
+            _type: "_doc"
         }
-    });
-    if (upvoteResponse.result !== "created"){
-        console.log(`[QA] Failed to create Answer document with ${qid}, ${username}, ${body}, ${media}`);
-        console.log(upvoteResponse);
-    }
+    };
+    partial_doc = {
+        "qid": qid,
+        "aid": response._id,
+        "user_id": user_id,   // needed to make DELETE easier
+        "upvotes": [],
+        "downvotes": [],
+        "waived_downvotes": []
+    };
+    bulk_insert.body.push(action_doc);
+    bulk_insert.body.push(partial_doc);
+
+    // assocaite the free media IDs with the new Answer
+    let media_body = associateFreeMediaBulkBody(qid, media);
+    bulk_insert.body = bulk_insert.body.concat(media_body);
+    console.log(bulk_insert);
+
+    let bulk_response = client.bulk(bulk_insert);
+    promises.push(bulk_response);
 
     // modify the Question document
-    const updateQuestionResponse = await client.updateByQuery({
+    let update_question_response = client.updateByQuery({
         index: INDEX_QUESTIONS,
         type: "_doc",
         // refresh: "true",
@@ -765,18 +813,8 @@ async function addAnswer(qid, user, body, media, id){
             }
         }
     });
-    if (updateQuestionResponse.updated != 1){
-        console.log(`[QA] Failed to update Question ${qid}'s answer_count`);
-        console.log(updateQuestionResponse);
-    }
-
-    // associate the free media IDs with the Question this Answer is associated to
-    //      as we cannot delete an individual Answer document, this will make deleting easier
-    let associateMediaResponse = await associateFreeMedia(qid,media);
-    if (associateMediaResponse.status !== constants.DB_RES_SUCCESS){
-        console.log(`[QA] associateFreeMedia failed with qa_id=${qid}, media=${media}`);
-        console.log(`[QA] associateFreeMedia err: ${associateMediaResponse.data}`);
-    }
+    promises.push(update_question_response);
+    await Promise.all(promises);
 
     return new DBResult(constants.DB_RES_SUCCESS, response._id);
 }
