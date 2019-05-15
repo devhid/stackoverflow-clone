@@ -1,0 +1,25 @@
+---
+#
+# Playbook to setup Memcached.
+#
+
+- hosts: memcached
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+
+  roles:
+    - { role: ssh }
+    - { role: memcached }
+
+  tasks:
+    - name: Bind memcached server to run on {{ inventory_hostname }}
+      lineinfile:
+        destfile: /etc/memcached.conf
+        regex: "-l 127.0.0.1"
+        line: "-l {{ inventory_hostname }}"
+
+    - name: Restart Memcached
+      systemd:
+        name: memcached
+        state: restarted

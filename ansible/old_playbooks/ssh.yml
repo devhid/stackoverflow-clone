@@ -1,0 +1,11 @@
+---
+#
+# Ansible playbook to add ssh keys to all hosts.
+#
+
+hosts: services
+remote_user: ubuntu
+become: yes
+become_user: root
+roles:
+  - { role: ssh }

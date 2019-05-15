@@ -2,14 +2,14 @@
 #
 # Playbook to setup mail-server 
 #
-- hosts: mail_server
+- hosts: elk
   remote_user: ubuntu
   become: yes
   become_user: root
   vars: 
-    REGISTRATION_HOST: 192.168.122.32 
+    REGISTRATION_HOST: 192.168.122.28
   roles:
-  - { role: ssh }
+  # - { role: ssh }
   - { role: postfix }
 
   tasks:

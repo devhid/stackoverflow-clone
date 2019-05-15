@@ -1,0 +1,140 @@
+---
+#
+# Playbook to setup a backend server.
+# Backend services include, auth, email-verification, media, qa, registration, search, and user.
+# 
+
+- hosts: backend
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  vars:
+    - GIT_USERNAME: devhid
+    - GIT_TOKEN: "{{ lookup('file', '/Users/mgulati/Documents/vscode-projects/stackoverflow-clone/ansible/keys/git_ansible') }}"
+    - GIT_EMAIL: mikeygulati@gmail.com
+    - CASSANDRA_KEYSPACE: stackoverflow
+    - CASSANDRA_TABLE: media
+    - CASSANDRA_SEEDS: "192.168.122.38, 192.168.122.41"
+  roles:
+    - { role: ssh }
+    - { role: nginx }
+    - { role: nodejs }
+    - { role: cassandra }
+
+  tasks:
+
+    - name: Edit Seeds in Cassandra Configuration
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "seeds:"
+        line: '          - seeds: "{{ CASSANDRA_SEEDS }}"'
+
+    - name: Set 'listen_address' to '{{ inventory_hostname }}'
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "listen_address: localhost"
+        line: "listen_address: {{ inventory_hostname }}"
+    
+    - name: Set 'start_rpc' to 'true'
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "start_rpc:"
+        line: "start_rpc: true"
+    
+    - name: Set 'rpc_address' to '0.0.0.0'
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "^rpc_address:"
+        line: "rpc_address: 0.0.0.0"
+    
+    - name: Set 'broadcast_rpc_address' to '{{ inventory_hostname }}''
+      lineinfile:
+        destfile: /etc/cassandra/cassandra.yaml
+        regex: "broadcast_rpc_address:"
+        line: "broadcast_rpc_address: {{ inventory_hostname }}"
+      notify: Restart Cassandra
+
+    - name: Create Key Space {{ CASSANDRA_KEYSPACE }}
+      become_user: ubuntu
+      shell: cqlsh -e "create keyspace {{ CASSANDRA_KEYSPACE }} with replication = {'class':'SimpleStrategy', 'replication_factor':'1'};" {{ inventory_hostname }} 9042
+      retries: 5
+      delay: 30
+      register: result
+      until: result.stderr == ""
+
+    - name: Create Table {{ CASSANDRA_TABLE }}
+      become_user: ubuntu
+      shell: cqlsh -e "create table {{ CASSANDRA_KEYSPACE }}.{{ CASSANDRA_TABLE }} (id uuid PRIMARY KEY, content blob, filename text, mimetype text, qa_id text, poster text);" {{ inventory_hostname }} 9042    
+    
+    - name: Create Index for Column 'qa_id'
+      become_user: ubuntu
+      shell: cqlsh -e "create index on {{ CASSANDRA_KEYSPACE }}.{{ CASSANDRA_TABLE }}(qa_id);" {{ inventory_hostname }} 9042
+
+    - name: Clone Git Repository
+      become_user: ubuntu
+      git:
+        repo: http://{{ GIT_USERNAME }}:{{ GIT_TOKEN }}@github.com/devhid/stackoverflow-clone.git
+        dest: /home/ubuntu/stackoverflow-clone
+    
+    - name: Checkout Branch 'nginx-proxy'
+      become_user: ubuntu
+      shell: cd stackoverflow-clone && git pull && git config --global user.email {{ GIT_EMAIL }} && git stash && git checkout nginx-proxy && git pull
+
+    - name: Install Dependencies for 'authentication-service'
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/authentication-service && npm install
+
+    - name: Install Dependencies for 'email-verification-service'
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/email-verification-service && npm install
+
+    - name: Install Dependencies for 'media-service'
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/media-service && npm install
+
+    - name: Install Dependencies for 'qa-service'
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/qa-service && npm install
+
+    - name: Install Dependencies for 'registration-service'
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/registration-service && npm install
+
+    - name: Install Dependencies for 'search-service'
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/search-service && npm install
+
+    - name: Install Dependencies for 'user-service'
+      become_user: ubuntu
+      shell: cd stackoverflow-clone/services/user-service && npm install
+    
+    - name: Start 'authentication-service' with pm2
+      become_user: ubuntu
+      shell: pm2 start stackoverflow-clone/services/authentication-service/index.js --name authentication-service
+
+    - name: Start 'email-verification-service' with pm2
+      become_user: ubuntu
+      shell: pm2 start stackoverflow-clone/services/email-verification-service/index.js --name email-verification-service
+
+    - name: Start 'media-service' with pm2
+      become_user: ubuntu
+      shell: pm2 start stackoverflow-clone/services/media-service/index.js --name media-service
+
+    - name: Start 'qa-service' with pm2
+      become_user: ubuntu
+      shell: pm2 start stackoverflow-clone/services/qa-service/index.js --name qa-service
+
+    - name: Start 'search-service' with pm2
+      become_user: ubuntu
+      shell: pm2 start stackoverflow-clone/services/search-service/index.js --name search-service
+    
+    - name: Start 'user-service' with pm2
+      become_user: ubuntu
+      shell: pm2 start stackoverflow-clone/services/user-service/index.js --name user-service
+
+  handlers:
+    - name: Restart Cassandra
+      systemd:
+        name: cassandra
+        state: restarted
+        
