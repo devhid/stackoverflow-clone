@@ -1,0 +1,11 @@
+---
+#
+# Install MongoDB
+#
+
+# Install MongoDB from APT
+
+  - name: Update APT cache and install MongoDB
+    apt:
+      name: mongodb
+      update_cache: yes

@@ -1,0 +1,60 @@
+---
+#
+# Playbook to setup MongoDB.
+# 
+
+- hosts: mongodb
+  remote_user: ubuntu
+  become: yes
+  become_user: root
+  vars:
+    BIND_IP: "0.0.0.0"
+    DB_NAME: "stackoverflow"
+    COLLECTION_USERS: "users"
+    COLLECTION_QUESTIONS: "questions"
+    COLLECTION_ANSWERS: "answers"
+    COLLECTION_VIEWS: "views"
+    COLLECTION_Q_UPVOTES: "q-upvotes"
+    COLLECTION_A_UPVOTES: "a-upvotes"
+    COLLECTION_MEDIA: "media"
+
+  roles:
+    - { role: ssh }
+    - { role: mongodb }
+  
+  tasks:
+    - name: Update binded IP to {{ BIND_IP }}
+      lineinfile:
+        destfile: /etc/mongodb.conf
+        regex: "bind_ip ="
+        line: "bind_ip = {{ BIND_IP }}"
+    
+    - name: Restart MongoDB
+      systemd:
+        name: mongodb
+        state: restarted
+
+    - name: Create collection, {{ COLLECTION_USERS }}
+      shell: mongo {{ DB_NAME }} --host {{ inventory_hostname }} --eval 'db.createCollection("{{ COLLECTION_USERS }}")'
+      retries: 5
+      delay: 5
+      register: result
+      until: result.rc == 0
+
+    - name: Create collection, {{ COLLECTION_QUESTIONS }}
+      shell: mongo {{ DB_NAME }} --host {{ inventory_hostname }} --eval 'db.createCollection("{{ COLLECTION_QUESTIONS }}")'
+    
+    - name: Create collection, {{ COLLECTION_ANSWERS }}
+      shell: mongo {{ DB_NAME }} --host {{ inventory_hostname }} --eval 'db.createCollection("{{ COLLECTION_ANSWERS }}")'
+    
+    - name: Create collection, {{ COLLECTION_VIEWS }}
+      shell: mongo {{ DB_NAME }} --host {{ inventory_hostname }} --eval 'db.createCollection("{{ COLLECTION_VIEWS }}")'
+
+    - name: Create collection, {{ COLLECTION_Q_UPVOTES }}
+      shell: mongo {{ DB_NAME }} --host {{ inventory_hostname }} --eval 'db.createCollection("{{ COLLECTION_Q_UPVOTES }}")'
+
+    - name: Create collection, {{ COLLECTION_A_UPVOTES }}
+      shell: mongo {{ DB_NAME }} --host {{ inventory_hostname }} --eval 'db.createCollection("{{ COLLECTION_A_UPVOTES }}")'
+
+    - name: Create collection, {{ COLLECTION_MEDIA }}
+      shell: mongo {{ DB_NAME }} --host {{ inventory_hostname }} --eval 'db.createCollection("{{ COLLECTION_MEDIA }}")'
