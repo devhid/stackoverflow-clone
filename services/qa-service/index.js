@@ -1,9 +1,11 @@
 /* library imports */
 const express = require('express');
 const rabbot = require('rabbot');
+const debug = require('debug');
+const log = debug('qa');
 
 /* internal imports */
-const database = require('./database');
+const database = require('./db');
 const constants = require('./constants');
 const APIResponse = require('./apiresponse').APIResponse;
 
@@ -28,7 +30,7 @@ app.use(function(req, res, next) {
 });
 
 /* Start the server. */
-var server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+var server = app.listen(PORT, '0.0.0.0', () => log(`Server running on http://0.0.0.0:${PORT}`));
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
@@ -101,9 +103,9 @@ rabbot.handle({
 /* configure rabbot */
 rabbot.configure(constants.RABBOT_SETTINGS)
     .then(function(){
-        console.log('[Rabbot] Rabbot configured...');
+        log('Rabbot configured...');
     }).catch(err => {
-        console.log(`[Rabbot] err ${err}`);
+        log(`[Error] rabbot.configure() - ${err}`);
     });
 
 /* ------------------ ENDPOINTS ------------------ */
@@ -164,7 +166,7 @@ async function addQuestion(request){
         request.reply({status: status, response: merged});
         request.ack();
     } catch (err){
-        console.log(`[QA] addQuestion err ${err}`);
+        log(`[Error] addQuestion() - ${err}`);
         request.nack();
     }
 }
@@ -218,7 +220,7 @@ async function getQuestion(request){
         request.reply({status: status, response: merged, views: views});
         request.ack();
     } catch (err){
-        console.log(`[QA] getQuestion err ${err}`);
+        log(`[Error] getQuestion() - ${err}`);
         request.nack();
     }
 }
@@ -279,7 +281,7 @@ async function addAnswer(request){
         request.reply({status: status, response: merged});
         request.ack();
     } catch (err){
-        console.log(`[QA] addAnswer err ${err}`);
+        log(`[Error] addAnswer() - ${err}`);
         request.nack();
     }
 }
@@ -332,7 +334,7 @@ async function getAnswers(request){
         request.reply({status: status, response: merged});
         request.ack();
     } catch (err){
-        console.log(`[QA] getAnswers err ${err}`);
+        log(`[Error] getAnswers() - ${err}`);
         request.nack();
     }
 }
@@ -385,7 +387,7 @@ async function deleteQuestion(request){
         request.reply({status: status, response: response.toOBJ()});
         request.ack();
     } catch(err){
-        console.log(`[QA] deleteQuestion err ${err}`);
+        log(`[Error] deleteQuestion() - ${err}`);
         request.nack();
     }
 }
@@ -440,7 +442,7 @@ async function upvoteQuestion(request){
         request.reply({status: status, response: response.toOBJ()});
         request.ack();
     } catch (err){
-        console.log(`[QA] upvoteQuestion err ${err}`);
+        log(`[Error] upvoteQuestion() - ${err}`);
         request.nack();
     }
 }
@@ -493,7 +495,7 @@ async function upvoteAnswer(request){
         request.reply({status: status, response: response.toOBJ()});
         request.ack();
     } catch (err){
-        console.log(`[QA] upvoteAnswer err ${err}`);
+        log(`[Error] upvoteAnswer() - ${err}`);
         request.nack();
     }
 }
@@ -553,7 +555,7 @@ async function acceptAnswer(request){
         request.reply({status: status, response: response.toOBJ()});
         request.ack();
     } catch (err){
-        console.log(`[QA] acceptAnswer err ${err}`);
+        log(`[Error] acceptAnswer() - ${err}`);
         request.nack();
     }
 }

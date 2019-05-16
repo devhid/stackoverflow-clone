@@ -1,9 +1,11 @@
 /* library imports */
 const express = require('express');
 const rabbot = require('rabbot');
+const debug = require('debug');
+const log = debug('user');
 
 /* internal imports */
-const database = require('./database');
+const database = require('./db');
 const constants = require('./constants');
 
 /* initialize express application */
@@ -54,9 +56,9 @@ rabbot.handle({
 /* configure rabbot */
 rabbot.configure(constants.RABBOT_SETTINGS)
     .then(function(){
-        console.log('[Rabbot] Rabbot configured...');
+        log('Rabbot configured...');
     }).catch(err => {
-        console.log(`[Rabbot] err ${err}`);
+        log(`[Error] rabbot.configure() - ${err}`);
     });
 
 /* ------------------ ENDPOINTS ------------------ */
@@ -88,14 +90,14 @@ async function getUser(request){
     
         response = generateOK();
         response[constants.USER_KEY] = user;
-    
         status = constants.STATUS_200;
+
         let reply = {status: status, response: response};
-        console.log(`getUser reply=${reply}`);
+        log(`getUser() - reply=${reply}`);
         request.reply(reply);
         request.ack();
     } catch (err){
-        console.log(`[User] getUser err ${JSON.stringify(err)}`);
+        log(`[Error] getUser() - ${JSON.stringify(err)}`);
         request.nack();
     }
     
@@ -132,12 +134,13 @@ async function getUserQuestions(request){
         response = generateOK();
         response[constants.QUESTIONS_KEY] = qids;
         status = constants.STATUS_200;
+
         let reply = {status: status, response: response};
-        console.log(`getUserQuestions reply=${reply}`);
+        log(`getUserQuestions() - reply=${reply}`);
         request.reply(reply);
         request.ack();
     } catch (err){
-        console.log(`[User] getUserQuestions err ${JSON.stringify(err)}`);
+        console.log(`[Error] getUserQuestions() - ${JSON.stringify(err)}`);
         request.nack();
     }
     
@@ -174,14 +177,14 @@ async function getUserAnswers(request){
     
         response = generateOK();
         response[constants.ANSWERS_KEY] = aids;
-    
         status = constants.STATUS_200;
+
         let reply = {status: status, response: response};
-        console.log(`getUserAnswers reply=${reply}`);
+        log(`getUserAnswers() reply=${reply}`);
         request.reply(reply);
         request.ack();
     } catch (err){
-        console.log(`[User] getUserAnswers err ${JSON.stringify(err)}`);
+        log(`[Error] getUserAnswers() - ${JSON.stringify(err)}`);
         request.nack();
 
     }
@@ -203,7 +206,7 @@ function generateERR(){
 }
 
 /* Start the server. */
-var server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+var server = app.listen(PORT, '0.0.0.0', () => log(`Server running on http://0.0.0.0:${PORT}`));
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);

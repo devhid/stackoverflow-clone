@@ -5,7 +5,7 @@ const debug = require('debug');
 const log = debug('email-verification');
 
 /* internal imports */
-const database = require('./database');
+const database = require('./db');
 const constants = require('./constants');
 
 /* initialize express application */

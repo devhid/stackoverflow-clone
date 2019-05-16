@@ -5,7 +5,7 @@ const debug = require('debug');
 const log = debug('registration');
 
 /* internal imports */
-const database = require('./mdb');
+const database = require('./db');
 const constants = require('./constants');
 
 /* initialize express application */
