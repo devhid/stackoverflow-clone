@@ -24,7 +24,7 @@ module.exports = {
     STATUS_404: 404,    // not found
     STATUS_409: 409,    // conflict
 
-    MEMCACHED_LOCATIONS: ['192.168.122.40'],
+    MEMCACHED_LOCATIONS: ['130.245.171.134'],
 
     REDIS_OPTIONS: {
         host: '192.168.122.40',
