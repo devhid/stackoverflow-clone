@@ -35,6 +35,23 @@ module.exports = {
         host: "http://admin:ferdman123@130.245.169.86:92"
     },
 
+    MONGODB_OPTIONS: {
+        host: "mongodb://130.245.171.134:27017",
+        database: "stackoverflow"
+    },
+
+    COLLECTIONS: {
+        USERS: "users",
+        QUESTIONS: "questions",
+        ANSWERS: "answers",
+        VIEWS: "views",
+        Q_UPVOTES: "q-upvotes",
+        A_UPVOTES: "a-upvotes",
+        MEDIA: "media"
+    },
+
+    KEY_LENGTH: 16,
+
     SERVICES: SERVICES,    
 
     RABBOT_SETTINGS: {

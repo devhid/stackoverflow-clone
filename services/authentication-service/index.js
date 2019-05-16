@@ -1,9 +1,11 @@
 /* external imports */
 const express = require('express');
 const rabbot = require('rabbot');
+const debug = require('debug');
+const log = debug('authentication');
 
 /* internal imports */
-const database = require('./database');
+const database = require('./mdb');
 const constants = require('./constants');
 
 /* initialize express application */
@@ -46,9 +48,9 @@ rabbot.handle({
 /* configure rabbot */
 rabbot.configure(constants.RABBOT_SETTINGS)
     .then(function(){
-        console.log('[Rabbot] Rabbot configured...');
+        log('Rabbot configured...');
     }).catch(err => {
-        console.log(`[Rabbot] err ${err}`);
+        log(`[Error] rabbot.configure() - ${err}`);
     });
 
 /* ------------------ ENDPOINTS ------------------ */
@@ -100,7 +102,7 @@ async function login(request) {
             request.ack();
             return;
         }
-        if (user._source.email_verified !== true){
+        if (!database.isVerified(user)){
             response = { 
                 "status": constants.STATUS_401,
                 "response": {
@@ -112,7 +114,7 @@ async function login(request) {
             request.ack();
             return;
         }
-        let success = database.authenticate_user(user, password);
+        let success = database.authenticate(user, password);
         if(!success) {
             response = { 
                 "status": constants.STATUS_401,
@@ -136,7 +138,7 @@ async function login(request) {
         request.reply(response);
         request.ack();
     } catch (err){
-        console.log(`[Auth] login err ${JSON.stringify(err)}`);
+        log(`[Error] login() - ${JSON.stringify(err)}`);
         request.nack();
     }
 }
@@ -167,7 +169,7 @@ async function logout(request) {
         request.reply(response);
         request.ack();
     } catch (err){
-        console.log(`[Auth] logout err ${JSON.stringify(err)}`);
+        log(`[Error]k logout() - ${JSON.stringify(err)}`);
         request.nack();
     }
 }
@@ -181,7 +183,7 @@ function notEmpty(fields) {
 }
 
 /* Start the server. */
-let server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+let server = app.listen(PORT, '0.0.0.0', () => log(`Server running on http://0.0.0.0:${PORT}`));
 
 /* Graceful shutdown */
 process.on("SIGINT", shutdown);

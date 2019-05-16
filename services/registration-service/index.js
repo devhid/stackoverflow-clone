@@ -1,9 +1,11 @@
 /* library imports */
 const express = require('express');
 const rabbot = require('rabbot');
+const debug = require('debug');
+const log = debug('registration');
 
 /* internal imports */
-const database = require('./database');
+const database = require('./mdb');
 const constants = require('./constants');
 
 /* initialize express application */
@@ -19,7 +21,6 @@ const mail_server = emailjs.server.connect({
     user: "ubuntu",
     password: "",
     host: "192.168.122.25",
-    //host: "192.168.122.13",
     ssl: false
 });
 
@@ -28,7 +29,6 @@ app.use(express.json());
 
 /* enable CORS */
 app.use(function(req, res, next) {
-  //res.set('Access-Control-Allow-Origin', 'http://localhost:4200');
   res.set('Access-Control-Allow-Origin', 'http://kellogs.cse356.compas.cs.stonybrook.edu');
   res.set('Access-Control-Allow-Headers', 'Content-Type');
   res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -49,24 +49,26 @@ rabbot.handle({
 /* configure rabbot */
 rabbot.configure(constants.RABBOT_SETTINGS)
     .then(function(){
-        console.log('[Rabbot] Rabbot configured...');
+        log('Rabbot configured...');
     }).catch(err => {
-        console.log(`[Rabbot] err ${err}`);
+        log(`[Error] rabbot.configure() - ${err}`);
     });
 
 /* ------------------ ENDPOINTS ------------------ */
 
 app.get('/emailtest', async(req, res) => {
-    console.log(mail_server);
     mail_server.send({
         text: "Email received.",
         from: "no-reply <>",
         to: "tijo@smartbusiness.me",
         subject: "Test email"
         }, function(err, message) {
-            console.log(err);
-            console.log(message);
-    });
+            if(err) {
+                log(`[Error]: /emailtest - ${err}`);
+            } else {
+                log(`/emailtest - ${message}`);  
+            }  
+        });
 });
 
 /* Register a user if they do not already exist. */
@@ -76,13 +78,11 @@ async function addUser(request){
         const email = req.body["email"];
         const username = req.body["username"];
         const password = req.body["password"];
-        console.log(email + " " + username + " " + password);
 
         let status = constants.STATUS_200;
         let response = {};
 
         if (!notEmpty([email, username, password])) {
-            console.log('empty fields');
             status = constants.STATUS_400;
             response = {"status": "error", "error": "One or more fields are empty."};
             request.reply({status: status, response: response});
@@ -92,7 +92,6 @@ async function addUser(request){
         let userExists = await database.userExists(email, username);
 
         if (userExists) {
-            console.log('user exists');
             status = constants.STATUS_409;
             response = {"status": "error", "error": "A user with that email or username already exists."};
             request.reply({status: status, response: response});
@@ -111,7 +110,7 @@ async function addUser(request){
             }, 
             function(err, message) {
                 if (err) {
-                    console.log(err);
+                    log(`[Error]: mail_server.send() - ${err}`)
                     status = constants.STATUS_503;
                     response = { "status": "error" };
                     request.reply({status: status, response: response});
@@ -119,7 +118,7 @@ async function addUser(request){
                     return;
                 }
                 else {
-                    console.log('mail sent');
+                    log(`mail_server.send() - ${message}`)
                     status = constants.STATUS_200;
                     response = { "status": "OK" };
                     request.reply({status: status, response: response});
@@ -129,7 +128,7 @@ async function addUser(request){
             }
         );
     } catch (err){
-        console.log(`[Register] addUser err ${err}`);
+        log(`[Error] addUser() - ${err}`);
         request.nack();
     }
 
@@ -144,7 +143,7 @@ function notEmpty(fields) {
 }
 
 /* Start the server. */
-var server = app.listen(PORT, '0.0.0.0', () => console.log(`Server running on http://0.0.0.0:${PORT}`));
+var server = app.listen(PORT, '0.0.0.0', () => log(`Server running on http://0.0.0.0:${PORT}`));
 
 process.on('SIGINT', shutdown);
 process.on('SIGTERM', shutdown);
