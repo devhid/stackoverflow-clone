@@ -73,8 +73,21 @@ async function upvoteAnswer() {
 
 }
 
-async function acceptAnswer() {
-    
+async function acceptAnswer(aid, username) {
+    const answer = await getAnswerDocument(aid);
+    const question = await getQuestionDocument(answer.qid);
+
+    if(!isOriginalPoster(question, username)) {
+        // set status and error and return DBResult
+    } 
+
+    if(isAccepted(question)) {
+        // set status and error and return DBResult
+    }
+
+    markAnswered(aid);
+
+    // return successful DBResult
 }
 
 /******* Helper Functions *******/
@@ -97,14 +110,18 @@ async function initializeQuestion(user, title, body, media, tags, id, timestamp)
         "accepted_answer_id": null
     };
 
-    try {
-        const result = await db.collection(constants.COLLECTIONS.QUESTIONS).insertOne(questionDocument);
-        log(`initalizeQuestion() - ${result}`);
-    } catch(err) {
-        log(`[Error] initializeQuestion() - ${err}`);
-    }
+    return new Promise((resolve, reject) => {
+        db.collection(constants.COLLECTIONS.QUESTIONS).insertOne(questionDocument, function(err, response) {
+            if(err) {
+                log(`[Error] initializeQuestion() - ${err}`);
+                reject(err);
+            } else {
+                log(`initalizeQuestion() - ${response}`);
+                resolve(id);
+            }
+        });
 
-    return id;
+    });
 }
 
 async function initializeView(id) {
@@ -162,15 +179,17 @@ async function initializeMedia(id) {
  * @param {string} qid 
  * @param {string} aid 
  */
-async function markAnswered(qid, aid) {
+async function markAnswered(aid) {
     try {
-        const result = db.collection(constants.COLLECTIONS.QUESTIONS).updateOne({"id": qid}, {$set:{"accepted_answer_id": aid}});
+        var updated = await db.collection(constants.COLLECTIONS.ANSWERS).findOneAndUpdate({"id": aid}, {$set:{"is_accepted": true}}, {"returnNewDocument": true});
+        log(`markAnswered() - ${updated}`);
     } catch(err) {
         log(`[Error] markAnswered() - ${err}`);
     }
 
     try {
-        const result = db.collection(constants.COLLECTIONS.ANSWERS).updateOne({"id": aid}, {$set:{"is_accepted": true}});
+        const result = await db.collection(constants.COLLECTIONS.QUESTIONS).updateOne({"id": updated.qid}, {$set:{"accepted_answer_id": aid}});
+        log(`markAnswered() - ${result}`);
     } catch(err) {
         log(`[Error] markAnswered() - ${err}`);
     }
@@ -178,19 +197,25 @@ async function markAnswered(qid, aid) {
 
 /**
  * Returns true, if the user with the specified username was the one who asked 
- *      the question with the specified qid, otherwise false.
+ *      the question, otherwise false.
  * 
- * @param {string} qid 
+ * @param {object} question 
  * @param {string} username 
  */
-async function isOriginalPoster(qid, username) {
-    const question = await getQuestionDocument(qid);
-    if(question == null) {
-        let errorMsg = "Question is null.";
-        throw new Error(errorMsg);
-    }
+async function isOriginalPoster(question, username) {
+    assert.notEqual(question, null);
+    assert.notEqual(username, null);
 
     return question.user.username == username;
+}
+
+/**
+ * Returns true if the question already has an accepted answer, false otherwise.
+ * 
+ * @param {object} question 
+ */
+function isAccepted(question) {
+    return question.accepted_answer_id != null;
 }
 
 /**
@@ -239,6 +264,22 @@ async function getQuestionDocument(qid) {
     }
 
     return question;
+}
+
+/**
+ * Returns the full answer document associated with the answer (answer ID).
+ * 
+ * @param {string} aid The ID of a answer.
+ */
+async function getAnswerDocument(aid) {
+    try {
+        var answer = await db.collection(constants.COLLECTIONS.ANSWERS).findOne({"id": aid});
+        log(`getAnswerDocument() - ${answer}`)
+    } catch(err) {
+        log(`[Error] getAnswerDocument() - $(err)`);
+    }
+
+    return answer;
 }
 
 /**
@@ -318,7 +359,7 @@ async function getAssociatedMedia(qid) {
  * @param {string[]} mediaIDs 
  */
 async function deleteMedia(mediaIDs) {
-    
+
 }
 
 /**
