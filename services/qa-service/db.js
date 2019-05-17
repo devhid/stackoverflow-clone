@@ -132,7 +132,7 @@ function initializeView(qid) {
 
     return new Promise((resolve, reject) => {
         db.collection(constants.COLLECTIONS.VIEWS).insertOne(viewDocument, function(err, response) {
-            if(err) {
+            if (err) {
                 logMongo(`[Error] initializeView() - ${err}`);
                 reject(err);
             } else {
@@ -153,7 +153,7 @@ function initializeUpvotes(qa_id, collection) {
 
     return new Promise((resolve, reject) => {
         db.collection(collection).insertOne(upvotesDocument, function(err, response) {
-            if(err) {
+            if (err) {
                 logMongo(`[Error] initializeUpvotes() - ${err}`);
                 reject(err);
             } else {
@@ -171,7 +171,7 @@ function initializeMedia(qa_id) {
 
     return new Promise((resolve, reject) => {
         db.collection(constants.COLLECTIONS.MEDIA).insertOne(mediaDocument, function(err, response) {
-            if(err) {
+            if (err) {
                 logMongo(`[Error] initializeQuestionUpvotes() - ${err}`);
                 reject(err);
             } else {
