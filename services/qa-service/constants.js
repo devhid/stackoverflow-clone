@@ -49,6 +49,10 @@ module.exports = {
         MEDIA: "media"
     },
 
+    INDICES: {
+        QUESTIONS: "questions"
+    },
+
     SERVICES: SERVICES,    
 
     RABBOT_SETTINGS: {

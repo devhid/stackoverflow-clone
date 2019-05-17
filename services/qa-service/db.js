@@ -1,5 +1,6 @@
 /* library imports */
 const MongoClient = require('mongodb').MongoClient;
+const elasticsearch = require('elasticsearch');
 const debug = require('debug');
 const assert = require('assert');
 const uuidv4 = require('uuid/v4');
@@ -26,6 +27,9 @@ MongoClient.connect(constants.MONGODB_OPTIONS.host, {"useNewUrlParser": true}, f
         db = client.db(constants.MONGODB_OPTIONS.database);
     }
 });
+
+/* client to communicate with elasticsearch */
+const elasticClient = new elasticsearch.Client(constants.ELASTICSEARCH_OPTIONS);
 
 /* connect to cassandra */
 const cassandraOptions = constants.CASSANDRA_OPTIONS;
@@ -58,10 +62,44 @@ async function deleteQuestion() {
 }
 
 async function addAnswer() {
+    // check if the question exists
+    let questionExists = await questionExists(qid);
+    if (questionExists === false){
+        return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
+    }
 
+    // check if the media is free to use and belongs to user
+    let media = (media == undefined) ? [] : media;
+    let mediaAvailability = await checkMediaAvailablity(media);
+    if (mediaAvailability === false){
+        return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
+    }
+    let mediaValidity = validateMedia(media, user.username);
+    if (mediaValidity === false){
+        return new DBResult(constants.DB_RES_MEDIA_INVALID, null);
+    }
+
+    // now we can create the appropriate documents
+    let createAnswer = initializeAnswer(qid, user, body, media, aid, timestamp);
+    let createMedia = initializeMedia();
+    let createUpvotes = initializeUpvotes()
 }
 
-async function getAnswers() {
+/**
+ * Retrieves all Answers for the specified Question.
+ * @param {string} qid the _id of the question
+ */
+async function getAnswers(qid) {
+    // check if the question exists
+    let questionExists = await questionExists(qid);
+    if (questionExists === false){
+        return new DBResult(constants.DB_RES_Q_NOTFOUND, null);
+    }
+
+
+    // grab all answer documents for the specified question
+    const answers = await db.collection(constants.COLLECTIONS.ANSWERS)).find()
+
 
 }
 
@@ -77,11 +115,11 @@ async function acceptAnswer(aid, username) {
     const answer = await getAnswerDocument(aid);
     const question = await getQuestionDocument(answer.qid);
 
-    if(!isOriginalPoster(question, username)) {
+    if (!isOriginalPoster(question, username)) {
         // set status and error and return DBResult
     } 
 
-    if(isAccepted(question)) {
+    if (isAccepted(question)) {
         // set status and error and return DBResult
     }
 
@@ -91,7 +129,6 @@ async function acceptAnswer(aid, username) {
 }
 
 /******* Helper Functions *******/
-
 async function initializeQuestion(user, title, body, media, tags, id, timestamp) {    
     const questionDocument = {
         "id": id,
@@ -166,6 +203,40 @@ async function initializeMedia(id) {
     } catch(err) {
         log(`[Error] initializeQuestionUpvotes() - ${err}`);
     }
+}
+
+/**
+ * Creates an Answer document in Mongo.
+ * @param {string} qid the _id of the question
+ * @param {object} user the user object
+ * @param {string} body the body of the answer
+ * @param {string[]} media array of media IDs attached to the answer
+ * @param {string} aid the _id to use
+ * @param {Number} timestamp the UTC timestamp to insert
+ */
+function initializeAnswer(qid, user, body, media, aid, timestamp){
+    const answerMongoDocument = {
+        "_id": aid,
+        "qid": qid,
+        "user": user.username,
+        "body": body,
+        "score": 0,
+        "is_accepted": false,
+        "timestamp": timestamp,
+        "media": media
+    };
+
+    return new Promise((resolve, reject) => {
+        db.collection(constants.COLLECTIONS.ANSWERS).insertOne(answerDocument, function(err, response) {
+            if (err) {
+                log(`[Error] initializeAnswer() - ${err}`);
+                reject(err);
+            } else {
+                log(`initializeAnswer() - ${response}`);
+                resolve(aid);
+            }
+        });
+    });
 }
 
 /**
@@ -325,11 +396,11 @@ async function validateMedia(mediaIDs, poster) {
  */
 async function checkMediaAvailablity(mediaIDs) {
     try {
-        const result = db.collection(constants.COLLECTIONS.MEDIA).find({"id": {$in: mediaIDs}}).toArray();
-        if(result.length != 0) {
+        const result = db.collection(constants.COLLECTIONS.MEDIA).find({"_id": {$in: mediaIDs}}).toArray();
+        if (result.length != 0) {
             return false;
         }
-    } catch(err) {
+    } catch (err) {
         log(`[Error] checkMediaAvailablity() - ${err}`);
     }
 
