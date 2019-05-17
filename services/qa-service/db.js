@@ -1,8 +1,8 @@
 /* library imports */
 const MongoClient = require('mongodb').MongoClient;
+const MUUID = require('uuid-mongodb');
 const debug = require('debug');
 const assert = require('assert');
-const uuidv4 = require('uuid/v4');
 const cassandra = require('cassandra-driver');
 
 /* internal imports */
@@ -19,7 +19,7 @@ let db = null;
 
 /* connect to mongodb and set reference to database object */
 MongoClient.connect(constants.MONGODB_OPTIONS.host, {"useNewUrlParser": true}, function(err, client) {
-    if(err) {
+    if (err) {
         logMongo(`[Error] MongoClient.connect() - ${err}`);
     } else {
         logMongo("Successfully connected.");
@@ -77,11 +77,11 @@ async function acceptAnswer(aid, username) {
     const answer = await getAnswerDocument(aid);
     const question = await getQuestionDocument(answer.qid);
 
-    if(!isOriginalPoster(question, username)) {
+    if (!isOriginalPoster(question, username)) {
         // set status and error and return DBResult
     } 
 
-    if(isAccepted(question)) {
+    if (isAccepted(question)) {
         // set status and error and return DBResult
     }
 
@@ -92,9 +92,9 @@ async function acceptAnswer(aid, username) {
 
 /******* Helper Functions *******/
 
-async function initializeQuestion(user, title, body, media, tags, id, timestamp) {    
+function initializeQuestion(user, title, body, media, tags, id, timestamp) {    
     const questionDocument = {
-        "id": id,
+        "_id": id,
         "user": {
             "username": user.username,
             "reputation": user.reputation
@@ -112,60 +112,74 @@ async function initializeQuestion(user, title, body, media, tags, id, timestamp)
 
     return new Promise((resolve, reject) => {
         db.collection(constants.COLLECTIONS.QUESTIONS).insertOne(questionDocument, function(err, response) {
-            if(err) {
-                log(`[Error] initializeQuestion() - ${err}`);
+            if (err) {
+                logMongo(`[Error] initializeQuestion() - ${err}`);
                 reject(err);
             } else {
-                log(`initalizeQuestion() - ${response}`);
+                logMongo(`initalizeQuestion() - ${response}`);
                 resolve(id);
             }
         });
-
     });
 }
 
-async function initializeView(id) {
+function initializeView(qid) {
     const viewDocument = {
-        "qid": id,
+        "_id": qid,
         "authenticated": [],
         "unauthenticated": []
     };
 
-    try {
-        const result = await db.collection(constants.COLLECTIONS.VIEWS).insertOne(viewDocument);
-        log(`initalizeView() - ${result}`);
-    } catch(err) {
-        log(`[Error] initializeView() - ${err}`);
-    }
+    return new Promise((resolve, reject) => {
+        db.collection(constants.COLLECTIONS.VIEWS).insertOne(viewDocument, function(err, response) {
+            if(err) {
+                logMongo(`[Error] initializeView() - ${err}`);
+                reject(err);
+            } else {
+                logMongo(`initalizeView() - ${response}`);
+                resolve(response);
+            }
+        });
+    });
 }
 
-async function initializeQuestionUpvotes(id) {
+function initializeUpvotes(qa_id, collection) {
     const upvotesDocument = {
-        "qid": id,
+        "_id": qa_id,
         "upvotes": [],
         "downvotes": [],
         "waived_downvotes": []
     };
 
-    try {
-        const result = await db.collection(constants.COLLECTIONS.Q_UPVOTES).insertOne(upvotesDocument);
-        log(`initalizeQuestionUpvotes() - ${result}`);
-    } catch(err) {
-        log(`[Error] initializeQuestionUpvotes() - ${err}`);
-    }
+    return new Promise((resolve, reject) => {
+        db.collection(collection).insertOne(upvotesDocument, function(err, response) {
+            if(err) {
+                logMongo(`[Error] initializeUpvotes() - ${err}`);
+                reject(err);
+            } else {
+                logMongo(`initalizeUpvotes() - ${result}`);
+                resolve(response);
+            }
+        });
+    });
 }
 
-async function initializeMedia(id) {
+function initializeMedia(qa_id) {
     const mediaDocument = {
         "qa_id": qa_id
     };
 
-    try {
-        const result = await db.collection(constants.COLLECTIONS.Q_UPVOTES).insertOne(upvotesDocument);
-        log(`initalizeQuestionUpvotes() - ${result}`);
-    } catch(err) {
-        log(`[Error] initializeQuestionUpvotes() - ${err}`);
-    }
+    return new Promise((resolve, reject) => {
+        db.collection(constants.COLLECTIONS.MEDIA).insertOne(mediaDocument, function(err, response) {
+            if(err) {
+                logMongo(`[Error] initializeQuestionUpvotes() - ${err}`);
+                reject(err);
+            } else {
+                logMongo(`initalizeQuestionUpvotes() - ${response}`);
+                resolve(response);
+            }
+        });
+    });
 }
 
 /**
@@ -182,16 +196,16 @@ async function initializeMedia(id) {
 async function markAnswered(aid) {
     try {
         var updated = await db.collection(constants.COLLECTIONS.ANSWERS).findOneAndUpdate({"id": aid}, {$set:{"is_accepted": true}}, {"returnNewDocument": true});
-        log(`markAnswered() - ${updated}`);
+        logMongo(`markAnswered() - ${updated}`);
     } catch(err) {
-        log(`[Error] markAnswered() - ${err}`);
+        logMongo(`[Error] markAnswered() - ${err}`);
     }
 
     try {
         const result = await db.collection(constants.COLLECTIONS.QUESTIONS).updateOne({"id": updated.qid}, {$set:{"accepted_answer_id": aid}});
-        log(`markAnswered() - ${result}`);
+        logMongo(`markAnswered() - ${result}`);
     } catch(err) {
-        log(`[Error] markAnswered() - ${err}`);
+        logMongo(`[Error] markAnswered() - ${err}`);
     }
 }
 
@@ -226,9 +240,9 @@ function isAccepted(question) {
 async function answerExists(aid) {
     try {
         var answer = await db.collection(constants.COLLECTIONS.ANSWERS).countDocuments(query={"id": aid}, options={"limit": 1});
-        log(`answerExists() - ${answer}`);
+        logMongo(`answerExists() - ${answer}`);
     } catch(err) {
-        log(`[Error] answerExists() - ${err}`);
+        logMongo(`[Error] answerExists() - ${err}`);
     }
 
     return answer != 0;
@@ -242,9 +256,9 @@ async function answerExists(aid) {
 async function questionExists(qid) {
     try {
         var question = await db.collection(constants.COLLECTIONS.QUESTIONS).countDocuments(query={"id": qid}, options={"limit": 1});
-        log(`questionExists() - ${question}`);
+        logMongo(`questionExists() - ${question}`);
     } catch(err) {
-        log(`[Error] questionExists() - ${err}`);
+        logMongo(`[Error] questionExists() - ${err}`);
     }
 
     return question != 0;
@@ -258,9 +272,9 @@ async function questionExists(qid) {
 async function getQuestionDocument(qid) {
     try {
         var question = await db.collection(constants.COLLECTIONS.QUESTIONS).findOne({"id": qid});
-        log(`getQuestionDocument() - ${question}`)
+        logMongo(`getQuestionDocument() - ${question}`)
     } catch(err) {
-        log(`[Error] getQuestionDocument() - $(err)`);
+        logMongo(`[Error] getQuestionDocument() - $(err)`);
     }
 
     return question;
@@ -274,9 +288,9 @@ async function getQuestionDocument(qid) {
 async function getAnswerDocument(aid) {
     try {
         var answer = await db.collection(constants.COLLECTIONS.ANSWERS).findOne({"id": aid});
-        log(`getAnswerDocument() - ${answer}`)
+        logMongo(`getAnswerDocument() - ${answer}`)
     } catch(err) {
-        log(`[Error] getAnswerDocument() - $(err)`);
+        logMongo(`[Error] getAnswerDocument() - ${err}`);
     }
 
     return answer;
@@ -297,20 +311,20 @@ async function validateMedia(mediaIDs, poster) {
     try {
         var result = await cassandraClient.execute(query, [mediaIDs], {prepare: true});
     } catch (err) {
-        log(`[Error] validateMedia() - ${err}`);
+        logCassandra(`[Error] validateMedia() - ${err}`);
         return false;
     }
 
     /* this will fail if some media IDs specified in the question or answer do not exist in Cassandra */
     if (result.rowLength != mediaIDs.length) {
-        log(`validateMedia() - Some media IDs were not found in Cassandra.`);
+        logCassandra(`validateMedia() - Some media IDs were not found in Cassandra.`);
         return false;
     }
 
     /* checks if ALL of the media queried has a matching poster */
     for (var row of result.rows) {
         if (row.poster !== poster) {
-            log(`validateMedia() - Specified poster, ${poster} did not match the one in Cassandra, ${row.poster}.`);
+            logCassandra(`validateMedia() - Specified poster, ${poster} did not match the one in Cassandra, ${row.poster}.`);
             return false;
         }
     }
@@ -326,11 +340,11 @@ async function validateMedia(mediaIDs, poster) {
 async function checkMediaAvailablity(mediaIDs) {
     try {
         const result = db.collection(constants.COLLECTIONS.MEDIA).find({"id": {$in: mediaIDs}}).toArray();
-        if(result.length != 0) {
+        if (result.length != 0) {
             return false;
         }
     } catch(err) {
-        log(`[Error] checkMediaAvailablity() - ${err}`);
+        logMongo(`[Error] checkMediaAvailablity() - ${err}`);
     }
 
     return true;
@@ -377,27 +391,27 @@ async function deleteMedia(mediaIDs) {
  * @param {string} ip The IP address of the user is unauthenticated, or null if a username is provided.
  */
 function checkUniqueView(qid, username, ip) {
-    if(username == null && ip == null) { // '== null' is the same as checking if it is null or undefined
+    if (username == null && ip == null) { // '== null' is the same as checking if it is null or undefined
         throw Error("Both username and ip cannot be null.");
     }
 
-    if(username && ip) {
+    if (username && ip) {
         throw Error("Both username and ip cannot be non-null.");
     }
     
     try {
         const view = await db.collection(constants.COLLECTIONS.VIEWS).findOne({"qid": qid});
-        if(view == null) {
-            log(`checkUniqueView() - No matching documents found for qid=${qid}.`);
+        if (view == null) {
+            logMongo(`checkUniqueView() - No matching documents found for qid=${qid}.`);
         } else {
-            if(username) {
+            if (username) {
                 return view.authenticated.includes(username);
             } else {
                 return view.unauthenticated.includes(ip);
             }
         }
     } catch(err) {
-        log(`[Error] checkUniqueView() - ${err}`);
+        logMongo(`[Error] checkUniqueView() - ${err}`);
     }
 }
 
@@ -409,16 +423,16 @@ function checkUniqueView(qid, username, ip) {
 async function incrementViewCount(qid) {
     try {
         var newViewCount = await db.collection(constants.COLLECTIONS.QUESTIONS).findOne({"id": qid}) + 1;
-        log(`incrementViewCount() - ${newViewCount}`)
+        logMongo(`incrementViewCount() - ${newViewCount}`)
     } catch(err) {
-        log(`[Error] incrementViewCount() - ${err}`);
+        logMongo(`[Error] incrementViewCount() - ${err}`);
     }
 
     try {
         const result = await db.collection(constants.COLLECTIONS.QUESTIONS).updateOne({"id": qid}, {$set: {"view_count": newViewCount}});
-        log(`incrementViewCount() - ${result}`)
+        logMongo(`incrementViewCount() - ${result}`)
     } catch(err) {
-        log(`[Error] incrementViewCount() - ${err}`);
+        logMongo(`[Error] incrementViewCount() - ${err}`);
     }
 
     return newViewCount;
