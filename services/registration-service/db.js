@@ -65,13 +65,12 @@ async function addUser(email, username, password) {
         "reputation": 1
     };
 
-    db.collection(constants.COLLECTIONS.USERS).insertOne(user, function(err, response) {
-        if(err) {
-            log(`[Error] addUser() - ${err}`);
-        } else {
-            log(response);
-        }
-    })
+    try {
+        const response = await db.collection(constants.COLLECTIONS.USERS).insertOne(user);
+        log(response);
+    } catch(err) {
+        log(`[Error] addUser() - ${err}`);
+    }
 
     return key;
 }

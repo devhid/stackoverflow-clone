@@ -31,17 +31,14 @@ async function getUser(username) {
     assert.notEqual(db, null);
     assert.notEqual(username, undefined);
 
-    return new Promise( (resolve, reject) => {
-        db.collection(constants.COLLECTIONS.USERS).findOne({"username": username}, function(err, result) {
-            if(err) {
-                log(`[Error] getUser() - ${err}`);
-                reject(err);
-            } else {
-                log(`getUser() - ${result}`);
-                resolve(result);
-            }
-        });
-    });
+    try {
+        var user = await db.collection(constants.COLLECTIONS.USERS).findOne({"username": username});
+        log(`getUser() - ${user}`);
+    } catch(err) {
+        log(`[Error] getUser() - ${err}`);
+    }
+    
+    return user;
 }
 
 /**
@@ -53,23 +50,20 @@ async function getUserQuestions(username) {
     assert.notEqual(db, null);
     assert.notEqual(username, undefined);
 
-    return new Promise((resolve, reject) => {
-        db.collection(constants.COLLECTIONS.QUESTIONS).find({'user.username': username}).toArray(function(err, result) {
-            if(err) {
-                log(`[Error] getUserQuestions() - ${err}`);
-                reject(err);
-            } else {
-                log(`getUserQuestions() - ${result}`);
+    try {
+        const questions = await db.collection(constants.COLLECTIONS.QUESTIONS).find({'user': username}).toArray();
+        log(`getUserQuestions() - ${questions}`);
 
-                let qids = [];
-                for(let question of result) {
-                    qids.push(question.id);
-                }
-                
-                resolve(qids);
-            }
-        })
-    });
+        var qids = [];
+        for(let question of questions) {
+            qids.push(question.id);
+        }
+        
+    } catch(err) {
+        log(`[Error] getUserQuestions() - ${err}`);
+    }
+
+    return qids;
 }
 
 /**
@@ -81,23 +75,20 @@ async function getUserAnswers(username) {
     assert.notEqual(db, null);
     assert.notEqual(username, undefined);
 
-    return new Promise((resolve, reject) => {
-        db.collection(constants.COLLECTIONS.ANSWERS).find({'user': username}).toArray(function(err, result) {
-            if(err) {
-                log(`[Error] getUserQuestions() - ${err}`);
-                reject(err);
-            } else {
-                log(`getUserQuestions() - ${result}`);
+    try {
+        const answers = await db.collection(constants.COLLECTIONS.ANSWERS).find({'user': username}).toArray();
+        log(`getUserAnswers() - ${answers}`);
 
-                let aids = [];
-                for(let answer of result) {
-                    aids.push(answer.id);
-                }
-                
-                resolve(aids);
-            }
-        })
-    });
+        var aids = [];
+        for(let answer of answers) {
+            aids.push(answer.id);
+        }
+        
+    } catch(err) {
+        log(`[Error] getUserQuestions() - ${err}`);
+    }
+
+    return aids;
 }
 
 module.exports = {

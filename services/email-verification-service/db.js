@@ -31,17 +31,14 @@ async function getUser(username) {
     assert.notEqual(db, null);
     assert.notEqual(username, undefined);
 
-    return new Promise( (resolve, reject) => {
-        db.collection(constants.COLLECTIONS.USERS).findOne({"username": username}, function(err, result) {
-            if(err) {
-                log(`[Error] getUser() - ${err}`);
-                reject(err);
-            } else {
-                log(`getUser() - ${result}`);
-                resolve(result);
-            }
-        });
-    });
+    try {
+        var user = await db.collection(constants.COLLECTIONS.USERS).findOne({"username": username});
+        log(`getUser() - ${user}`);
+    } catch(err) {
+        log(`[Error] getUser() - ${err}`);
+    }
+    
+    return user;
 }
 
 /**
@@ -72,13 +69,12 @@ async function updateVerified(email) {
     assert.notEqual(db, null);
     assert.notEqual(email, undefined);
 
-    db.collection(constants.COLLECTIONS.USERS).updateOne({"email": email}, {$set: {"email_verified": true}}, function(err, result) {
-        if(err) {
-            log(`[Error] updateVerified() - ${err}`);
-        } else {
-            log(`updateVerified() - ${result}`);
-        }
-    });
+    try {
+        const result = await db.collection(constants.COLLECTIONS.USERS).updateOne({"email": email}, {$set: {"email_verified": true}});
+        log(`updateVerified() - ${result}`);
+    } catch(err) {
+        log(`[Error] updateVerified() - ${err}`);
+    }
 }
 
 module.exports = {

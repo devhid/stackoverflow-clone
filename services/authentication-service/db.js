@@ -32,17 +32,14 @@ async function getUser(username) {
     assert.notEqual(db, null);
     assert.notEqual(username, undefined);
 
-    return new Promise( (resolve, reject) => {
-        db.collection(constants.COLLECTIONS.USERS).findOne({"username": username}, function(err, result) {
-            if(err) {
-                log(`[Error] getUser() - ${err}`);
-                reject(err);
-            } else {
-                log(`getUser() - ${result}`);
-                resolve(result);
-            }
-        });
-    });
+    try {
+        var user = await db.collection(constants.COLLECTIONS.USERS).findOne({"username": username});
+        log(`getUser() - ${user}`);
+    } catch(err) {
+        log(`[Error] getUser() - ${err}`);
+    }
+    
+    return user;
 }
 
 /**
